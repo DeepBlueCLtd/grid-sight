@@ -44,12 +44,20 @@ grid-sight/
 ├── demo/                       # Playground and sample data
 │   ├── playground.html
 │   └── submarine-db-tables/
+├── stories/                    # Storybook component stories
+│   ├── ui/                     # UI component stories
+│   ├── enrichments/            # Enrichment stories
+│   └── Introduction.mdx        # Storybook documentation
 ├── dist/                       # Build artifacts
 │   └── grid-sight.min.js
 ├── .windsurfrules              # IDE consistency
 ├── .eslintrc.cjs               # Linting config
 ├── .prettierrc                 # Formatting config
+├── .storybook/                 # Storybook configuration
+│   ├── main.js
+│   └── preview.js
 ├── vite.config.js              # Build tool setup
+├── vitest.config.js            # Vitest configuration
 └── README.md
 ```
 
@@ -58,12 +66,25 @@ grid-sight/
 ## ⚙️ Build & Tooling
 
 ### 🔨 Bundler
-- **Vite** or **esbuild** recommended
+- **Vite** as the primary build system
 - Produces single `grid-sight.min.js` output
 - Supports:
   - Tree-shaking
   - Minification
   - Optional ESM + UMD builds
+
+### 🧪 Testing
+- **Vitest**: Fast unit and integration testing with Vite integration
+  - Compatible with Jest API
+  - Watch mode for development
+  - Coverage reporting
+
+### 📚 Component Development
+- **Storybook v9**: Component development environment
+  - Isolated component development and testing
+  - Interactive documentation
+  - Visual regression testing capabilities
+  - Component states and variations showcase
 
 ### ✅ Linting & Formatting
 - **ESLint**: Enforces JS code standards
@@ -77,8 +98,10 @@ grid-sight/
 |------|-------------|
 | Lint | Run ESLint on `src/` |
 | Format | Check code style with Prettier |
+| Test | Run Vitest tests for unit and integration testing |
 | Build | Compile to `/dist/grid-sight.min.js` |
-| Optional | Playwright or Puppeteer tests on demo tables |
+| Storybook | Build Storybook for component documentation |
+| E2E Tests | Run Playwright tests on demo tables |
 | Deploy | Copy to GitHub Pages or release ZIP |
 
 ---
@@ -104,6 +127,8 @@ This separation enables **parallel development**, allowing multiple contributors
 | `simple-statistics` | Basic stat functions (mean, z) |
 | `uPlot`             | High-performance charts (planned) |
 | `localStorage`      | User config persistence        |
+| `Storybook v9`      | Component development and documentation |
+| `Vitest`            | Fast unit and integration testing |
 
 ---
 
