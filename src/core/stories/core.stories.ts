@@ -90,8 +90,11 @@ export const BasicTable = () => {
   table.appendChild(tbody)
   container.appendChild(table)
   
-  // Process the table with Grid-Sight
-  processTable(table)
+  // Use setTimeout to process the table after it's been attached to the DOM
+  // This ensures the table has an offsetParent and passes the visibility check
+  setTimeout(() => {
+    processTable(table)
+  }, 0)
   
   // Add usage instructions
   const usageInstructions = document.createElement('div')
