@@ -14,8 +14,7 @@ export default defineConfig({
     rollupOptions: {
       output: {
         globals: {
-          uplot: 'uPlot',
-          valtio: 'valtio'
+          uplot: 'uPlot'
         }
       }
     }

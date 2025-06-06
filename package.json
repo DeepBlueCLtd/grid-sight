@@ -56,7 +56,6 @@
     "vite": "^5.0.0"
   },
   "dependencies": {
-    "uplot": "^1.6.24",
-    "valtio": "^1.10.5"
+    "uplot": "^1.6.24"
   }
 }
