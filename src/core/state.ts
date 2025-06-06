@@ -3,6 +3,7 @@
  */
 
 import { proxy } from 'valtio'
+import { DataType } from './types'
 
 // Define types for our state
 interface TableConfig {
@@ -16,6 +17,9 @@ interface TableConfig {
     heatmapColorScheme: string
     zScoreThreshold: number
   }
+  // Column and row data type classifications
+  columnTypes?: DataType[]
+  rowTypes?: DataType[]
 }
 
 interface GridSightState {
