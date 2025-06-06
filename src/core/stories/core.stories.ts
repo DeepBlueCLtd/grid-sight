@@ -70,16 +70,14 @@ export const BasicTable = () => {
   data.forEach(rowData => {
     const row = document.createElement('tr')
     
-    rowData.forEach((cellData, index) => {
+    rowData.forEach((cellData) => {
       const td = document.createElement('td')
       td.textContent = String(cellData)
       td.style.border = '1px solid #ccc'
       td.style.padding = '8px'
       
-      // Make the Value column numeric for heatmap demonstration
-      if (index === 2) {
-        td.setAttribute('data-type', 'numeric')
-      }
+      // Let Grid-Sight automatically detect the column types based on content
+      // No need to add data attributes as Grid-Sight will analyze the content
       
       row.appendChild(td)
     })
@@ -90,11 +88,11 @@ export const BasicTable = () => {
   table.appendChild(tbody)
   container.appendChild(table)
   
-  // Use setTimeout to process the table after it's been attached to the DOM
-  // This ensures the table has an offsetParent and passes the visibility check
+  // Process the table with Grid-Sight after a short delay
+  // This ensures the table is properly attached to the DOM before processing
   setTimeout(() => {
     processTable(table)
-  }, 0)
+  }, 100)
   
   // Add usage instructions
   const usageInstructions = document.createElement('div')
