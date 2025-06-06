@@ -1,7 +1,11 @@
 import { processTable } from '../tableDetection'
+import '../../core/events'
 
 export default {
   title: 'Core/Basic',
+  parameters: {
+    layout: 'fullscreen',
+  }
 }
 
 /**
@@ -9,14 +13,28 @@ export default {
  * Creates a simple table and applies Grid-Sight to add the enrichment toggle.
  */
 export const BasicTable = () => {
-  // Create a container
+  // Create a container with some padding and styling
   const container = document.createElement('div')
   container.style.padding = '20px'
+  container.style.fontFamily = 'Arial, sans-serif'
+  
+  // Add a title
+  const title = document.createElement('h2')
+  title.textContent = 'Grid-Sight Basic Demo'
+  title.style.marginBottom = '20px'
+  container.appendChild(title)
+  
+  // Add instructions
+  const instructions = document.createElement('p')
+  instructions.innerHTML = 'This demo shows the core Grid-Sight functionality. <br>Look for the Grid-Sight toggle button that appears in the bottom-right corner.'
+  instructions.style.marginBottom = '20px'
+  container.appendChild(instructions)
   
   // Create a table with header and body
   const table = document.createElement('table')
   table.style.borderCollapse = 'collapse'
   table.style.width = '100%'
+  table.style.marginBottom = '30px'
   
   // Create header
   const thead = document.createElement('thead')
@@ -39,7 +57,7 @@ export const BasicTable = () => {
   // Create table body
   const tbody = document.createElement('tbody')
   
-  // Sample data
+  // Sample data with numeric values for the Value column
   const data = [
     [1, 'Alpha', 42, 'Active'],
     [2, 'Beta', 18, 'Inactive'],
@@ -52,11 +70,17 @@ export const BasicTable = () => {
   data.forEach(rowData => {
     const row = document.createElement('tr')
     
-    rowData.forEach(cellData => {
+    rowData.forEach((cellData, index) => {
       const td = document.createElement('td')
       td.textContent = String(cellData)
       td.style.border = '1px solid #ccc'
       td.style.padding = '8px'
+      
+      // Make the Value column numeric for heatmap demonstration
+      if (index === 2) {
+        td.setAttribute('data-type', 'numeric')
+      }
+      
       row.appendChild(td)
     })
     
@@ -68,6 +92,19 @@ export const BasicTable = () => {
   
   // Process the table with Grid-Sight
   processTable(table)
+  
+  // Add usage instructions
+  const usageInstructions = document.createElement('div')
+  usageInstructions.innerHTML = `
+    <h3>How to use Grid-Sight:</h3>
+    <ol>
+      <li>Click the Grid-Sight toggle button in the bottom-right corner to activate enrichment mode</li>
+      <li>Notice the plus icons that appear in table headers and rows</li>
+      <li>Click a plus icon to open the context menu with enrichment options</li>
+      <li>Select an enrichment option like "Apply Heatmap" to visualize the data</li>
+    </ol>
+  `
+  container.appendChild(usageInstructions)
   
   return container
 }
