@@ -8,5 +8,6 @@ module.exports = {
   coverageReporters: ['text', 'lcov'],
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1'
-  }
+  },
+  setupFilesAfterEnv: ['<rootDir>/tests/setup/jest.setup.js']
 }
