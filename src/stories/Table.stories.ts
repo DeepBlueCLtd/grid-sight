@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/html-vite'
 import { processTable } from '../core/tableDetection'
+import { cleanupToggles } from '../ui/tableToggle'
 
 // Import HTML content as strings using Vite's ?raw import
 import defaultTableHtml from './tables/default-table.html?raw'
@@ -14,6 +15,9 @@ const processedTables = new WeakSet<HTMLTableElement>()
 const createTableStory = (tableHtmlContent: string) => {
   // This is a function that Storybook will call to render the story
   return (): HTMLElement => {
+    // Clean up any existing toggles from previous stories
+    cleanupToggles()
+    
     const container = document.createElement('div')
     container.style.padding = '20px'
     container.innerHTML = tableHtmlContent

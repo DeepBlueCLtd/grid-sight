@@ -9,6 +9,20 @@ import { showContextMenu } from './contextMenu'
 const tableToggles = new WeakMap<HTMLTableElement, HTMLDivElement>()
 
 /**
+ * Clean up all toggles and clear the toggle cache
+ * This should be called when the story changes
+ */
+export const cleanupToggles = (): void => {
+  // Remove all toggle elements from the DOM
+  document.querySelectorAll('.grid-sight-toggle').forEach(toggle => {
+    toggle.remove()
+  })
+  
+  // Clear the WeakMap (though this isn't strictly necessary as it's a WeakMap)
+  // The main purpose is to remove the DOM elements
+}
+
+/**
  * Create and inject a Grid-Sight toggle button for a table
  * @param table - The table element to create a toggle for
  */
