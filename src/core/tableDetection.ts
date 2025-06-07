@@ -142,6 +142,7 @@ export const classifyDataValues = (values: string[]): DataType => {
  * @param table - The HTML table element to process
  */
 export const processTable = (table: HTMLTableElement): void => {
+  console.log('procesing table')
   if (!isValidTable(table)) return
   
   // Register the table with state management

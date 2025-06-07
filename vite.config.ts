@@ -1,23 +1,24 @@
 import { defineConfig } from 'vite'
-import { resolve } from 'path'
 
 export default defineConfig({
+  esbuild: {
+    jsx: 'automatic',
+  },
+  server: {
+    port: 3000
+  },
   build: {
     lib: {
-      entry: resolve(__dirname, 'src/index.ts'),
+      entry: 'src/index.ts',
       name: 'GridSight',
-      fileName: 'grid-sight'
+      fileName: (format) => `grid-sight.${format}.js`,
+      formats: ['es', 'umd']
     },
-    outDir: 'dist',
-    sourcemap: true,
-    // Ensure external dependencies aren't bundled
     rollupOptions: {
+      external: [],
       output: {
-        globals: {
-          uplot: 'uPlot'
-        }
+        globals: {}
       }
     }
-  },
-  base: '/grid-sight/'
+  }
 })
