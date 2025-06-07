@@ -5,17 +5,28 @@
 import { dispatchGridSightEvent, EVENTS } from '../core/events'
 import { showContextMenu } from './contextMenu'
 
+// Track which tables already have toggles
+const tableToggles = new WeakMap<HTMLTableElement, HTMLDivElement>()
+
 /**
  * Create and inject a Grid-Sight toggle button for a table
  * @param table - The table element to create a toggle for
  */
 export const createTableToggle = (table: HTMLTableElement): void => {
+  // Check if this table already has a toggle
+  if (tableToggles.has(table)) {
+    return // Skip if toggle already exists for this table
+  }
+
   // Create toggle element
   const toggle = document.createElement('div')
   toggle.className = 'grid-sight-toggle'
   toggle.setAttribute('role', 'button')
   toggle.setAttribute('tabindex', '0')
   toggle.setAttribute('aria-label', 'Toggle Grid-Sight data visualization')
+  
+  // Store reference to this toggle
+  tableToggles.set(table, toggle)
   
   // Set initial state
   let isActive = false
