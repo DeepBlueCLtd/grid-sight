@@ -94,17 +94,15 @@ const updateToggleState = (toggle: HTMLElement, isActive: boolean): void => {
 }
 
 /**
- * Position the toggle button relative to the table
+ * Position the toggle button next to the table
  * @param toggle - The toggle element
  * @param table - The table element
  */
 const positionToggle = (toggle: HTMLElement, table: HTMLTableElement): void => {
-  const tableRect = table.getBoundingClientRect()
-  
-  // Position the toggle at the top-right of the table
-  toggle.style.position = 'absolute'
-  toggle.style.top = `${tableRect.top + window.scrollY}px`
-  toggle.style.left = `${tableRect.right + window.scrollX - 40}px`
+  // Style the toggle
+  toggle.style.display = 'inline-block'
+  toggle.style.verticalAlign = 'top'
+  toggle.style.marginLeft = '10px'
   
   // Add basic styling
   toggle.style.backgroundColor = '#2c3e50'
@@ -112,9 +110,30 @@ const positionToggle = (toggle: HTMLElement, table: HTMLTableElement): void => {
   toggle.style.padding = '4px 8px'
   toggle.style.borderRadius = '4px'
   toggle.style.cursor = 'pointer'
-  toggle.style.zIndex = '1000'
   toggle.style.fontSize = '14px'
   toggle.style.fontWeight = 'bold'
+  
+  // Insert the toggle next to the table
+  if (table.parentNode) {
+    // Create a container for the table and toggle
+    const container = document.createElement('div')
+    container.style.display = 'inline-flex'
+    container.style.alignItems = 'flex-start'
+    container.style.verticalAlign = 'top'
+    container.style.margin = '1em 0'
+    
+    // Wrap the table in the container
+    const parent = table.parentNode
+    parent.insertBefore(container, table)
+    
+    // Move the table into the container
+    container.appendChild(table)
+    
+    // Add the toggle to the container
+    container.appendChild(toggle)
+
+    console.log('container', container)
+  }
 }
 
 /**
