@@ -1,116 +1,27 @@
 /**
- * UI component for the Grid-Sight toggle button
+ * UI component for the Grid-Sight toggle button, implemented in vanilla JS/TS.
  */
-
-import { useEffect, useRef, useState, useCallback } from 'react'
-import type { Root } from 'react-dom/client'
 import { dispatchGridSightEvent, EVENTS } from '../core/events'
 import { showContextMenu } from './contextMenu'
 
 // Track which tables already have toggles
 const tableToggles = new WeakMap<HTMLTableElement, HTMLButtonElement>()
-// Keep track of created roots for cleanup
-const tableRoots = new WeakMap<HTMLTableElement, { root: Root; container: HTMLElement }>()
+// tableRoots is no longer needed as we are not using React for this component.
 
 /**
  * Clean up all toggles and clear the toggle cache
  * This should be called when the story changes
  */
 export const cleanupToggles = (): void => {
-  // Unmount React roots and remove their containers
-  for (const tableKey of (typeof tableRoots !== 'undefined' ? Object.keys(tableRoots) : [])) {
-    const entry = tableRoots.get(tableKey as any) // Cast needed if keys aren't perfect
-    if (entry) {
-      try {
-        entry.root.unmount()
-      } catch (e) {
-        console.warn('Grid-Sight: Error unmounting React root during cleanup', e)
-      }
-      entry.container.remove()
-      tableRoots.delete(tableKey as any)
-    }
-  }
-
-  // Remove all toggle button containers (if any were missed or structured differently)
+  // Remove all toggle button containers from the DOM.
   document.querySelectorAll('.grid-sight-toggle-container').forEach(container => {
-    container.remove()
+    // Check if the container still has a parent before removing, to avoid errors if already removed.
+    if (container.parentNode) {
+      container.parentNode.removeChild(container)
+    }
   })
-
-  // The tableToggles WeakMap (for button elements) will clear as elements are removed and GC'd.
-}
-
-interface TableToggleProps {
-  table: HTMLTableElement
-}
-
-/**
- * React component for the Grid-Sight toggle button
- */
-const TableToggle: React.FC<TableToggleProps> = ({ table }) => {
-  const [isActive, setIsActive] = useState(false)
-  
-const toggleRef: React.MutableRefObject<HTMLButtonElement | null> = useRef<HTMLButtonElement | null>(null)
-
-  // Effect for button-specific logic
-  useEffect(() => {
-    if (!toggleRef.current) return
-
-    // Store reference to this toggle button
-    if (!tableToggles.has(table)) {
-      tableToggles.set(table, toggleRef.current)
-    }
-
-    return () => {
-      // Cleanup on unmount if needed, e.g. if tableToggles needed explicit delete
-      // tableToggles.delete(table) // WeakMap handles this if buttonEl is GC'd
-    }
-  }, [table]) // Depends on table for the WeakMap key
-
-  const handleToggle = useCallback(() => {
-    console.log('toggle', table)
-    const newActiveState = !isActive
-    setIsActive(newActiveState)
-
-    // Dispatch appropriate event
-    if (newActiveState) {
-      dispatchGridSightEvent(EVENTS.TOGGLE_ACTIVATED, { tableElement: table })
-      addPlusIcons(table)
-    } else {
-      dispatchGridSightEvent(EVENTS.TOGGLE_DEACTIVATED, { tableElement: table })
-      removePlusIcons(table)
-    }
-  }, [isActive, table])
-
-  const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLButtonElement>) => {
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault()
-      handleToggle()
-    }
-  }, [handleToggle])
-
-  return <button
-        ref={toggleRef}
-        className='grid-sight-toggle'
-        role="button"
-        tabIndex={0}
-        aria-label='Toggle Grid-Sight data visualization'
-        aria-pressed={isActive}
-        onClick={handleToggle}
-        onKeyDown={handleKeyDown}
-        style={{
-          backgroundColor: '#2c3e50',
-          color: 'white',
-          padding: '4px 8px',
-          borderRadius: '4px',
-          cursor: 'pointer',
-          fontSize: '14px',
-          fontWeight: 'bold',
-          marginLeft: '10px',
-          border: 'none',
-        }}
-      >
-        GS
-      </button>
+  // tableToggles WeakMap will clear as buttons are removed and garbage collected.
+  // No need to iterate tableToggles explicitly for cleanup.
 }
 
 /**
@@ -129,39 +40,74 @@ export const createTableToggle = (table: HTMLTableElement): void => {
     return
   }
 
-  // Create a wrapper div that will contain the toggle and the table
+  // Create the button element
+  const button = document.createElement('button')
+  button.className = 'grid-sight-toggle'
+  button.setAttribute('role', 'button')
+  button.tabIndex = 0
+  button.setAttribute('aria-label', 'Toggle Grid-Sight data visualization')
+  button.textContent = 'GS'
+
+  // Style the button
+  Object.assign(button.style, {
+    backgroundColor: '#2c3e50',
+    color: 'white',
+    padding: '4px 8px',
+    borderRadius: '4px',
+    cursor: 'pointer',
+    fontSize: '14px',
+    fontWeight: 'bold',
+    marginLeft: '10px', // Keep margin on the button itself
+    border: 'none',
+  })
+
+  // State for the toggle (managed per button)
+  let isActive = false
+  button.setAttribute('aria-pressed', String(isActive))
+
+  // Event handler for toggle logic
+  const handleToggle = () => {
+    isActive = !isActive
+    button.setAttribute('aria-pressed', String(isActive))
+
+    if (isActive) {
+      dispatchGridSightEvent(EVENTS.TOGGLE_ACTIVATED, { tableElement: table })
+      addPlusIcons(table)
+    } else {
+      dispatchGridSightEvent(EVENTS.TOGGLE_DEACTIVATED, { tableElement: table })
+      removePlusIcons(table)
+    }
+  }
+
+  // Attach event listeners
+  button.addEventListener('click', handleToggle)
+  button.addEventListener('keydown', (e: KeyboardEvent) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault()
+      handleToggle()
+    }
+  })
+
+  // Create a wrapper div that will contain the toggle button and the table
   const wrapperDiv = document.createElement('div')
-  wrapperDiv.className = 'grid-sight-toggle-container' // Used for cleanup and potential styling
+  wrapperDiv.className = 'grid-sight-toggle-container'
   Object.assign(wrapperDiv.style, {
     display: 'inline-flex',
     alignItems: 'flex-start',
     verticalAlign: 'top',
-    margin: '1em 0' // Apply margin to the wrapper
+    margin: '1em 0' // Apply overall margin to the wrapper
   })
 
-  // Create a mount point for the React component (the button)
-  const reactMountPoint = document.createElement('div')
-  // reactMountPoint.style.marginRight = '10px' // If button needs margin from table
-
-  // Replace the original table with the wrapperDiv
+  // Replace the original table with the wrapperDiv in the DOM
   parent.replaceChild(wrapperDiv, table)
 
-  // Add the React mount point and the original table into the wrapper
-  wrapperDiv.appendChild(reactMountPoint)
+  // Add the button and the original table into the wrapper
+  wrapperDiv.appendChild(button) // Add button first
   wrapperDiv.appendChild(table)
 
-  // Import React and render the component into the mount point
-  Promise.all([
-    import('react'),
-    import('react-dom/client')
-  ]).then(([_, { createRoot }]) => {
-    const root = createRoot(reactMountPoint)
-    root.render(<TableToggle table={table} />)
-    // Store the wrapperDiv for cleanup, as it's the outermost container we created
-    tableRoots.set(table, { root, container: wrapperDiv })
-  }).catch(error => {
-    console.error('Grid-Sight: Failed to load React or render toggle:', error)
-  })
+  // Store a reference to the created button for this table
+  tableToggles.set(table, button)
+  console.log('Grid-Sight: Vanilla JS toggle created for table', table)
 }
 
 /**
