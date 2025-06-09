@@ -6,6 +6,7 @@ This document provides a dependency-ordered list of BDD tests, each with an AI d
 ---
 
 ## ✅ 1. Table Detection and Toggle Injection
+**Status: complete**
 
 ### AI Prompt
 > As a **Frontend Developer**, specializing in JavaScript, it is your goal to write a test for:  
@@ -16,6 +17,7 @@ This document provides a dependency-ordered list of BDD tests, each with an AI d
 ---
 
 ## ✅ 2. Toggle UI Control Behavior
+**Status: complete**
 
 ### AI Prompt
 > As a **UI Engineer**, specializing in JavaScript, it is your goal to test:  
@@ -25,6 +27,7 @@ This document provides a dependency-ordered list of BDD tests, each with an AI d
 ---
 
 ## ✅ 3. Context Menu Interaction
+**Status: complete**
 
 ### AI Prompt
 > As a **UI Interaction Engineer**, your goal is to implement and test:  
