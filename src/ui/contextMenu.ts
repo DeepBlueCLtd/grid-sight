@@ -187,54 +187,59 @@ const getCellsForSelection = (
   const cells: HTMLTableCellElement[] = []
   
   if (isColumn) {
-    // Find the column index
-    const headerRow = tableElement.querySelector('thead tr')
-    if (!headerRow) return cells
-    
-    const headerCells = Array.from(headerRow.querySelectorAll('th'))
+    const allTableRows = Array.from(tableElement.querySelectorAll('tr'))
+    if (allTableRows.length === 0) return cells
+
+    const firstRow = allTableRows[0]
+    // Ensure firstRow and its cells exist and are not empty
+    if (!firstRow || !firstRow.cells || firstRow.cells.length === 0) {
+        console.warn('Grid-Sight: First row or its cells not found or empty for column selection.')
+        return cells
+    }
+    const headerCells = Array.from(firstRow.cells) // Works for <th> or <td>
     let columnIndex = -1
-    
-    // Find which header contains the target element
+
+    // Find which header cell (from the first row) contains the target plus icon
     headerCells.forEach((cell, index) => {
-      if (cell.contains(targetElement)) {
+      if (cell.contains(targetElement)) { // targetElement is the plus icon
         columnIndex = index
       }
     })
     
-    if (columnIndex === -1) return cells
-    
-    // Get all cells in this column (skip header)
-    const rows = tableElement.querySelectorAll('tbody tr')
-    rows.forEach(row => {
-      const cell = row.querySelectorAll('td')[columnIndex]
-      if (cell) {
-        cells.push(cell as HTMLTableCellElement)
+    // Fallback: if targetElement is not contained by any cell (e.g. it's a direct child of the cell)
+    // and the targetElement's parent is one of the headerCells.
+    if (columnIndex === -1 && targetElement.parentElement) {
+        const parentCellIndex = headerCells.indexOf(targetElement.parentElement as HTMLTableCellElement)
+        if (parentCellIndex !== -1) {
+            columnIndex = parentCellIndex
+        }
+    }
+
+    if (columnIndex === -1) {
+      console.warn('Grid-Sight: Could not determine column index for context menu action. Target:', targetElement, 'Header cells:', headerCells)
+      return cells
+    }
+
+    // Get all cells in that column from all rows
+    // This includes the header cell itself, which is fine for heatmap/z-score calculations
+    allTableRows.forEach(row => {
+      if (row.cells && row.cells[columnIndex]) {
+        cells.push(row.cells[columnIndex])
       }
     })
-  } else {
-    // Find the row
-    const rows = Array.from(tableElement.querySelectorAll('tbody tr'))
-    let targetRow: Element | null = null
-    
-    // Find which row contains the target element
-    for (const row of rows) {
-      if (row.contains(targetElement)) {
-        targetRow = row
-        break
-      }
+  } else { // isRow
+    const iconContainerCell = targetElement.parentElement // The cell containing the plus icon
+    if (!iconContainerCell) {
+        console.warn('Grid-Sight: Plus icon has no parent cell for row selection.')
+        return cells
     }
+    const rowElement = iconContainerCell.closest('tr')
     
-    if (!targetRow) return cells
-    
-    // Get all cells in this row (skip first cell if it's the one with the plus icon)
-    const rowCells = Array.from(targetRow.querySelectorAll('td'))
-    
-    // If the first cell contains the target, we want all cells except the first
-    if (rowCells[0] && (rowCells[0] as Element).contains(targetElement)) {
-      cells.push(...rowCells.slice(1) as HTMLTableCellElement[])
+    if (rowElement && rowElement.cells && rowElement.cells.length > 0) {
+      // Get all cells from this row.
+      cells.push(...Array.from(rowElement.cells))
     } else {
-      // Otherwise get all cells
-      cells.push(...rowCells as HTMLTableCellElement[])
+        console.warn('Grid-Sight: Could not find row element or its cells for row selection. Target:', targetElement)
     }
   }
   
