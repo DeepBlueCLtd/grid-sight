@@ -26,6 +26,15 @@ export const showContextMenu = (
   // Create context menu
   const contextMenu = document.createElement('div')
   contextMenu.className = 'grid-sight-context-menu'
+  // Basic styling for the context menu
+  Object.assign(contextMenu.style, {
+    backgroundColor: 'white', // Solid background
+    border: '1px solid #ccc',    // Border
+    borderRadius: '4px',         // Rounded corners
+    padding: '5px 0',            // Padding
+    boxShadow: '2px 2px 5px rgba(0,0,0,0.2)', // Subtle shadow
+    zIndex: '10000'             // Ensure it's on top
+  })
   
   // Add menu items
   const menuItems = [
@@ -38,6 +47,18 @@ export const showContextMenu = (
     const menuItem = document.createElement('div')
     menuItem.className = 'grid-sight-context-menu-item'
     menuItem.textContent = item.label
+    // Basic styling for menu items
+    Object.assign(menuItem.style, {
+      padding: '8px 15px',       // Padding
+      cursor: 'pointer'          // Cursor
+    })
+    // Hover effect for menu items
+    menuItem.addEventListener('mouseenter', () => {
+      menuItem.style.backgroundColor = '#f0f0f0' // Light grey background on hover
+    })
+    menuItem.addEventListener('mouseleave', () => {
+      menuItem.style.backgroundColor = 'white'   // Revert on mouse leave
+    })
     menuItem.addEventListener('click', () => {
       item.action()
       removeContextMenu()
