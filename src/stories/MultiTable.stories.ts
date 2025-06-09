@@ -24,11 +24,11 @@ const Template: StoryFn = () => {
     <h2>Employee Data Table (Should Get Toggle)</h2>
     ${employeeTableHtml}
     <hr />
-    <h2>Sales Data Table (Should Get Toggle)</h2>
-    ${salesTableHtml}
-    <hr />
     <h2>Invalid Structure Table (Should NOT Get Toggle)</h2>
     ${invalidTableHtml}
+    <hr />
+    <h2>Sales Data Table (Should Get Toggle)</h2>
+    ${salesTableHtml}
   `
 
   // Use a short timeout to ensure DOM is updated before processing tables
@@ -43,3 +43,4 @@ const Template: StoryFn = () => {
 
 export const Default = Template.bind({})
 Default.args = {}
+
