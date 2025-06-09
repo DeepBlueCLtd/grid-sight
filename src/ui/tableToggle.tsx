@@ -9,16 +9,34 @@ import { showContextMenu } from './contextMenu'
 
 // Track which tables already have toggles
 const tableToggles = new WeakMap<HTMLTableElement, HTMLButtonElement>()
+// Keep track of created roots for cleanup
+const tableRoots = new WeakMap<HTMLTableElement, { root: Root; container: HTMLElement }>()
 
 /**
  * Clean up all toggles and clear the toggle cache
  * This should be called when the story changes
  */
 export const cleanupToggles = (): void => {
-  // Remove all toggle elements from the DOM
+  // Unmount React roots and remove their containers
+  for (const tableKey of (typeof tableRoots !== 'undefined' ? Object.keys(tableRoots) : [])) {
+    const entry = tableRoots.get(tableKey as any) // Cast needed if keys aren't perfect
+    if (entry) {
+      try {
+        entry.root.unmount()
+      } catch (e) {
+        console.warn('Grid-Sight: Error unmounting React root during cleanup', e)
+      }
+      entry.container.remove()
+      tableRoots.delete(tableKey as any)
+    }
+  }
+
+  // Remove all toggle button containers (if any were missed or structured differently)
   document.querySelectorAll('.grid-sight-toggle-container').forEach(container => {
     container.remove()
   })
+
+  // The tableToggles WeakMap (for button elements) will clear as elements are removed and GC'd.
 }
 
 interface TableToggleProps {
@@ -30,43 +48,26 @@ interface TableToggleProps {
  */
 const TableToggle: React.FC<TableToggleProps> = ({ table }) => {
   const [isActive, setIsActive] = useState(false)
-  const containerRef: React.MutableRefObject<HTMLDivElement | null> = useRef<HTMLDivElement | null>(null)
+  
 const toggleRef: React.MutableRefObject<HTMLButtonElement | null> = useRef<HTMLButtonElement | null>(null)
 
-  // Position the toggle next to the table on mount
+  // Effect for button-specific logic
   useEffect(() => {
-    if (!containerRef.current || !toggleRef.current) return
+    if (!toggleRef.current) return
 
-    // Store reference to this toggle
-    if (tableToggles.has(table)) return
-    tableToggles.set(table, toggleRef.current)
-
-    // Style the container
-    const container = containerRef.current
-    Object.assign(container.style, {
-      display: 'inline-flex',
-      alignItems: 'flex-start',
-      verticalAlign: 'top',
-      margin: '1em 0'
-    })
-
-    // Wrap the table in the container
-    const parent = table.parentNode
-    if (!parent) return
-
-    parent.insertBefore(container, table)
-    container.appendChild(table)
+    // Store reference to this toggle button
+    if (!tableToggles.has(table)) {
+      tableToggles.set(table, toggleRef.current)
+    }
 
     return () => {
-      // Cleanup on unmount
-      if (container.parentNode) {
-        container.parentNode.insertBefore(table, container)
-        container.remove()
-      }
+      // Cleanup on unmount if needed, e.g. if tableToggles needed explicit delete
+      // tableToggles.delete(table) // WeakMap handles this if buttonEl is GC'd
     }
-  }, [table])
+  }, [table]) // Depends on table for the WeakMap key
 
   const handleToggle = useCallback(() => {
+    console.log('toggle', table)
     const newActiveState = !isActive
     setIsActive(newActiveState)
 
@@ -87,8 +88,7 @@ const toggleRef: React.MutableRefObject<HTMLButtonElement | null> = useRef<HTMLB
     }
   }, [handleToggle])
 
-  return <div ref={containerRef} className='grid-sight-toggle-container'>
-      <button
+  return <button
         ref={toggleRef}
         className='grid-sight-toggle'
         role="button"
@@ -111,36 +111,56 @@ const toggleRef: React.MutableRefObject<HTMLButtonElement | null> = useRef<HTMLB
       >
         GS
       </button>
-    </div>
 }
 
 /**
  * Create and inject a Grid-Sight toggle button for a table
  * @param table - The table element to create a toggle for
  */
-// Keep track of created roots for cleanup
-const tableRoots = new WeakMap<HTMLTableElement, { root: Root; container: HTMLElement }>()
-
 export const createTableToggle = (table: HTMLTableElement): void => {
-  // Check if this table already has a toggle
   if (tableToggles.has(table)) {
-    return // Skip if toggle already exists for this table
+    console.log('Grid-Sight: Toggle already exists for this table. Skipping.')
+    return
   }
 
-  // Create a container for the React component
-  const container = document.createElement('div')
-  document.body.appendChild(container)
+  const parent = table.parentNode
+  if (!parent) {
+    console.error('Grid-Sight: Table has no parent node. Cannot inject toggle.', table)
+    return
+  }
 
-  // Import React and render the component
+  // Create a wrapper div that will contain the toggle and the table
+  const wrapperDiv = document.createElement('div')
+  wrapperDiv.className = 'grid-sight-toggle-container' // Used for cleanup and potential styling
+  Object.assign(wrapperDiv.style, {
+    display: 'inline-flex',
+    alignItems: 'flex-start',
+    verticalAlign: 'top',
+    margin: '1em 0' // Apply margin to the wrapper
+  })
+
+  // Create a mount point for the React component (the button)
+  const reactMountPoint = document.createElement('div')
+  // reactMountPoint.style.marginRight = '10px' // If button needs margin from table
+
+  // Replace the original table with the wrapperDiv
+  parent.replaceChild(wrapperDiv, table)
+
+  // Add the React mount point and the original table into the wrapper
+  wrapperDiv.appendChild(reactMountPoint)
+  wrapperDiv.appendChild(table)
+
+  // Import React and render the component into the mount point
   Promise.all([
-    import('react'), // Import React for JSX
+    import('react'),
     import('react-dom/client')
-  ]).then(([_, { createRoot }]) => { // Use underscore for unused React import
-    const root = createRoot(container)
+  ]).then(([_, { createRoot }]) => {
+    const root = createRoot(reactMountPoint)
     root.render(<TableToggle table={table} />)
-    tableRoots.set(table, { root, container })
+    // Store the wrapperDiv for cleanup, as it's the outermost container we created
+    tableRoots.set(table, { root, container: wrapperDiv })
   }).catch(error => {
-    console.error('Failed to load React:', error)
+    console.error('Grid-Sight: Failed to load React or render toggle:', error)
   })
 }
 
