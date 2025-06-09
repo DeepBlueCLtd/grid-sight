@@ -107,7 +107,6 @@ export const createTableToggle = (table: HTMLTableElement): void => {
 
   // Store a reference to the created button for this table
   tableToggles.set(table, button)
-  console.log('Grid-Sight: Vanilla JS toggle created for table', table)
 }
 
 /**

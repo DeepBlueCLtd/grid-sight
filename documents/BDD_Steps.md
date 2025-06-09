@@ -11,7 +11,7 @@ This document provides detailed, behavior-driven pseudocode tests for **Grid-Sig
 
 **Scenario: Detect table on page load**
 ```
-Given a page contains a valid <table> with <thead> and <tbody>
+Given a page contains a <table> with more than one row.
 When Grid-Sight loads
 Then a GS toggle appears adjacent to the top-right of the table
 And a plus icon appears inside the top-left cell

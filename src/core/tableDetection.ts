@@ -13,12 +13,12 @@ import { DataType } from './types'
  * @returns boolean indicating if the table is suitable for Grid-Sight
  */
 export const isValidTable = (table: HTMLTableElement): boolean => {
-  // Check if the table has at least one row (tr element)
-  // This is more lenient than requiring explicit thead and tbody elements
-  const hasRows = table.querySelectorAll('tr').length > 0
+  // Check if the table has at least two rows (tr elements)
+  // as per BDD: "Given a page contains a <table> with more than one row."
+  const rowCount = table.querySelectorAll('tr').length
   
-  if (!hasRows) {
-    console.error('Grid-Sight: invalid table structure - no rows found')
+  if (rowCount < 2) {
+    console.error(`Grid-Sight: invalid table structure - found ${rowCount} row(s), requires at least 2 rows`)
     return false
   }
   
@@ -135,6 +135,13 @@ export const classifyDataValues = (values: string[]): DataType => {
   }
   
   return 'unknown'
+}
+
+export const processAllTables = (parentElement: HTMLElement): void => {
+  const tables = parentElement.querySelectorAll('table')
+  tables.forEach(table => {
+    processTable(table as HTMLTableElement)
+  })
 }
 
 /**
