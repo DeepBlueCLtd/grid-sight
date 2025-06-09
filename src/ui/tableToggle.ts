@@ -114,72 +114,63 @@ export const createTableToggle = (table: HTMLTableElement): void => {
  * @param table - The table element
  */
 const addPlusIcons = (table: HTMLTableElement): void => {
-  // Add plus icons to column headers
-  const headerCells = table.querySelectorAll('thead th')
-  headerCells.forEach(cell => {
-    // Create a container for the React component
-    const container = document.createElement('span')
-    cell.appendChild(container)
-    
-    // Create the plus icon element
+  const allRows = Array.from(table.querySelectorAll('tr'))
+  if (allRows.length === 0) return
+
+  // Add plus icons to cells of the first row (assumed headers for columns)
+  const firstRowCells = Array.from(allRows[0].cells)
+  firstRowCells.forEach(cell => {
     const plusIcon = document.createElement('span')
-    plusIcon.className = 'grid-sight-plus-icon'
+    plusIcon.className = 'grid-sight-plus-icon grid-sight-column-icon'
     plusIcon.textContent = '+'
     plusIcon.style.marginLeft = '5px'
     plusIcon.style.cursor = 'pointer'
     plusIcon.tabIndex = 0
     plusIcon.setAttribute('role', 'button')
     plusIcon.setAttribute('aria-label', 'Show column options')
-    
-    // Add event listeners
+
     const handleClick = (event: MouseEvent) => {
       showContextMenu(event, table, true) // true for column
     }
-    
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Enter' || event.key === ' ') {
         event.preventDefault()
-        showContextMenu(event as unknown as MouseEvent, table, true) // true for column
+        showContextMenu(event as unknown as MouseEvent, table, true)
       }
     }
-    
     plusIcon.addEventListener('click', handleClick)
     plusIcon.addEventListener('keydown', handleKeyDown)
-    container.appendChild(plusIcon)
+    // Prepend to keep icon before text, append if it should be after
+    cell.insertBefore(plusIcon, cell.firstChild) 
   })
-  
-  // Add plus icons to the first cell of each row in tbody
-  const rows = table.querySelectorAll('tbody tr')
-  rows.forEach(row => {
-    const firstCell = row.querySelector('td')
-    if (!firstCell) return
-    
-    // Create the plus icon element
+
+  // Add plus icons to the first cell of each subsequent row (for row operations)
+  // Starting from the second row (index 1) to avoid duplicating on the header row's first cell
+  allRows.slice(1).forEach(row => {
+    const firstCellInRow = row.cells[0]
+    if (!firstCellInRow) return
+
     const plusIcon = document.createElement('span')
-    plusIcon.className = 'grid-sight-plus-icon'
+    plusIcon.className = 'grid-sight-plus-icon grid-sight-row-icon'
     plusIcon.textContent = '+'
-    plusIcon.style.marginRight = '5px'
+    plusIcon.style.marginRight = '5px' // For icons at the start of the cell content
     plusIcon.style.cursor = 'pointer'
     plusIcon.tabIndex = 0
     plusIcon.setAttribute('role', 'button')
     plusIcon.setAttribute('aria-label', 'Show row options')
-    
-    // Add event listeners
+
     const handleClick = (event: MouseEvent) => {
       showContextMenu(event, table, false) // false for row
     }
-    
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Enter' || event.key === ' ') {
         event.preventDefault()
-        // Pass the icon itself as the target for positioning if needed, or use event.target
         showContextMenu(event as unknown as MouseEvent, table, false)
       }
     }
-    
     plusIcon.addEventListener('click', handleClick)
     plusIcon.addEventListener('keydown', handleKeyDown)
-    firstCell.insertBefore(plusIcon, firstCell.firstChild)
+    firstCellInRow.insertBefore(plusIcon, firstCellInRow.firstChild)
   })
 }
 
@@ -188,8 +179,11 @@ const addPlusIcons = (table: HTMLTableElement): void => {
  * @param table - The table element
  */
 const removePlusIcons = (table: HTMLTableElement): void => {
+  // Remove all plus icons, whether they are column or row icons
   const plusIcons = table.querySelectorAll('.grid-sight-plus-icon')
   plusIcons.forEach(icon => {
-    icon.remove()
+    if (icon.parentNode) {
+      icon.parentNode.removeChild(icon)
+    }
   })
 }
