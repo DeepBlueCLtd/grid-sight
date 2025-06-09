@@ -173,7 +173,8 @@ const addPlusIcons = (table: HTMLTableElement): void => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Enter' || event.key === ' ') {
         event.preventDefault()
-        showContextMenu(event as unknown as MouseEvent, table, false) // false for row
+        // Pass the icon itself as the target for positioning if needed, or use event.target
+        showContextMenu(event as unknown as MouseEvent, table, false)
       }
     }
     
