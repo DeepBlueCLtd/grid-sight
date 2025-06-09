@@ -1,19 +1,21 @@
-import { StoryFn, Meta } from '@storybook/html'
+import { StoryFn, Meta, StoryObj } from '@storybook/html'
+
 import { processAllTables } from '../core/tableDetection'
-import { cleanupToggles } from '../ui/tableToggle' // Adjusted path if tableToggle.tsx was moved/renamed to .ts
+import { cleanupToggles } from '../ui/tableToggle'
 
 // Import HTML content as raw strings
 import employeeTableHtml from './tables/employee-data.html?raw'
 import salesTableHtml from './tables/sales-data.html?raw'
 import invalidTableHtml from './tables/invalid-table-structure.html?raw'
 
-export default {
+const meta = {
   title: 'Grid-Sight/Multi-Table Detection',
   argTypes: {},
   parameters: {
     // Optional parameters
   },
 } as Meta
+export default meta
 
 const Template: StoryFn = () => {
   // Ensure a clean slate before rendering
@@ -44,3 +46,11 @@ const Template: StoryFn = () => {
 export const Default = Template.bind({})
 Default.args = {}
 
+type Story = StoryObj<typeof meta>;
+export const Opens: Story = {
+  render: Template, // Explicitly use the Template function for rendering
+  play: async ({ canvas, userEvent }) => {
+    const allTables = canvas.getAllByRole('table') as HTMLTableElement[]
+    console.log('Tables found:', allTables.length, allTables)
+  },
+};
