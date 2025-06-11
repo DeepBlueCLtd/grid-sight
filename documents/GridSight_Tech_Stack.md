@@ -65,6 +65,10 @@ grid-sight/
 
 ## ⚙️ Build & Tooling
 
+### Language
+- **TypeScript** for type safety and better IDE support
+- **Vanilla HTML, CSS, JS** for lightweight deployment
+
 ### 🔨 Bundler
 - **Vite** as the primary build system
 - Produces single `grid-sight.min.js` output
@@ -85,6 +89,8 @@ grid-sight/
   - Interactive documentation
   - Visual regression testing capabilities
   - Component states and variations showcase
+  - Support for interaction testing via `vitest`
+  - Use Storybook/HTML as renderer for tests
 
 ### ✅ Linting & Formatting
 - **ESLint**: Enforces JS code standards
@@ -137,6 +143,9 @@ This separation enables **parallel development**, allowing multiple contributors
 - Single JavaScript file: `grid-sight.min.js`
 - Runtime injected via `<script>` tag
 - No external dependencies at runtime
+
+## Demonstrator
+- Static html file containing series of data-tables.  Script to pull in minified grid-sight.js and inject into page.  This will be hosted via GH pages
 
 ---
 
