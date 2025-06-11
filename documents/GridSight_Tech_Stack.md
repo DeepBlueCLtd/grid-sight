@@ -91,6 +91,8 @@ grid-sight/
   - Component states and variations showcase
   - Support for interaction testing via `vitest`
   - Use Storybook/HTML as renderer for tests
+  - Storybook V9 testing is documented here: https://storybook.js.org/tutorials/ui-testing-handbook/react/en/interaction-testing/
+
 
 ### ✅ Linting & Formatting
 - **ESLint**: Enforces JS code standards
