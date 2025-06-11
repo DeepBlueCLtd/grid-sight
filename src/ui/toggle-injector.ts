@@ -1,5 +1,7 @@
 import { injectPlusIcons, removePlusIcons, plusIconStyles } from './header-utils';
+import { removeAllMenus } from './enrichment-menu';
 import { analyzeTable } from '../core/table-detection';
+import { toggleHeatmap } from '../enrichments/heatmap';
 
 // CSS class names for the toggle element
 const TOGGLE_CLASS = 'grid-sight-toggle';
@@ -77,6 +79,46 @@ export function createToggleElement(): HTMLElement {
 }
 
 /**
+ * Handles enrichment selection from the menu
+ */
+function handleEnrichmentSelected(event: Event) {
+  const customEvent = event as CustomEvent<{
+    type: 'row' | 'column';
+    enrichmentType: string;
+    header: HTMLElement;
+    headerIndex: number;
+  }>;
+  
+  const { type, enrichmentType, header, headerIndex } = customEvent.detail;
+  
+  console.log(`Enrichment selected: ${enrichmentType} for ${type} header at index ${headerIndex}`);
+  
+  // Handle menu item selection
+  if (enrichmentType === 'heatmap') {
+    const columnIndex = Array.from(header.parentElement?.children || []).indexOf(header);
+    if (columnIndex >= 0) {
+      // Toggle heatmap for this column
+      const table = header.closest('table');
+      if (table) {
+        toggleHeatmap(table, columnIndex);
+      }
+    }
+  }
+  
+  // Dispatch event for the specific enrichment type
+  const enrichmentEvent = new CustomEvent(`gridsight:enrichment:${enrichmentType}`, {
+    bubbles: true,
+    detail: {
+      type,
+      header,
+      headerIndex
+    }
+  });
+  
+  header.dispatchEvent(enrichmentEvent);
+}
+
+/**
  * Injects the Grid-Sight toggle into the top-left cell of the given table.
  * @param table The HTMLTableElement to inject the toggle into.
  * @returns True if the toggle was injected, false otherwise.
@@ -128,10 +170,15 @@ export function injectToggle(table: HTMLTableElement): boolean {
           const { columnTypes } = analyzeTable(rows);
           // Inject plus icons
           injectPlusIcons(table, columnTypes);
+          
+          // Add click handler for enrichment selection
+          table.addEventListener('gridsight:enrichmentSelected', handleEnrichmentSelected as EventListener);
         } else {
           table.classList.remove(TABLE_ENABLED_CLASS);
-          // Remove plus icons when toggling off
+          // Remove plus icons, menus, and event listeners when toggling off
           removePlusIcons(table);
+          removeAllMenus();
+          table.removeEventListener('gridsight:enrichmentSelected', handleEnrichmentSelected as EventListener);
         }
       });
     }

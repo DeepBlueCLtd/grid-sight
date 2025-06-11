@@ -16,25 +16,28 @@ const DEFAULT_OPTIONS: Required<TypeDetectionOptions> = {
 };
 
 /**
- * Checks if a string can be converted to a number, including with units and various number formats
- * @param value The string to check
- * @returns true if the string can be converted to a number, false otherwise
+ * Cleans a string value to extract a numeric value, handling various number formats and currency symbols
+ * @param value The string value to clean
+ * @returns The cleaned number as a float, or null if the value cannot be converted to a number
  */
-function isNumericValue(value: string): boolean {
-  if (typeof value !== 'string') return false;
+export function cleanNumericCell(value: string | number | null | undefined): number | null {
+  if (value === null || value === undefined) return null;
+  
+  // If it's already a number, return it directly
+  if (typeof value === 'number') return isFinite(value) ? value : null;
   
   // Handle empty strings
   const trimmed = value.trim();
-  if (!trimmed) return false;
+  if (!trimmed) return null;
   
   // Handle currency symbols and other non-numeric prefixes/suffixes
-  // Remove any non-numeric characters except digits, decimal points, commas, and minus sign
+  // Remove any non-numeric characters except digits, decimal points, commas, and minus
   let numericString = trimmed
     // Remove all non-numeric characters except digits, decimal points, commas, and minus
     .replace(/[^\d.,-]/g, '');
   
   // If we're left with an empty string, it wasn't a valid number
-  if (!numericString) return false;
+  if (!numericString) return null;
   
   // Handle negative numbers (only allow minus at the start)
   const isNegative = numericString.startsWith('-');
@@ -43,11 +46,11 @@ function isNumericValue(value: string): boolean {
   }
   
   // Remove any remaining minus signs (they're only valid at the start)
-  if (numericString.includes('-')) return false;
+  if (numericString.includes('-')) return null;
   
   // Handle decimal separators - only allow one decimal point
   const parts = numericString.split('.');
-  if (parts.length > 2) return false; // More than one decimal point
+  if (parts.length > 2) return null; // More than one decimal point
   
   // Handle thousands separators (commas) - they must be in the correct positions
   if (parts[0].includes(',')) {
@@ -56,16 +59,16 @@ function isNumericValue(value: string): boolean {
     const groups = integerPart.split(',');
     
     // First group can be 1-3 digits, subsequent groups must be exactly 3 digits
-    if (groups[0].length === 0 || groups[0].length > 3) return false;
+    if (groups[0].length === 0 || groups[0].length > 3) return null;
     for (let i = 1; i < groups.length; i++) {
-      if (groups[i].length !== 3) return false;
+      if (groups[i].length !== 3) return null;
     }
     
     // Remove commas for final parsing
     numericString = groups.join('') + (parts[1] ? `.${parts[1]}` : '');
   } else if (parts.length === 2) {
     // No commas, but has a decimal point - ensure decimal part is valid
-    if (parts[1].includes(',')) return false; // Comma in decimal part
+    if (parts[1].includes(',')) return null; // Comma in decimal part
     numericString = parts[0] + '.' + parts[1];
   }
   
@@ -74,9 +77,18 @@ function isNumericValue(value: string): boolean {
     numericString = '-' + numericString;
   }
   
-  // Final check that the string parses to a finite number
+  // Parse the final number
   const num = parseFloat(numericString);
-  return !isNaN(num) && isFinite(num);
+  return isFinite(num) ? num : null;
+}
+
+/**
+ * Checks if a string can be converted to a number, including with units and various number formats
+ * @param value The string to check
+ * @returns true if the string can be converted to a number, false otherwise
+ */
+function isNumericValue(value: string): boolean {
+  return cleanNumericCell(value) !== null;
 }
 
 /**

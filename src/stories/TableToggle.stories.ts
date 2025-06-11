@@ -85,15 +85,27 @@ const mixedTable = `
       </tr>
       <tr>
         <td>New York</td>
-        <td>8,419,000</td>
+        <td>10,419,000</td>
         <td>783.8</td>
         <td>USA</td>
       </tr>
       <tr>
         <td>London</td>
-        <td>8,900,000</td>
+        <td>5,900,000</td>
         <td>1,572</td>
         <td>UK</td>
+      </tr>
+      <tr>
+        <td>France</td>
+        <td>8,900,000</td>
+        <td>3,572</td>
+        <td>France</td>
+      </tr>
+      <tr>
+        <td>Brussels</td>
+        <td>1,900,000</td>
+        <td>3,572</td>
+        <td>Belgium</td>
       </tr>
     </tbody>
   </table>
