@@ -22,9 +22,13 @@ Grid-Sight runs entirely in the browser with no server-side code.
 ### 📄 HTML Table Format
 To be enriched, HTML tables must follow these basic structural rules:
 
-- `<table>` tag with visible `<thead>` and `<tbody>`
-- Headers in `<th>` elements (first row, and optionally first column)
-- Data in `<td>` elements, preferably numeric
+- Legacy html will be supported, which is just a `<table>` with a collection of `<tr>` children rows.
+- Where a modern table breaks data down into `<thead>` and `<tbody>`, these will effectively be merged into a series of `<tr>` rows.
+- Potentially valid tables will be a `<table>` element with more than one `<tr>` child row.
+- The first cell in a row/column is treated as a header.
+- If a row/column contains text or numeric header, and all other row/column cells contain numbers, it's a numeric row/column
+- If all row/column headers are number (possibly with units suffix) then interpolation can be added for that axis.
+- If all row/column children are text, containing 3 or more unique values, then it's a categorical row/column.
 - Recommended: one data table per grid; multi-table support available with page-level enrichment toggle
 
 ---
@@ -32,7 +36,7 @@ To be enriched, HTML tables must follow these basic structural rules:
 ## 🧠 Plugin Functional Requirements
 
 ### 📦 Base Features
-- Add enrichment toggle via GS icon and checkbox
+- If valid, add enrichment toggle via GS icon and checkbox
 - Inject plus icons at:
   - Whole-table level (top-left)
   - Column headers
@@ -46,7 +50,7 @@ To be enriched, HTML tables must follow these basic structural rules:
 - Axis coordinate highlighting
 - Global and scoped search/match
 - Basic statistics (mean, z-score, outliers)
-- Interpolation tools (planned)
+- Interpolation tools (slider alongside relevant axis)
 - Chart overlays (e.g. row/column plot using uPlot)
 
 ---
@@ -68,8 +72,10 @@ To be enriched, HTML tables must follow these basic structural rules:
 
 ### 📚 Core Technologies
 | Layer           | Technology           | Purpose                            |
-|----------------|----------------------|------------------------------------|
-| Language        | JavaScript (ES6+)    | Plugin logic and enrichment tools  |
+|-----------------|----------------------|------------------------------------|
+| UI              | HTML(not React)      | Avoid pulling in react or UI framework |
+| Dev Language    | TypeScript           | Plugin logic and enrichment tools  |
+| Runtime Language| JavaScript (ES6+)    | Plugin logic and enrichment tools  |
 | Build System    | esbuild / Vite       | Bundling and minification          |
 | Charts          | uPlot (planned)      | High-performance visualisation     |
 | Statistics      | simple-statistics    | Z-score, regression, etc.          |
@@ -124,6 +130,7 @@ To be enriched, HTML tables must follow these basic structural rules:
 
 - Manual browser tests for enrichment injection
 - Snapshot HTML comparisons for demo tables
+- Storybook v9 interaction tests, verified via `vitest`
 - Headless browser tests (optional) with Puppeteer or Playwright
 
 ---
