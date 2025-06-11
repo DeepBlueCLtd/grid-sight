@@ -128,8 +128,34 @@ Add stories that demonstrate:
 5. Compare statistics between columns
 
 ## Dependencies
-- No new external dependencies required
+- **simple-statistics** (v7.8.0+)
+  - Lightweight statistics library (16KB minified)
+  - Zero dependencies
+  - MIT licensed
+  - Provides all needed statistical functions:
+    - `mean()`, `median()`
+    - `min()`, `max()`
+    - `standardDeviation()`, `variance()`
+    - `quantile()`, `interquartileRange()`
 - Uses existing DOM APIs for clipboard functionality
+
+### Installation
+```bash
+yarn add simple-statistics@^7.8.0
+```
+
+### Usage Example
+```typescript
+import { mean, median, standardDeviation, sampleVariance } from 'simple-statistics';
+
+const values = [1, 2, 3, 4, 5];
+const stats = {
+  mean: mean(values),
+  median: median(values),
+  stdDev: standardDeviation(values),
+  variance: sampleVariance(values)
+};
+```
 
 ## Timeline
 - Phase 1: 2 days
