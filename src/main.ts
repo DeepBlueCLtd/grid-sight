@@ -1,24 +1,23 @@
 import './style.css'
-import typescriptLogo from './typescript.svg'
-import viteLogo from '/vite.svg'
-import { setupCounter } from './counter.ts'
+import { findTables, isTableSuitable } from './core/table-detection'
+import { injectToggle } from './ui/toggle-injector'
 
-document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
-  <div>
-    <a href="https://vite.dev" target="_blank">
-      <img src="${viteLogo}" class="logo" alt="Vite logo" />
-    </a>
-    <a href="https://www.typescriptlang.org/" target="_blank">
-      <img src="${typescriptLogo}" class="logo vanilla" alt="TypeScript logo" />
-    </a>
-    <h1>Vite + TypeScript</h1>
-    <div class="card">
-      <button id="counter" type="button"></button>
-    </div>
-    <p class="read-the-docs">
-      Click on the Vite and TypeScript logos to learn more
-    </p>
-  </div>
-`
+/**
+ * Initializes the Grid-Sight functionality on the page.
+ * It finds all tables, checks their suitability, and injects the
+ * Grid-Sight toggle into the ones that are suitable.
+ */
+function initializeGridSight(): void {
+  const tables = findTables()
+  tables.forEach(table => {
+    if (isTableSuitable(table)) {
+      injectToggle(table)
+    }
+  })
+}
 
-setupCounter(document.querySelector<HTMLButtonElement>('#counter')!)
+// Run the initialization logic once the DOM is fully loaded.
+window.addEventListener('DOMContentLoaded', initializeGridSight)
+
+// Export for potential use in other modules or for testing.
+export { initializeGridSight }
