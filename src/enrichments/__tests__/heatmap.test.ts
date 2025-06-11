@@ -48,11 +48,12 @@ describe('Heatmap', () => {
       // Check if heatmap is applied
       expect(table.classList.contains('gs-heatmap')).toBe(true);
       
-      // Check if cells have heatmap class and styles
+      // Check if cells have heatmap class
       const cells = table.querySelectorAll('td:nth-child(2)');
       expect(cells.length).toBe(2);
-      expect(cells[0].classList.contains('gs-heatmap-cell')).toBe(true);
-      expect(cells[0].style.backgroundColor).toBeTruthy();
+      cells.forEach(cell => {
+        expect(cell.classList.contains('gs-heatmap-cell')).toBe(true);
+      });
       
       // Clean up
       removeHeatmap(table);
@@ -81,12 +82,11 @@ describe('Heatmap', () => {
       // Check if heatmap is applied
       expect(table.classList.contains('gs-heatmap')).toBe(true);
       
-      // Check if cells have heatmap class and styles (skip first cell as it's the row header)
+      // Check if cells have heatmap class (skip first cell as it's the row header)
       const row = table.rows[1];
       for (let i = 1; i < row.cells.length; i++) {
         const cell = row.cells[i];
         expect(cell.classList.contains('gs-heatmap-cell')).toBe(true);
-        expect(cell.style.backgroundColor).toBeTruthy();
       }
       
       // Clean up

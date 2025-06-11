@@ -67,11 +67,39 @@ export function extractNumericValues(
   options: { skipHeader?: boolean } = {}
 ): number[] {
   const values: number[] = [];
+  const cellArray = Array.isArray(cells) ? cells : Array.from(cells);
   
-  for (let i = 0; i < cells.length; i++) {
-    if (options.skipHeader && i === 0) continue;
+  // If skipHeader is true, we need to determine how many cells are in the first row
+  // to skip all of them
+  if (options.skipHeader && cellArray.length > 0) {
+    // Find the first row by traversing up to the row element
+    const firstCell = cellArray[0] as HTMLTableCellElement;
+    const firstRow = firstCell.closest('tr');
     
-    const text = cells[i].textContent?.trim() || '';
+    if (firstRow) {
+      // Skip all cells that are in the first row
+      const headerCells = Array.from(firstRow.cells);
+      const filteredCells = cellArray.filter(
+        (cell): cell is HTMLTableCellElement => 
+          !headerCells.includes(cell as HTMLTableCellElement)
+      );
+      
+      // Process remaining cells
+      for (const cell of filteredCells) {
+        const text = cell.textContent?.trim() || '';
+        const num = parseFloat(text);
+        if (!isNaN(num)) {
+          values.push(num);
+        }
+      }
+      
+      return values;
+    }
+  }
+  
+  // Default processing when not skipping header or no header found
+  for (const cell of cellArray as HTMLTableCellElement[]) {
+    const text = cell.textContent?.trim() || '';
     const num = parseFloat(text);
     if (!isNaN(num)) {
       values.push(num);
