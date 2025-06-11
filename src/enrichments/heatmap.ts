@@ -313,19 +313,11 @@ export function toggleHeatmap(
   // Check if this specific heatmap is already active
   const isActive = isHeatmapActive(table, index, type);
   
-  // If it's active, remove it
   if (isActive) {
+    // If it's active, remove just this specific heatmap
     removeHeatmap(table, index, type);
-    return;
+  } else {
+    // If not active, apply the new heatmap (can have multiple heatmaps on different rows/columns)
+    applyHeatmap(table, index, type, options);
   }
-  
-  // If not active, first remove any existing heatmaps of the same type
-  if (table._heatmapInfos?.some(h => h.type === type)) {
-    // Remove all heatmaps of the same type
-    const toRemove = [...(table._heatmapInfos || [])].filter(h => h.type === type);
-    toRemove.forEach(h => removeHeatmap(table, h.index, h.type));
-  }
-  
-  // Apply the new heatmap
-  applyHeatmap(table, index, type, options);
 }

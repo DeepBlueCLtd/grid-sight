@@ -1,5 +1,15 @@
 /**
- * Normalizes a value to a 0-1 range based on min and max
+ * Normalizes a numeric value to a 0-1 range based on provided minimum and maximum bounds.
+ * The result is clamped between 0 and 1, inclusive.
+ * 
+ * @example
+ * // Returns 0.5
+ * normalizeValue(5, 0, 10);
+ * 
+ * @param value - The value to normalize
+ * @param min - The minimum value in the range
+ * @param max - The maximum value in the range
+ * @returns A number between 0 and 1 representing the normalized position of the value
  */
 export function normalizeValue(
   value: number,
@@ -11,7 +21,18 @@ export function normalizeValue(
 }
 
 /**
- * Gets a color from a color scale based on a normalized value
+ * Gets a color from a color scale based on a value's position within a range.
+ * The value is first normalized to a 0-1 range, then mapped to the closest color in the scale.
+ * 
+ * @example
+ * // Returns '#ff0000' (red)
+ * getColorForValue(5, 0, 10, ['#ff0000', '#00ff00']);
+ * 
+ * @param value - The value to get a color for
+ * @param min - The minimum value in the range
+ * @param max - The maximum value in the range
+ * @param colorScale - An array of colors in the scale, from minimum to maximum
+ * @returns The color from the scale that best represents the value's position
  */
 export function getColorForValue(
   value: number,
@@ -32,7 +53,18 @@ export function getColorForValue(
 }
 
 /**
- * Calculates min and max values while ignoring non-numeric values
+ * Calculates the minimum and maximum numeric values from an array of values.
+ * Non-numeric values and strings that can't be parsed as numbers are ignored.
+ * Can optionally update existing min/max values.
+ * 
+ * @example
+ * // Returns { min: 1, max: 3 }
+ * calculateMinMax([1, 2, 3, 'a', '4']);
+ * 
+ * @param values - Array of values to analyze (numbers or strings that can be parsed as numbers)
+ * @param [existingMin] - Optional existing minimum value to update
+ * @param [existingMax] - Optional existing maximum value to update
+ * @returns An object containing the calculated min and max values
  */
 export function calculateMinMax(
   values: (number | string)[],
@@ -60,7 +92,18 @@ export function calculateMinMax(
 }
 
 /**
- * Extracts numeric values from table cells
+ * Extracts numeric values from an array of table cells.
+ * Can optionally skip header cells by checking the skipHeader option.
+ * 
+ * @example
+ * // Returns [2, 3, 4]
+ * const cells = Array.from(document.querySelectorAll('td'));
+ * extractNumericValues(cells, { skipHeader: true });
+ * 
+ * @param cells - Array of table cells to extract numbers from
+ * @param [options] - Configuration options
+ * @param [options.skipHeader=false] - Whether to skip cells in the first row (header row)
+ * @returns An array of extracted numeric values
  */
 export function extractNumericValues(
   cells: HTMLTableCellElement[],
