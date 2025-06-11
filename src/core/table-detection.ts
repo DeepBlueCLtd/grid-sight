@@ -55,14 +55,14 @@ export function isTableSuitable(table: HTMLTableElement): { isSuitable: boolean;
   const tableData = extractTableData(table);
   const { columnTypes } = analyzeTableType(tableData);
   
-  // Check if we have at least one suitable column
+  // Check if we have at least one suitable column (numeric or categorical)
   const suitableColumns = columnTypes.filter((t) => t === 'numeric' || t === 'categorical');
   const hasEnoughSuitableColumns = suitableColumns.length >= 1;
   
   // Update the reason based on the analysis
   let reason = '';
   if (!hasEnoughSuitableColumns) {
-    reason = 'Table does not have enough suitable columns (need at least 1)';
+    reason = 'Table needs at least one numeric or categorical column';
   } else {
     reason = 'Table meets all criteria for enrichment';
   }

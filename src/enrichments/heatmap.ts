@@ -1,3 +1,5 @@
+import { cleanNumericCell } from '../core/type-detection';
+
 const HEATMAP_CLASS = 'gs-heatmap';
 const HEATMAP_CELL_CLASS = 'gs-heatmap-cell';
 
@@ -20,7 +22,8 @@ interface HeatmapOptions {
 
 export function applyHeatmap(
   table: HTMLTableElement,
-  columnIndex: number,
+  index: number,
+  type: 'row' | 'column' = 'column',
   options: HeatmapOptions = {}
 ): void {
   // Skip if already has heatmap
@@ -32,17 +35,36 @@ export function applyHeatmap(
   const values: number[] = [];
   const cells: HTMLTableCellElement[] = [];
 
-  // Collect all numeric values and their corresponding cells
-  for (let i = 0; i < rows.length; i++) {
-    const row = rows[i];
-    if (!row.cells[columnIndex]) continue;
-    
-    const cell = row.cells[columnIndex];
-    const value = parseFloat(cell.textContent?.trim() || '');
-    
-    if (!isNaN(value)) {
-      values.push(value);
-      cells.push(cell);
+  if (type === 'column') {
+    // Column heatmap - apply to all cells in the column
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i];
+      if (!row.cells[index]) continue;
+      
+      const cell = row.cells[index];
+      const value = cleanNumericCell(cell.textContent || '');
+      
+      if (value !== null) {
+        values.push(value);
+        cells.push(cell);
+      }
+    }
+  } else {
+    // Row heatmap - apply to all cells in the row (except the first cell if it's a header)
+    const row = rows[index];
+    if (row) {
+      // Start from 1 to skip the row header if it exists
+      const startIndex = row.parentElement?.tagName === 'THEAD' ? 0 : 1;
+      
+      for (let i = startIndex; i < row.cells.length; i++) {
+        const cell = row.cells[i];
+        const value = cleanNumericCell(cell.textContent || '');
+        
+        if (value !== null) {
+          values.push(value);
+          cells.push(cell);
+        }
+      }
     }
   }
 
@@ -123,12 +145,13 @@ export function removeHeatmap(table: HTMLTableElement): void {
 
 export function toggleHeatmap(
   table: HTMLTableElement,
-  columnIndex: number,
+  index: number,
+  type: 'row' | 'column' = 'column',
   options: HeatmapOptions = {}
 ): void {
   if (table.classList.contains(HEATMAP_CLASS)) {
     removeHeatmap(table);
   } else {
-    applyHeatmap(table, columnIndex, options);
+    applyHeatmap(table, index, type, options);
   }
 }

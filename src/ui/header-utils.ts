@@ -1,4 +1,5 @@
 import type { ColumnType } from '../core/type-detection';
+import { cleanNumericCell } from '../core/type-detection';
 import { createEnrichmentMenu, positionMenu, removeAllMenus } from './enrichment-menu';
 
 const PLUS_ICON_CLASS = 'gs-plus-icon';
@@ -9,11 +10,11 @@ export function injectPlusIcons(table: HTMLTableElement, columnTypes: ColumnType
   // Remove any existing plus icons first
   removePlusIcons(table);
 
-  // Add plus icons to column headers (first row)
+  // Add plus icons to column headers for both numeric and categorical columns
   const headerRow = table.rows[0];
   if (!headerRow) return;
 
-  // Add plus icons to column headers
+  // Add plus icons to column headers for both numeric and categorical columns
   Array.from(headerRow.cells).forEach((cell, colIndex) => {
     const type = columnTypes[colIndex];
     if (type === 'numeric' || type === 'categorical') {
@@ -21,17 +22,14 @@ export function injectPlusIcons(table: HTMLTableElement, columnTypes: ColumnType
     }
   });
 
-  // Add plus icons to row headers (first cell of each row)
-  for (let i = 0; i < table.rows.length; i++) {
+  // Add plus icons to row headers (first cell of each row) if the row contains any data
+  for (let i = 1; i < table.rows.length; i++) {
     const row = table.rows[i];
     if (!row.cells.length) continue;
     
-    const firstCell = row.cells[0];
-    const type = columnTypes[0]; // Row headers are always first column
-    
-    if (i > 0 && (type === 'numeric' || type === 'categorical')) {
-      addPlusIconToHeader(firstCell, 'row');
-    }
+    // For rows, we'll check if the row has any numeric or categorical data
+    // The actual filtering of menu items will be done in addPlusIconToHeader
+    addPlusIconToHeader(row.cells[0], 'row');
   }
 }
 
@@ -46,9 +44,39 @@ export function removePlusIcons(table: HTMLTableElement): void {
 }
 
 function addPlusIconToHeader(header: HTMLTableCellElement, type: 'row' | 'column'): void {
-  const columnType: ColumnType = type === 'column' ? 'numeric' : 'categorical'; // Simplified - should be determined from actual data
   // Skip if already has a plus icon
   if (header.querySelector(`.${PLUS_ICON_CLASS}`)) return;
+  
+  // Determine the actual column type based on the header type
+  let columnType: ColumnType = 'categorical'; // Default to categorical for rows
+  
+  if (type === 'column') {
+    // For column headers, use the provided type from column analysis
+    const headerRow = header.closest('tr');
+    if (headerRow) {
+      const colIndex = Array.from(headerRow.cells).indexOf(header);
+      const table = header.closest('table');
+      if (table && table.rows.length > 0) {
+        // Get the column type from the first row's cells
+        const firstDataRow = table.rows[1]; // Skip header row
+        if (firstDataRow && firstDataRow.cells[colIndex]) {
+          const value = firstDataRow.cells[colIndex].textContent?.trim() || '';
+          columnType = cleanNumericCell(value) !== null ? 'numeric' : 'categorical';
+        }
+      }
+    }
+  } else {
+    // For row headers, check if any cell in the row is numeric
+    const row = header.closest('tr');
+    if (row) {
+      // Skip the first cell (header) and check the rest
+      const hasNumeric = Array.from(row.cells).slice(1).some(cell => {
+        const value = cell.textContent?.trim() || '';
+        return cleanNumericCell(value) !== null;
+      });
+      columnType = hasNumeric ? 'numeric' : 'categorical';
+    }
+  }
 
   // Create plus icon
   const plusIcon = document.createElement('span');

@@ -60,17 +60,17 @@ describe('Table Detection', () => {
       expect(result.reason).toContain('must have at least one data row');
     });
 
-    it('should return false for tables with only one suitable column', () => {
+    it('should return true for tables with at least one suitable column', () => {
       const table = createTestTable([
         ['Name', 'Age', 'Department'],
         ['Alice', '30', 'Engineering'],
         ['Bob', '25', 'Marketing']
       ]);
       
-      // Only 'Age' is numeric, so not enough suitable columns
+      // 'Age' is numeric, so the table should be suitable
       const result = isTableSuitable(table);
-      expect(result.isSuitable).toBe(false);
-      expect(result.reason).toContain('needs at least two numeric or categorical columns');
+      expect(result.isSuitable).toBe(true);
+      expect(result.reason).toContain('meets all criteria');
     });
 
     it('should return true for tables with multiple suitable columns', () => {

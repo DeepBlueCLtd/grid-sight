@@ -95,12 +95,18 @@ function handleEnrichmentSelected(event: Event) {
   
   // Handle menu item selection
   if (enrichmentType === 'heatmap') {
-    const columnIndex = Array.from(header.parentElement?.children || []).indexOf(header);
-    if (columnIndex >= 0) {
-      // Toggle heatmap for this column
-      const table = header.closest('table');
-      if (table) {
-        toggleHeatmap(table, columnIndex);
+    const table = header.closest('table');
+    if (!table) return;
+    
+    if (type === 'column') {
+      const columnIndex = Array.from(header.parentElement?.children || []).indexOf(header);
+      if (columnIndex >= 0) {
+        toggleHeatmap(table, columnIndex, 'column');
+      }
+    } else if (type === 'row') {
+      const rowIndex = Array.from(header.closest('tr')?.parentElement?.children || []).indexOf(header.closest('tr') as HTMLTableRowElement);
+      if (rowIndex >= 0) {
+        toggleHeatmap(table, rowIndex, 'row');
       }
     }
   }
