@@ -196,7 +196,7 @@ export function analyzeTable(
   
   return {
     columnTypes,
-    isSuitable: suitableColumnCount >= 2,
+    isSuitable: suitableColumnCount >= 1,
   };
 }
 

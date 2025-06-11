@@ -101,18 +101,10 @@ const mixedTable = `
 
 const unsuitableTable = `
   <table id="unsuitable-table" class="demo-table">
-    <thead>
-      <tr>
-        <th>ID</th>
-        <th>Description</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td>1</td>
-        <td>This is a sample description</td>
-      </tr>
-    </tbody>
+    <tr>
+      <th>ID</th>
+      <th>Description</th>
+    </tr>
   </table>
 `;
 
@@ -213,7 +205,7 @@ const meta: Meta = {
 
       <div class="example">
         <h3>Unsuitable Table <span class="status status-unsuitable">Not Suitable</span></h3>
-        <p>This table doesn't have enough suitable columns (only one numeric column). The GS toggle should NOT appear.</p>
+        <p>This table doesn't have enough suitable columns (only one row). The GS toggle should NOT appear.</p>
         ${unsuitableTable}
       </div>
     `;
@@ -229,7 +221,7 @@ type Story = StoryObj;
 // Define the actual story
 export const Default: Story = {
   name: 'Table Detection Examples',
-  play: async ({ canvasElement }) => {
+  play: async () => {
     // Run the main logic to inject the toggles
     initializeGridSight();
 
@@ -260,7 +252,7 @@ export const Default: Story = {
 // Add a story to test the toggle interaction
 export const ToggleInteraction: Story = {
   name: 'Toggle Interaction',
-  play: async ({ canvasElement }) => {
+  play: async () => {
     // Run the main logic to inject the toggles
     initializeGridSight();
     
