@@ -45,7 +45,7 @@ async function testHeatmapOptionForColumn(canvasElement: HTMLElement, columnName
   const canvas = within(canvasElement);
   
   // First, find and click the GS toggle to enable GridSight
-  const gsToggle = canvasElement.querySelector('.gridsight-toggle');
+  const gsToggle = canvasElement.querySelector('.grid-sight-toggle');
   if (!gsToggle) {
     throw new Error('GridSight toggle not found');
   }
