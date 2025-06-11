@@ -30,9 +30,7 @@ type Story = StoryObj
 // Define the actual story
 export const Default: Story = {
   name: 'Default Table Toggle Behavior',
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement)
-
+  play: async ({ }) => {
     // Run the main logic to inject the toggles
     initializeGridSight()
 
