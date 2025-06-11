@@ -2,14 +2,22 @@ import { injectPlusIcons, removePlusIcons, plusIconStyles } from './header-utils
 import { removeAllMenus } from './enrichment-menu';
 import { analyzeTable } from '../core/table-detection';
 import { toggleHeatmap } from '../enrichments/heatmap';
-import { calculateStatistics, formatStatistics } from '../enrichments/statistics';
+import { calculateStatistics } from '../enrichments/statistics';
 import { cleanNumericCell } from '../core/type-detection';
+import { StatisticsPopup } from './statistics-popup';
 
 // CSS class names for the toggle element
 const TOGGLE_CLASS = 'grid-sight-toggle';
 const TOGGLE_CONTAINER_CLASS = 'grid-sight-toggle-container';
 const TOGGLE_ACTIVE_CLASS = 'grid-sight-toggle--active';
 const TABLE_ENABLED_CLASS = 'grid-sight-enabled';
+
+// Add type declaration for the global popup instance
+declare global {
+  interface Window {
+    _gsStatisticsPopup?: StatisticsPopup;
+  }
+}
 
 // Add styles for plus icons
 const styleElement = document.createElement('style');
@@ -98,6 +106,11 @@ function handleEnrichmentSelected(event: Event) {
   const table = header.closest('table');
   if (!table) return;
 
+    // Create statistics popup instance if it doesn't exist
+  if (!window._gsStatisticsPopup) {
+    window._gsStatisticsPopup = new StatisticsPopup();
+  }
+
   // Handle menu item selection
   if (enrichmentType === 'heatmap') {
     if (type === 'column') {
@@ -121,7 +134,7 @@ function handleEnrichmentSelected(event: Event) {
       try {
         const values = extractNumericColumnValues(table, columnIndex);
         const stats = calculateStatistics(values);
-        alert(formatStatistics(stats));
+        window._gsStatisticsPopup.show(stats, header);
       } catch (error) {
         console.error('Error calculating statistics:', error);
         alert(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
