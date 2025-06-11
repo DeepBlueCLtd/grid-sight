@@ -3,14 +3,16 @@
  */
 export type ColumnType = 'numeric' | 'categorical' | 'unknown';
 
-interface TypeDetectionOptions {
+export interface TypeDetectionOptions {
   minUniqueValuesForCategorical?: number;
   numericThreshold?: number;
+  hasHeader?: boolean;
 }
 
 const DEFAULT_OPTIONS: Required<TypeDetectionOptions> = {
   minUniqueValuesForCategorical: 3,
   numericThreshold: 0.8, // 80% of cells must be numeric to consider column numeric
+  hasHeader: true,
 };
 
 /**
@@ -30,78 +32,78 @@ function isNumericValue(value: string): boolean {
 
 /**
  * Determines if a column is numeric based on the requirements:
- * - The first cell is treated as a header
+ * - If hasHeader is true, the first cell is treated as a header
  * - All other cells must contain numbers (with optional units)
  */
 export function isNumericColumn(
-  cells: HTMLTableCellElement[],
+  values: string[],
   options: TypeDetectionOptions = {}
 ): boolean {
-  if (cells.length <= 1) return false; // Need at least one data point
-
-  const { numericThreshold } = { ...DEFAULT_OPTIONS, ...options };
-  const [header, ...dataCells] = cells;
+  const { numericThreshold, hasHeader } = { ...DEFAULT_OPTIONS, ...options };
   
-  // Skip empty cells
-  const nonEmptyCells = dataCells.filter(cell => cell.textContent?.trim());
-  if (nonEmptyCells.length === 0) return false;
+  // Skip header if present
+  const dataValues = hasHeader ? values.slice(1) : [...values];
+  
+  // Skip empty values
+  const nonEmptyValues = dataValues.filter(value => value?.trim());
+  if (nonEmptyValues.length === 0) return false;
 
-  // Count numeric cells
-  const numericCount = nonEmptyCells.filter(cell => 
-    isNumericValue(cell.textContent || '')
+  // Count numeric values
+  const numericCount = nonEmptyValues.filter(value => 
+    isNumericValue(value)
   ).length;
 
-  // Check if enough cells are numeric
-  return numericCount / nonEmptyCells.length >= numericThreshold;
+  // Check if enough values are numeric
+  return numericCount / nonEmptyValues.length >= numericThreshold;
 }
 
 /**
  * Determines if a column is categorical based on the requirements:
  * - All cells contain text
- * - There are 3 or more unique values
+ * - There are 3 or more unique values (configurable)
  */
 export function isCategoricalColumn(
-  cells: HTMLTableCellElement[],
+  values: string[],
   options: TypeDetectionOptions = {}
 ): boolean {
-  if (cells.length <= 1) return false; // Need at least one data point
-
-  const { minUniqueValuesForCategorical } = { ...DEFAULT_OPTIONS, ...options };
-  const [header, ...dataCells] = cells;
+  const { minUniqueValuesForCategorical, hasHeader } = { ...DEFAULT_OPTIONS, ...options };
   
-  // Skip empty cells
-  const nonEmptyCells = dataCells
-    .map(cell => cell.textContent?.trim())
+  // Skip header if present
+  const dataValues = hasHeader ? values.slice(1) : [...values];
+  
+  // Skip empty values
+  const nonEmptyValues = dataValues
+    .map(value => value?.trim())
     .filter((value): value is string => !!value);
   
-  if (nonEmptyCells.length === 0) return false;
+  if (nonEmptyValues.length === 0) return false;
 
   // Count unique values (case insensitive)
   const uniqueValues = new Set(
-    nonEmptyCells.map(value => value.toLowerCase())
+    nonEmptyValues.map(value => value.toLowerCase())
   );
 
   return uniqueValues.size >= minUniqueValuesForCategorical;
 }
 
 /**
- * Detects the type of each column in a table
+ * Detects the type of each column in a 2D array of strings
  */
 export function detectColumnTypes(
-  table: HTMLTableElement,
+  rows: string[][],
   options: TypeDetectionOptions = {}
 ): ColumnType[] {
-  if (!table.rows || table.rows.length === 0) return [];
-
-  const columnCount = table.rows[0].cells.length;
+  if (!rows.length) return [];
+  
+  const columnCount = rows[0].length;
   const columnTypes: ColumnType[] = [];
 
-  for (let i = 0; i < columnCount; i++) {
-    const columnCells = Array.from(table.rows).map(row => row.cells[i]);
+  for (let col = 0; col < columnCount; col++) {
+    const columnValues = rows.map(row => row[col] || '');
     
-    if (isNumericColumn(columnCells, options)) {
+    if (isNumericColumn(columnValues, options)) {
       columnTypes.push('numeric');
-    } else if (isCategoricalColumn(columnCells, options)) {
+    } else if (isCategoricalColumn(columnValues, options)) {
       columnTypes.push('categorical');
     } else {
       columnTypes.push('unknown');
@@ -115,10 +117,10 @@ export function detectColumnTypes(
  * Analyzes a table to determine column types and overall suitability
  */
 export function analyzeTable(
-  table: HTMLTableElement,
+  rows: string[][],
   options: TypeDetectionOptions = {}
 ): { columnTypes: ColumnType[]; isSuitable: boolean } {
-  const columnTypes = detectColumnTypes(table, options);
+  const columnTypes = detectColumnTypes(rows, options);
   
   // Table is suitable if it has at least 2 columns with numeric or categorical data
   const suitableColumnCount = columnTypes.filter(
@@ -129,4 +131,26 @@ export function analyzeTable(
     columnTypes,
     isSuitable: suitableColumnCount >= 2,
   };
+}
+
+/**
+ * Extracts text content from an HTML table into a 2D array of strings
+ */
+export function extractTableData(table: HTMLTableElement): string[][] {
+  if (!table.rows) return [];
+  
+  const rows: string[][] = [];
+  
+  for (let i = 0; i < table.rows.length; i++) {
+    const row = table.rows[i];
+    const rowData: string[] = [];
+    
+    for (let j = 0; j < row.cells.length; j++) {
+      rowData.push(row.cells[j]?.textContent?.trim() || '');
+    }
+    
+    rows.push(rowData);
+  }
+  
+  return rows;
 }

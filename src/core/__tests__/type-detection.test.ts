@@ -1,170 +1,260 @@
 import { describe, it, expect } from 'vitest';
-import { 
-  isNumericColumn, 
-  isCategoricalColumn, 
-  detectColumnTypes, 
+import {
+  isNumericColumn,
+  isCategoricalColumn,
+  detectColumnTypes,
   analyzeTable,
-  type ColumnType 
+  extractTableData,
 } from '../type-detection';
-
-// Helper function to create a test table from a 2D array
-function createTestTable(rows: string[][], withHeader: boolean = true): HTMLTableElement {
-  const table = document.createElement('table');
-  const tbody = document.createElement('tbody');
-  
-  rows.forEach((row, rowIndex) => {
-    const tr = document.createElement('tr');
-    
-    row.forEach((cellText) => {
-      const cell = rowIndex === 0 && withHeader 
-        ? document.createElement('th')
-        : document.createElement('td');
-      
-      cell.textContent = cellText;
-      tr.appendChild(cell);
-    });
-    
-    tbody.appendChild(tr);
-  });
-  
-  table.appendChild(tbody);
-  return table;
-}
+import type { 
+  ColumnType,
+  TypeDetectionOptions 
+} from '../type-detection';
 
 describe('Type Detection', () => {
   describe('isNumericColumn', () => {
     it('should identify numeric columns with plain numbers', () => {
-      const table = createTestTable([
-        ['Price'],
-        ['10'],
-        ['20.5'],
-        ['-15.75'],
-        ['1,000.50']
-      ]);
+      const values = [
+        'Price',
+        '100',
+        '200',
+        '300',
+      ];
       
-      const cells = Array.from(table.rows).map(row => row.cells[0]);
-      expect(isNumericColumn(cells)).toBe(true);
+      expect(isNumericColumn(values)).toBe(true);
     });
 
     it('should identify numeric columns with currency symbols', () => {
-      const table = createTestTable([
-        ['Price'],
-        ['$10'],
-        ['£20.50'],
-        ['€-15.75'],
-        ['¥1,000.50']
-      ]);
+      const values = [
+        'Price',
+        '$100',
+        '€200.50',
+        '£300.75',
+      ];
       
-      const cells = Array.from(table.rows).map(row => row.cells[0]);
-      expect(isNumericColumn(cells)).toBe(true);
+      expect(isNumericColumn(values)).toBe(true);
     });
 
-    it('should not identify text columns as numeric', () => {
-      const table = createTestTable([
-        ['Product'],
-        ['Laptop'],
-        ['Phone'],
-        ['Tablet']
-      ]);
+    it('should identify numeric columns with commas and periods', () => {
+      const values = [
+        'Price',
+        '1,000.50',
+        '2,000.75',
+        '3,000.25',
+      ];
       
-      const cells = Array.from(table.rows).map(row => row.cells[0]);
-      expect(isNumericColumn(cells)).toBe(false);
+      expect(isNumericColumn(values)).toBe(true);
+    });
+
+    it('should return false for non-numeric columns', () => {
+      const values = [
+        'Name',
+        'Alice',
+        'Bob',
+        'Charlie',
+      ];
+      
+      expect(isNumericColumn(values)).toBe(false);
     });
 
     it('should handle empty cells', () => {
-      const table = createTestTable([
-        ['Price'],
-        [''],
-        ['10'],
-        [''],
-        ['20.5']
-      ]);
+      const values = [
+        'Value',
+        '',
+        '100',
+        '',
+        '200',
+      ];
       
-      const cells = Array.from(table.rows).map(row => row.cells[0]);
-      expect(isNumericColumn(cells)).toBe(true);
+      // With default threshold of 0.8, we need at least 3/4 non-empty cells to be numeric
+      expect(isNumericColumn(values)).toBe(false);
+      
+      // With lower threshold, it should pass
+      expect(isNumericColumn(values, { numericThreshold: 0.5 })).toBe(true);
+    });
+
+    it('should work without header row when hasHeader is false', () => {
+      const values = [
+        '100',
+        '200',
+        '300',
+      ];
+      
+      expect(isNumericColumn(values, { hasHeader: false })).toBe(true);
     });
   });
 
   describe('isCategoricalColumn', () => {
     it('should identify categorical columns with enough unique values', () => {
-      const table = createTestTable([
-        ['Category'],
-        ['Electronics'],
-        ['Clothing'],
-        ['Books'],
-        ['Electronics']
-      ]);
+      const values = [
+        'Category',
+        'A',
+        'B',
+        'C',
+        'A',
+      ];
       
-      const cells = Array.from(table.rows).map(row => row.cells[0]);
-      expect(isCategoricalColumn(cells)).toBe(true);
+      expect(isCategoricalColumn(values)).toBe(true);
     });
 
-    it('should not identify columns with too few unique values as categorical', () => {
-      const table = createTestTable([
-        ['Status'],
-        ['Active'],
-        ['Inactive'],
-        ['Active']
-      ]);
+    it('should be case-insensitive for categorical values', () => {
+      const values = [
+        'Status',
+        'active',
+        'ACTIVE',
+        'inactive',
+        'INACTIVE',
+      ];
       
-      const cells = Array.from(table.rows).map(row => row.cells[0]);
-      expect(isCategoricalColumn(cells, { minUniqueValuesForCategorical: 3 })).toBe(false);
+      // Only 2 unique values when case is ignored
+      expect(isCategoricalColumn(values, { minUniqueValuesForCategorical: 3 })).toBe(false);
+      expect(isCategoricalColumn(values, { minUniqueValuesForCategorical: 2 })).toBe(true);
     });
 
-    it('should be case insensitive when counting unique values', () => {
-      const table = createTestTable([
-        ['Color'],
-        ['Red'],
-        ['red'],
-        ['Blue'],
-        ['GREEN'],
-        ['green']
-      ]);
+    it('should return false for columns with too few unique values', () => {
+      const values = [
+        'Flag',
+        'Yes',
+        'No',
+        'Yes',
+        'No',
+      ];
       
-      const cells = Array.from(table.rows).map(row => row.cells[0]);
-      expect(isCategoricalColumn(cells, { minUniqueValuesForCategorical: 3 })).toBe(true);
+      // Only 2 unique values, which is below the default threshold of 3
+      expect(isCategoricalColumn(values)).toBe(false);
+      
+      // Should pass with lower threshold
+      expect(isCategoricalColumn(values, { minUniqueValuesForCategorical: 2 })).toBe(true);
+    });
+
+    it('should ignore empty cells', () => {
+      const values = [
+        'Value',
+        '',
+        'A',
+        'B',
+        'C',
+      ];
+      
+      // 3 unique non-empty values
+      expect(isCategoricalColumn(values, { minUniqueValuesForCategorical: 3 })).toBe(true);
+    });
+
+    it('should work without header row when hasHeader is false', () => {
+      const values = [
+        'A',
+        'B',
+        'C',
+        'A',
+      ];
+      
+      expect(isCategoricalColumn(values, { 
+        hasHeader: false, 
+        minUniqueValuesForCategorical: 2 
+      })).toBe(true);
     });
   });
 
   describe('detectColumnTypes', () => {
-    it('should detect column types in a mixed table', () => {
-      const table = createTestTable([
-        ['Product', 'Price', 'Category', 'In Stock'],
-        ['Laptop', '$999.99', 'Electronics', 'Yes'],
-        ['Phone', '$699.99', 'Electronics', 'No'],
-        ['Tablet', '$299.99', 'Electronics', 'Yes'],
-      ]);
+    it('should detect column types correctly', () => {
+      const rows = [
+        ['Name', 'Age', 'Score', 'Active'],
+        ['Alice', '30', '95.5', 'Yes'],
+        ['Bob', '25', '88.0', 'No'],
+        ['Charlie', '35', '92.3', 'Yes'],
+      ];
       
-      const expected: ColumnType[] = ['unknown', 'numeric', 'categorical', 'unknown'];
-      expect(detectColumnTypes(table)).toEqual(expected);
+      const expected: ColumnType[] = ['categorical', 'numeric', 'numeric', 'categorical'];
+      expect(detectColumnTypes(rows)).toEqual(expected);
+    });
+
+    it('should handle mixed content columns', () => {
+      const rows = [
+        ['ID', 'Value'],
+        ['1', '100'],
+        ['2', 'Not a number'],
+        ['3', '200'],
+      ];
+      
+      // Value column is not numeric because not enough values are numbers
+      expect(detectColumnTypes(rows)).toEqual(['categorical', 'unknown']);
+      
+      // With lower threshold, it might be considered numeric
+      expect(detectColumnTypes(rows, { numericThreshold: 0.5 })).toEqual(['categorical', 'numeric']);
+    });
+
+    it('should handle tables without headers', () => {
+      const rows = [
+        ['Alice', '30', '95.5'],
+        ['Bob', '25', '88.0'],
+        ['Charlie', '35', '92.3'],
+      ];
+      
+      const options: TypeDetectionOptions = { hasHeader: false };
+      expect(detectColumnTypes(rows, options)).toEqual(['categorical', 'numeric', 'numeric']);
     });
   });
 
   describe('analyzeTable', () => {
     it('should mark table as suitable with multiple numeric/categorical columns', () => {
-      const table = createTestTable([
-        ['Product', 'Price', 'Category', 'Rating'],
-        ['Laptop', '$999.99', 'Electronics', '4.5'],
-        ['Phone', '$699.99', 'Electronics', '4.2'],
-        ['Tablet', '$299.99', 'Electronics', '4.0'],
-      ]);
+      const rows = [
+        ['Name', 'Age', 'Score', 'Active'],
+        ['Alice', '30', '95.5', 'Yes'],
+        ['Bob', '25', '88.0', 'No'],
+      ];
       
-      const result = analyzeTable(table);
+      const result = analyzeTable(rows);
       expect(result.isSuitable).toBe(true);
-      expect(result.columnTypes).toContain('numeric');
-      expect(result.columnTypes).toContain('categorical');
+      expect(result.columnTypes).toEqual(['categorical', 'numeric', 'numeric', 'categorical']);
     });
 
-    it('should mark table as unsuitable with only one numeric/categorical column', () => {
-      const table = createTestTable([
-        ['Product', 'Price'],
-        ['Laptop', 'Electronics'],
-        ['Phone', 'Electronics'],
-        ['Tablet', 'Electronics'],
-      ]);
+    it('should mark table as not suitable with only one numeric/categorical column', () => {
+      const rows = [
+        ['ID', 'Name', 'Description'],
+        ['1', 'Alice', 'First user'],
+        ['2', 'Bob', 'Second user'],
+      ];
       
-      const result = analyzeTable(table);
+      const result = analyzeTable(rows);
       expect(result.isSuitable).toBe(false);
+      expect(result.columnTypes).toEqual(['numeric', 'categorical', 'unknown']);
+    });
+  });
+
+  describe('extractTableData', () => {
+    it('should extract table data into a 2D string array', () => {
+      // Create a test table
+      const table = document.createElement('table');
+      
+      const headerRow = table.insertRow();
+      headerRow.insertCell().textContent = 'Name';
+      headerRow.insertCell().textContent = 'Age';
+      
+      const dataRow1 = table.insertRow();
+      dataRow1.insertCell().textContent = 'Alice';
+      dataRow1.insertCell().textContent = '30';
+      
+      const dataRow2 = table.insertRow();
+      dataRow2.insertCell().textContent = 'Bob';
+      dataRow2.insertCell().textContent = '25';
+      
+      const result = extractTableData(table);
+      expect(result).toEqual([
+        ['Name', 'Age'],
+        ['Alice', '30'],
+        ['Bob', '25']
+      ]);
+    });
+
+    it('should handle empty cells', () => {
+      const table = document.createElement('table');
+      const row = table.insertRow();
+      row.insertCell().textContent = 'A';
+      row.insertCell(); // Empty cell
+      row.insertCell().textContent = 'C';
+      
+      const result = extractTableData(table);
+      expect(result).toEqual([['A', '', 'C']]);
     });
   });
 });
