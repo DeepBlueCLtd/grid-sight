@@ -1,4 +1,9 @@
-import { analyzeTable, extractTableData } from './type-detection';
+import { analyzeTable as analyzeTableType, extractTableData } from './type-detection';
+import type { ColumnType } from './type-detection';
+
+// Re-export analyzeTable from type-detection
+export { analyzeTableType as analyzeTable };
+
 
 /**
  * Finds all table elements in the document.
@@ -48,18 +53,23 @@ export function isTableSuitable(table: HTMLTableElement): { isSuitable: boolean;
 
   // Extract table data and analyze column types
   const tableData = extractTableData(table);
-  const { isSuitable, columnTypes } = analyzeTable(tableData);
+  const { columnTypes } = analyzeTableType(tableData);
   
-  if (!isSuitable) {
-    return { 
-      isSuitable: false, 
-      reason: `Table needs at least two numeric or categorical columns (found: ${columnTypes.filter(t => t !== 'unknown').length})` 
-    };
+  // Check if we have at least one suitable column
+  const suitableColumns = columnTypes.filter((t) => t === 'numeric' || t === 'categorical');
+  const hasEnoughSuitableColumns = suitableColumns.length >= 1;
+  
+  // Update the reason based on the analysis
+  let reason = '';
+  if (!hasEnoughSuitableColumns) {
+    reason = 'Table does not have enough suitable columns (need at least 1)';
+  } else {
+    reason = 'Table meets all criteria for enrichment';
   }
-
+  
   return { 
-    isSuitable: true, 
-    reason: 'Table meets all criteria for enrichment' 
+    isSuitable: hasEnoughSuitableColumns, 
+    reason 
   };
 }
 
@@ -71,12 +81,16 @@ export function findSuitableTables(): Array<{
   table: HTMLTableElement;
   isSuitable: boolean;
   reason: string;
-  columnTypes: string[];
+  columnTypes: ColumnType[];
 }> {
   const tables = findTables();
   return Array.from(tables).map(table => {
     const tableData = extractTableData(table);
-    const { isSuitable, columnTypes } = analyzeTable(tableData);
+    const { columnTypes, isSuitable } = analyzeTableType(tableData);
+    
+    // Check if we have at least one suitable column
+    const suitableColumns = columnTypes.filter((t: ColumnType) => t === 'numeric' || t === 'categorical');
+    const hasEnoughSuitableColumns = suitableColumns.length >= 1;
     
     // Get the reason for suitability
     let reason = '';
@@ -84,8 +98,8 @@ export function findSuitableTables(): Array<{
       reason = 'Table must have both <thead> and <tbody> elements';
     } else if (table.rows.length < 2) {
       reason = 'Table must have at least one data row';
-    } else if (!isSuitable) {
-      reason = `Table needs at least two numeric or categorical columns (found: ${columnTypes.filter(t => t !== 'unknown').length})`;
+    } else if (!hasEnoughSuitableColumns) {
+      reason = 'Table does not have enough suitable columns (need at least 1)';
     } else {
       reason = 'Table meets all criteria for enrichment';
     }

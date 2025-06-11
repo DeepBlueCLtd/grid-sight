@@ -270,12 +270,13 @@ export const ToggleInteraction: Story = {
     toggle.click();
     
     // Test that the active class is added and aria-expanded is updated
-    expect(toggle.classList.contains('grid-sight-toggle--active')).toBe(true);
+    const container = toggle.closest('.grid-sight-toggle-container');
+    expect(container?.classList.contains('grid-sight-toggle--active')).toBe(true);
     expect(toggle.getAttribute('aria-expanded')).toBe('true');
     
     // Click again to toggle off
     toggle.click();
-    expect(toggle.classList.contains('grid-sight-toggle--active')).toBe(false);
+    expect(container?.classList.contains('grid-sight-toggle--active')).toBe(false);
     expect(toggle.getAttribute('aria-expanded')).toBe('false');
   },
 };

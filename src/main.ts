@@ -3,7 +3,7 @@ import { findSuitableTables } from './core/table-detection';
 import { injectToggle } from './ui/toggle-injector';
 
 // Debug flag - set to false in production
-const DEBUG = true;
+const DEBUG = false;
 
 /**
  * Logs debug information if debug mode is enabled.

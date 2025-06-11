@@ -1,7 +1,16 @@
+import { injectPlusIcons, removePlusIcons, plusIconStyles } from './header-utils';
+import { analyzeTable } from '../core/table-detection';
+
 // CSS class names for the toggle element
 const TOGGLE_CLASS = 'grid-sight-toggle';
 const TOGGLE_CONTAINER_CLASS = 'grid-sight-toggle-container';
 const TOGGLE_ACTIVE_CLASS = 'grid-sight-toggle--active';
+const TABLE_ENABLED_CLASS = 'grid-sight-enabled';
+
+// Add styles for plus icons
+const styleElement = document.createElement('style');
+styleElement.textContent = plusIconStyles;
+document.head.appendChild(styleElement);
 
 // ARIA labels for accessibility
 const ARIA_LABEL = 'Toggle Grid-Sight';
@@ -53,19 +62,7 @@ export function createToggleElement(): HTMLElement {
     toggle.style.borderColor = '#ccc';
   });
   
-  // Add click handler (placeholder for future functionality)
-  toggle.addEventListener('click', (event) => {
-    event.stopPropagation();
-    const isActive = toggle.classList.toggle(TOGGLE_ACTIVE_CLASS);
-    toggle.setAttribute('aria-expanded', String(isActive));
-    
-    // Dispatch custom event when toggle is clicked
-    const toggleEvent = new CustomEvent('gridsight:toggle', {
-      bubbles: true,
-      detail: { active: isActive, target: event.target }
-    });
-    toggle.dispatchEvent(toggleEvent);
-  });
+  // Click handler will be added in injectToggle
   
   // Add keyboard support
   toggle.addEventListener('keydown', (event) => {
@@ -101,9 +98,43 @@ export function injectToggle(table: HTMLTableElement): boolean {
   
   try {
     const toggleElement = createToggleElement();
+    const toggle = toggleElement.querySelector(`.${TOGGLE_CLASS}`);
     
     // Insert the toggle as the first child of the cell
     firstCell.insertBefore(toggleElement, firstCell.firstChild);
+    
+    // Add click handler for the toggle
+    if (toggle) {
+      toggle.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const container = toggle.closest(`.${TOGGLE_CONTAINER_CLASS}`);
+        const isActive = toggle.classList.toggle(TOGGLE_ACTIVE_CLASS);
+        container?.classList.toggle(TOGGLE_ACTIVE_CLASS, isActive);
+        toggle.setAttribute('aria-expanded', String(isActive));
+        
+        // Dispatch custom event when toggle is clicked
+        const toggleEvent = new CustomEvent('gridsight:toggle', {
+          bubbles: true,
+          detail: { active: isActive, target: e.target }
+        });
+        toggle.dispatchEvent(toggleEvent);
+        
+        if (isActive) {
+          table.classList.add(TABLE_ENABLED_CLASS);
+          // Extract table data and analyze column types
+          const rows = Array.from(table.rows).map(row => 
+            Array.from(row.cells).map(cell => cell.textContent || '')
+          );
+          const { columnTypes } = analyzeTable(rows);
+          // Inject plus icons
+          injectPlusIcons(table, columnTypes);
+        } else {
+          table.classList.remove(TABLE_ENABLED_CLASS);
+          // Remove plus icons when toggling off
+          removePlusIcons(table);
+        }
+      });
+    }
     
     // Add a class to the table to indicate it has Grid-Sight enabled
     table.classList.add('grid-sight-enabled');
