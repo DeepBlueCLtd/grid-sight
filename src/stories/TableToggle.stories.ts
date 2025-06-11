@@ -3,113 +3,10 @@ import { within } from '@storybook/testing-library';
 import { expect } from '@storybook/test';
 import { initializeGridSight } from '../main';
 
-// Table examples
-const numericTable = `
-  <table id="numeric-table" class="demo-table">
-    <thead>
-      <tr>
-        <th>Product</th>
-        <th>Price</th>
-        <th>Stock</th>
-        <th>Rating</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td>Laptop</td>
-        <td>$999.99</td>
-        <td>45</td>
-        <td>4.5</td>
-      </tr>
-      <tr>
-        <td>Phone</td>
-        <td>$699.99</td>
-        <td>120</td>
-        <td>4.7</td>
-      </tr>
-      <tr>
-        <td>Tablet</td>
-        <td>$329.99</td>
-        <td>75</td>
-        <td>4.3</td>
-      </tr>
-    </tbody>
-  </table>
-`;
-
-const categoricalTable = `
-  <table id="categorical-table" class="demo-table">
-    <thead>
-      <tr>
-        <th>Name</th>
-        <th>Department</th>
-        <th>Status</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td>Alice Johnson</td>
-        <td>Engineering</td>
-        <td>Active</td>
-      </tr>
-      <tr>
-        <td>Bob Smith</td>
-        <td>Marketing</td>
-        <td>Active</td>
-      </tr>
-      <tr>
-        <td>Charlie Brown</td>
-        <td>Sales</td>
-        <td>Inactive</td>
-      </tr>
-    </tbody>
-  </table>
-`;
-
-const mixedTable = `
-  <table id="mixed-table" class="demo-table">
-    <thead>
-      <tr>
-        <th>City</th>
-        <th>Population</th>
-        <th>Area (km²)</th>
-        <th>Country</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td>Tokyo</td>
-        <td>13,960,000</td>
-        <td>2,194</td>
-        <td>Japan</td>
-      </tr>
-      <tr>
-        <td>New York</td>
-        <td>10,419,000</td>
-        <td>783.8</td>
-        <td>USA</td>
-      </tr>
-      <tr>
-        <td>London</td>
-        <td>5,900,000</td>
-        <td>1,572</td>
-        <td>UK</td>
-      </tr>
-      <tr>
-        <td>France</td>
-        <td>8,900,000</td>
-        <td>3,572</td>
-        <td>France</td>
-      </tr>
-      <tr>
-        <td>Brussels</td>
-        <td>1,900,000</td>
-        <td>3,572</td>
-        <td>Belgium</td>
-      </tr>
-    </tbody>
-  </table>
-`;
+// Import table HTML content
+import numericTable from './tables/numeric-and-categorical.html?raw';
+import categoricalTable from './tables/categorical.html?raw';
+import mixedTable from './tables/mixed.html?raw';
 
 const unsuitableTable = `
   <table id="unsuitable-table" class="demo-table">
@@ -254,7 +151,7 @@ export const Default: Story = {
     };
 
     // Test each table
-    await expectToggle('numeric-table', true);
+    await expectToggle('test-table', true); // numeric-and-categorical.html
     await expectToggle('categorical-table', true);
     await expectToggle('mixed-table', true);
     await expectToggle('unsuitable-table', false);
@@ -269,7 +166,7 @@ export const ToggleInteraction: Story = {
     initializeGridSight();
     
     // Get the first suitable table
-    const table = document.getElementById('numeric-table') as HTMLTableElement;
+    const table = document.getElementById('test-table') as HTMLTableElement; // numeric-and-categorical.html
     const canvas = within(table);
     
     // Find the toggle and click it
