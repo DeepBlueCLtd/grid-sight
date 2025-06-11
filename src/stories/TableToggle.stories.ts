@@ -1,5 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/html'
 import { initializeGridSight } from '../main'
+import suitableTableHtml from './tables/suitable.html?raw'
+import unsuitableTableHtml from './tables/unsuitable.html?raw'
 
 // Define the metadata for the story
 const meta: Meta = {
@@ -9,35 +11,11 @@ const meta: Meta = {
     container.innerHTML = `
       <h2>Suitable Table (more than 1 row)</h2>
       <p>The "GS" toggle should appear in the top-left cell of this table.</p>
-      <table id="suitable-table" border="1" style="width: 300px; margin-bottom: 20px;">
-        <thead>
-          <tr>
-            <th>Header 1</th>
-            <th>Header 2</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>Data 1.1</td>
-            <td>Data 1.2</td>
-          </tr>
-          <tr>
-            <td>Data 2.1</td>
-            <td>Data 2.2</td>
-          </tr>
-        </tbody>
-      </table>
+      ${suitableTableHtml}
 
-      <h2>Unsuitable Table (only 1 row)</h2>
+      <h2 style="margin-top: 40px;">Unsuitable Table (only 1 row)</h2>
       <p>The "GS" toggle should NOT appear on this table.</p>
-      <table id="unsuitable-table" border="1" style="width: 300px;">
-        <thead>
-          <tr>
-            <th>Header A</th>
-            <th>Header B</th>
-          </tr>
-        </thead>
-      </table>
+      ${unsuitableTableHtml}
     `
     return container
   },
