@@ -110,6 +110,8 @@ To be enriched, HTML tables must follow these basic structural rules:
   - Local file system
   - Static file server
   - GitHub Pages
+- there is a strong use case where content isn't running on a server, it's just static HTML from a DVD or shared folder.  We need to be sure this always works, probably
+through testing from `file://` root/  
 
 ---
 
