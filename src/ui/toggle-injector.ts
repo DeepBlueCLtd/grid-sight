@@ -6,6 +6,7 @@
 export function createToggleElement(): HTMLElement {
   const toggle = document.createElement('span')
   toggle.textContent = 'GS'
+  toggle.className = 'grid-sight-toggle' // Add a class for identification
   toggle.style.cursor = 'pointer' // Basic styling to indicate it's interactive
   toggle.style.marginRight = '5px' // Add some spacing
   // In a real version, this would likely be an icon or a more styled button
@@ -40,8 +41,12 @@ export function injectToggle(table: HTMLTableElement): void {
   }
 
   if (firstCell) {
-    const toggleElement = createToggleElement()
-    firstCell.insertBefore(toggleElement, firstCell.firstChild)
+    // Check if a toggle already exists in this table
+    const existingToggle = firstCell.querySelector('.grid-sight-toggle')
+    if (!existingToggle) {
+      const toggleElement = createToggleElement()
+      firstCell.insertBefore(toggleElement, firstCell.firstChild)
+    }
   } else {
     console.warn('Grid-Sight: Could not find a suitable top-left cell to inject toggle in table:', table)
   }

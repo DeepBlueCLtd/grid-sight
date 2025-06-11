@@ -37,13 +37,13 @@ export const Default: Story = {
     initializeGridSight()
 
     // Test the suitable table
-    const suitableTable = canvas.getByRole('table', { name: /suitable table/i })
+    const suitableTable = document.getElementById('suitable-table') as HTMLTableElement
     const suitableTableCanvas = within(suitableTable)
     const toggleInSuitable = await suitableTableCanvas.findByText('GS')
     expect(toggleInSuitable).toBeInTheDocument()
 
     // Test the unsuitable table
-    const unsuitableTable = canvas.getByRole('table', { name: /unsuitable table/i })
+    const unsuitableTable = document.getElementById('unsuitable-table') as HTMLTableElement
     const unsuitableTableCanvas = within(unsuitableTable)
     const toggleInUnsuitable = unsuitableTableCanvas.queryByText('GS')
     expect(toggleInUnsuitable).not.toBeInTheDocument()
