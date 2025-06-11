@@ -250,16 +250,39 @@ export class StatisticsPopup {
   }
 
   private async copyToClipboard(text: string, button?: HTMLButtonElement): Promise<boolean> {
+    // Create a temporary textarea element to hold our text
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.style.position = 'fixed';  // Avoid scrolling to bottom
+    textarea.style.opacity = '0';
+    
     try {
-      await navigator.clipboard.writeText(text);
+      // Add to document
+      document.body.appendChild(textarea);
       
+      // Select and copy
+      textarea.select();
+      textarea.setSelectionRange(0, textarea.value.length);
+      console.log('writing', text)
+      try {
+        // First try the modern clipboard API
+        await navigator.clipboard.writeText(text);
+      } catch (err) {
+        // Fallback to deprecated execCommand if clipboard API fails
+        const success = document.execCommand('copy');
+        if (!success) {
+          throw new Error('Failed to copy text using execCommand');
+        }
+      }
+      
+      // Update button state if provided
       if (button) {
-        const originalText = button.innerHTML;
-        button.innerHTML = CHECK_ICON;
+        const originalText = button.textContent || '';
+        button.textContent = CHECK_ICON;
         button.classList.add('copied');
         
         setTimeout(() => {
-          button.innerHTML = originalText;
+          button.textContent = originalText;
           button.classList.remove('copied');
         }, 2000);
       }
@@ -268,6 +291,11 @@ export class StatisticsPopup {
     } catch (err) {
       console.error('Failed to copy text: ', err);
       return false;
+    } finally {
+      // Clean up
+      if (document.body.contains(textarea)) {
+        document.body.removeChild(textarea);
+      }
     }
   }
 
