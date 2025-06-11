@@ -2,6 +2,8 @@ import { injectPlusIcons, removePlusIcons, plusIconStyles } from './header-utils
 import { removeAllMenus } from './enrichment-menu';
 import { analyzeTable } from '../core/table-detection';
 import { toggleHeatmap } from '../enrichments/heatmap';
+import { calculateStatistics, formatStatistics } from '../enrichments/statistics';
+import { cleanNumericCell } from '../core/type-detection';
 
 // CSS class names for the toggle element
 const TOGGLE_CLASS = 'grid-sight-toggle';
@@ -93,13 +95,15 @@ function handleEnrichmentSelected(event: Event) {
   
   console.log(`Enrichment selected: ${enrichmentType} for ${type} header at index ${headerIndex}`);
   
+  const table = header.closest('table');
+  if (!table) return;
+
   // Handle menu item selection
   if (enrichmentType === 'heatmap') {
-    const table = header.closest('table');
-    if (!table) return;
-    
     if (type === 'column') {
-      const columnIndex = Array.from(header.parentElement?.children || []).indexOf(header);
+      // Type assertion for table header cell
+      const th = header as HTMLTableCellElement;
+      const columnIndex = th.cellIndex;
       if (columnIndex >= 0) {
         toggleHeatmap(table, columnIndex, 'column');
       }
@@ -109,19 +113,36 @@ function handleEnrichmentSelected(event: Event) {
         toggleHeatmap(table, rowIndex, 'row');
       }
     }
+  } else if (enrichmentType === 'statistics' && type === 'column') {
+    // Type assertion for table header cell
+    const th = header as HTMLTableCellElement;
+    const columnIndex = th.cellIndex;
+    if (columnIndex >= 0) {
+      try {
+        const values = extractNumericColumnValues(table, columnIndex);
+        const stats = calculateStatistics(values);
+        alert(formatStatistics(stats));
+      } catch (error) {
+        console.error('Error calculating statistics:', error);
+        alert(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      }
+    }
   }
   
   // Dispatch event for the specific enrichment type
-  const enrichmentEvent = new CustomEvent(`gridsight:enrichment:${enrichmentType}`, {
-    bubbles: true,
-    detail: {
-      type,
-      header,
-      headerIndex
-    }
-  });
-  
-  header.dispatchEvent(enrichmentEvent);
+  // Only dispatch if we haven't already handled it completely
+  if (enrichmentType !== 'statistics') {
+    const enrichmentEvent = new CustomEvent(`gridsight:enrichment:${enrichmentType}`, {
+      bubbles: true,
+      detail: {
+        type,
+        header,
+        headerIndex
+      }
+    });
+    
+    header.dispatchEvent(enrichmentEvent);
+  }
 }
 
 /**
@@ -129,6 +150,28 @@ function handleEnrichmentSelected(event: Event) {
  * @param table The HTMLTableElement to inject the toggle into.
  * @returns True if the toggle was injected, false otherwise.
  */
+/**
+ * Extracts numeric values from a table column
+ */
+function extractNumericColumnValues(table: HTMLTableElement, columnIndex: number): number[] {
+  const values: number[] = [];
+  
+  // Get all rows in the tbody
+  const rows = table.tBodies[0]?.rows || [];
+  
+  for (let i = 0; i < rows.length; i++) {
+    const cell = rows[i].cells[columnIndex];
+    if (!cell) continue;
+    
+    const value = cleanNumericCell(cell.textContent || '');
+    if (value !== null) {
+      values.push(value);
+    }
+  }
+  
+  return values;
+}
+
 export function injectToggle(table: HTMLTableElement): boolean {
   // Find the first cell in the first row of the thead
   const firstRow = table.tHead?.rows[0] || table.rows[0];

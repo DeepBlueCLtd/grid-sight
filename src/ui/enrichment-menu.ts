@@ -5,7 +5,7 @@ const MENU_ITEM_CLASS = 'gs-enrichment-menu-item';
 const MENU_ITEM_ICON_CLASS = 'gs-enrichment-menu-item-icon';
 const MENU_ITEM_LABEL_CLASS = 'gs-enrichment-menu-item-label';
 
-export type EnrichmentType = 'heatmap' | 'zscore' | 'sort' | 'filter' | 'aggregate';
+export type EnrichmentType = 'heatmap' | 'zscore' | 'sort' | 'filter' | 'aggregate' | 'statistics';
 
 export interface EnrichmentMenuItem {
   id: EnrichmentType;
@@ -19,6 +19,12 @@ export const ENRICHMENT_ITEMS: EnrichmentMenuItem[] = [
     id: 'heatmap',
     label: 'Heatmap',
     icon: '🔥',
+    availableFor: ['numeric']
+  },
+  {
+    id: 'statistics',
+    label: 'Statistics',
+    icon: '📊',
     availableFor: ['numeric']
   }
 ];
