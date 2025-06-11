@@ -9,3 +9,4 @@ trigger: always_on
     - names of files to be created / updated
     - names and signatures of new methods
     - testing strategy for the sub-task
+- always allow me to review any plans before you start implementing them.
