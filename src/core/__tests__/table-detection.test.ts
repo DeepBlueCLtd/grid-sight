@@ -96,7 +96,8 @@ describe('Table Detection', () => {
       const table1 = createTestTable([
         ['Name', 'Age', 'Score'],
         ['Alice', '30', '95.5'],
-        ['Bob', '25', '88.0']
+        ['Bob', '25', '88.0'],
+        ['Charlie', '15', '38.0']
       ]);
       container.appendChild(table1);
       
@@ -112,7 +113,8 @@ describe('Table Detection', () => {
       const table3 = createTestTable([
         ['City', 'Population', 'Area'],
         ['Tokyo', '13960000', '2191'],
-        ['New York', '8419000', '783.8']
+        ['New York', '8419000', '783.8'],
+        ['London', '8900000', '1572']
       ]);
       container.appendChild(table3);
       

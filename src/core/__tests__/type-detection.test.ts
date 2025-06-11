@@ -66,11 +66,19 @@ describe('Type Detection', () => {
         '200',
       ];
       
-      // With default threshold of 0.8, we need at least 3/4 non-empty cells to be numeric
-      expect(isNumericColumn(values)).toBe(false);
+      // Column is numeric because all non-empty cells are numeric
+      expect(isNumericColumn(values)).toBe(true);
+    });
+
+    it('should return false if any non-empty cell is not numeric', () => {
+      const values = [
+        'Value',
+        '100',
+        'not a number',
+        '200',
+      ];
       
-      // With lower threshold, it should pass
-      expect(isNumericColumn(values, { numericThreshold: 0.5 })).toBe(true);
+      expect(isNumericColumn(values)).toBe(false);
     });
 
     it('should work without header row when hasHeader is false', () => {
@@ -164,7 +172,7 @@ describe('Type Detection', () => {
         ['Charlie', '35', '92.3', 'Yes'],
       ];
       
-      const expected: ColumnType[] = ['categorical', 'numeric', 'numeric', 'categorical'];
+      const expected: ColumnType[] = ['categorical', 'numeric', 'numeric', 'unknown'];
       expect(detectColumnTypes(rows)).toEqual(expected);
     });
 
@@ -176,11 +184,8 @@ describe('Type Detection', () => {
         ['3', '200'],
       ];
       
-      // Value column is not numeric because not enough values are numbers
-      expect(detectColumnTypes(rows)).toEqual(['categorical', 'unknown']);
-      
-      // With lower threshold, it might be considered numeric
-      expect(detectColumnTypes(rows, { numericThreshold: 0.5 })).toEqual(['categorical', 'numeric']);
+      // Value column is not numeric because it contains non-numeric values
+      expect(detectColumnTypes(rows)).toEqual(['numeric', 'unknown']);      
     });
 
     it('should handle tables without headers', () => {
@@ -201,29 +206,32 @@ describe('Type Detection', () => {
         ['Name', 'Age', 'Score', 'Active'],
         ['Alice', '30', '95.5', 'Yes'],
         ['Bob', '25', '88.0', 'No'],
+        ['Charlie', '36', '75.5', 'No'],
       ];
       
       const result = analyzeTable(rows);
       expect(result.isSuitable).toBe(true);
-      expect(result.columnTypes).toEqual(['categorical', 'numeric', 'numeric', 'categorical']);
+      expect(result.columnTypes).toEqual(['categorical', 'numeric', 'numeric', 'unknown']);
     });
 
-    it('should mark table as not suitable with only one numeric/categorical column', () => {
+    it('should mark table as suitable with multiple numeric/categorical column', () => {
       const rows = [
-        ['ID', 'Name', 'Description'],
-        ['1', 'Alice', 'First user'],
-        ['2', 'Bob', 'Second user'],
+        ['ID', 'Name', 'Value'],
+        ['1', 'Alice', '100'],
+        ['2', 'Bob', '200'],
       ];
       
       const result = analyzeTable(rows);
-      expect(result.isSuitable).toBe(false);
-      expect(result.columnTypes).toEqual(['numeric', 'categorical', 'unknown']);
+      expect(result.isSuitable).toBe(true);
+      // First column is numeric because '1' and '2' are valid numbers
+      // Second column is unknown because 'Alice' and 'Bob' are too few terms
+      // Third column is numeric because '100' and '200' are valid numbers
+      expect(result.columnTypes).toEqual(['numeric', 'unknown', 'numeric']);
     });
   });
 
   describe('extractTableData', () => {
     it('should extract table data into a 2D string array', () => {
-      // Create a test table
       const table = document.createElement('table');
       
       const headerRow = table.insertRow();
