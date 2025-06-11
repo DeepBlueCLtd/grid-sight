@@ -1,0 +1,57 @@
+name: Storybook Tests
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+# Cancel in-progress runs when new commits are pushed
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Run Storybook Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'yarn'
+      
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+      
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+      
+      - name: Build Storybook
+        run: yarn build-storybook
+      
+      - name: Run Storybook tests
+        run: |
+          # Start Storybook in the background
+          npx http-server storybook-static --port 6006 --silent &
+          
+          # Wait for Storybook to be ready
+          npx wait-on http://localhost:6006
+          
+          # Run the tests using test-runner directly
+          npx test-storybook --url http://localhost:6006 --browsers chromium
+        
+      - name: Upload test artifacts on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-artifacts
+          path: |
+            test-results/
+            playwright-report/
+            storybook-static/
