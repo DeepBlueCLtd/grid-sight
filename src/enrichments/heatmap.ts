@@ -97,7 +97,7 @@ export function applyHeatmap(
       `tbody td:nth-child(${index + 1})`
     );
     
-    columnCells.forEach((cell, i) => {
+    columnCells.forEach((cell) => {
       const value = cleanNumericCell(cell.textContent || '');
       if (value !== null) {
         cells.push(cell);
