@@ -1,4 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/html'
+import { within } from '@storybook/testing-library'
+import { expect } from '@storybook/test'
 import { initializeGridSight } from '../main'
 import suitableTableHtml from './tables/suitable.html?raw'
 import unsuitableTableHtml from './tables/unsuitable.html?raw'
@@ -28,9 +30,22 @@ type Story = StoryObj
 // Define the actual story
 export const Default: Story = {
   name: 'Default Table Toggle Behavior',
-  play: async () => {
-    // This function runs after the story is rendered.
-    // We call our main initialization function here to apply the logic.
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+
+    // Run the main logic to inject the toggles
     initializeGridSight()
+
+    // Test the suitable table
+    const suitableTable = canvas.getByRole('table', { name: /suitable table/i })
+    const suitableTableCanvas = within(suitableTable)
+    const toggleInSuitable = await suitableTableCanvas.findByText('GS')
+    expect(toggleInSuitable).toBeInTheDocument()
+
+    // Test the unsuitable table
+    const unsuitableTable = canvas.getByRole('table', { name: /unsuitable table/i })
+    const unsuitableTableCanvas = within(unsuitableTable)
+    const toggleInUnsuitable = unsuitableTableCanvas.queryByText('GS')
+    expect(toggleInUnsuitable).not.toBeInTheDocument()
   },
 }
