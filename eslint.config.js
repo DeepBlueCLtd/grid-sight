@@ -32,7 +32,6 @@ export default [
       // Other standard rules
       '@typescript-eslint/explicit-function-return-type': 'off',
       '@typescript-eslint/no-unused-vars': ['warn', { 'argsIgnorePattern': '^_' }],
-      'no-console': ['warn', { allow: ['warn', 'error'] }],
       
       // Additional rules based on user preferences
       'indent': ['error', 2],
