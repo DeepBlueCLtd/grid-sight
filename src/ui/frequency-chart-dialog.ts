@@ -8,20 +8,12 @@ const DIALOG_TITLE_CLASS = 'gs-frequency-chart-dialog__title';
 const DIALOG_CLOSE_BUTTON_CLASS = 'gs-frequency-chart-dialog__close';
 const DIALOG_CONTENT_CLASS = 'gs-frequency-chart-dialog__content';
 const DIALOG_CHART_CLASS = 'gs-frequency-chart-dialog__chart';
-const DIALOG_CHART_ROW_CLASS = 'gs-frequency-chart-dialog__chart-row';
-const DIALOG_CHART_LABEL_CLASS = 'gs-frequency-chart-dialog__chart-label';
-const DIALOG_CHART_COUNT_CLASS = 'gs-frequency-chart-dialog__chart-count';
-const DIALOG_CHART_BAR_CLASS = 'gs-frequency-chart-dialog__chart-bar';
-const DIALOG_CHART_BAR_TEXT_CLASS = 'gs-frequency-chart-dialog__chart-bar-text';
 
 // SVG chart specific classes
 const DIALOG_SVG_CHART_CLASS = 'gs-frequency-chart-dialog__svg-chart';
 const DIALOG_SVG_AXIS_CLASS = 'gs-frequency-chart-dialog__svg-axis';
 const DIALOG_SVG_BAR_CLASS = 'gs-frequency-chart-dialog__svg-bar';
 const DIALOG_SVG_LABEL_CLASS = 'gs-frequency-chart-dialog__svg-label';
-const DIALOG_CHART_TOGGLE_CLASS = 'gs-frequency-chart-dialog__toggle';
-const DIALOG_CHART_TOGGLE_BUTTON_CLASS = 'gs-frequency-chart-dialog__toggle-button';
-const DIALOG_CHART_TOGGLE_BUTTON_ACTIVE_CLASS = 'gs-frequency-chart-dialog__toggle-button--active';
 
 // CSS styles for the dialog
 const DIALOG_STYLES = `
@@ -93,40 +85,6 @@ const DIALOG_STYLES = `
   font-family: monospace;
 }
 
-.${DIALOG_CHART_ROW_CLASS} {
-  display: flex;
-  margin-bottom: 8px;
-  align-items: center;
-}
-
-.${DIALOG_CHART_LABEL_CLASS} {
-  flex: 0 0 150px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  padding-right: 10px;
-}
-
-.${DIALOG_CHART_COUNT_CLASS} {
-  flex: 0 0 50px;
-  text-align: right;
-  padding-right: 10px;
-}
-
-.${DIALOG_CHART_BAR_CLASS} {
-  flex: 1;
-  display: flex;
-  align-items: center;
-}
-
-.${DIALOG_CHART_BAR_TEXT_CLASS} {
-  color: #0066cc;
-  font-family: monospace;
-  white-space: nowrap;
-  overflow: hidden;
-}
-
-/* SVG Chart Styles */
 .${DIALOG_SVG_CHART_CLASS} {
   width: 100%;
   height: 300px;
@@ -150,30 +108,6 @@ const DIALOG_STYLES = `
 .${DIALOG_SVG_LABEL_CLASS} {
   font-size: 10px;
   fill: #666;
-}
-
-.${DIALOG_CHART_TOGGLE_CLASS} {
-  display: flex;
-  justify-content: center;
-  margin-bottom: 10px;
-  border-bottom: 1px solid #eee;
-  padding-bottom: 8px;
-}
-
-.${DIALOG_CHART_TOGGLE_BUTTON_CLASS} {
-  background: #f5f5f5;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  padding: 4px 8px;
-  margin: 0 4px;
-  font-size: 12px;
-  cursor: pointer;
-}
-
-.${DIALOG_CHART_TOGGLE_BUTTON_ACTIVE_CLASS} {
-  background: #e0e0e0;
-  border-color: #ccc;
-  font-weight: bold;
 }
 
 /* Scrollbar styling */
@@ -201,21 +135,16 @@ type FrequencyChartDialogOptions = {
   columnName?: string;
 };
 
-type ChartType = 'ascii' | 'svg';
+
 
 export class FrequencyChartDialog {
   private element: HTMLElement;
   private contentElement: HTMLElement;
   private chartElement: HTMLElement;
-  private toggleContainer: HTMLElement;
-  private asciiToggleButton: HTMLButtonElement;
-  private svgToggleButton: HTMLButtonElement;
   private closeButton: HTMLButtonElement;
   private onCloseCallback: (() => void) | null = null;
   private handleOutsideClickBound: (event: MouseEvent) => void;
   private handleKeyDownBound: (event: KeyboardEvent) => void;
-  private currentResults: FrequencyResult[] = [];
-  private currentChartType: ChartType = 'ascii';
 
   constructor() {
     // Create and inject styles
@@ -249,30 +178,10 @@ export class FrequencyChartDialog {
     this.contentElement = document.createElement('div');
     this.contentElement.className = DIALOG_CONTENT_CLASS;
     
-    // Create toggle container
-    this.toggleContainer = document.createElement('div');
-    this.toggleContainer.className = DIALOG_CHART_TOGGLE_CLASS;
-    
-    // Create ASCII toggle button
-    this.asciiToggleButton = document.createElement('button');
-    this.asciiToggleButton.className = `${DIALOG_CHART_TOGGLE_BUTTON_CLASS} ${DIALOG_CHART_TOGGLE_BUTTON_ACTIVE_CLASS}`;
-    this.asciiToggleButton.textContent = 'ASCII Chart';
-    this.asciiToggleButton.addEventListener('click', () => this.switchChartType('ascii'));
-    
-    // Create SVG toggle button
-    this.svgToggleButton = document.createElement('button');
-    this.svgToggleButton.className = DIALOG_CHART_TOGGLE_BUTTON_CLASS;
-    this.svgToggleButton.textContent = 'Bar Chart';
-    this.svgToggleButton.addEventListener('click', () => this.switchChartType('svg'));
-    
-    this.toggleContainer.appendChild(this.asciiToggleButton);
-    this.toggleContainer.appendChild(this.svgToggleButton);
-    
     // Create chart container
     this.chartElement = document.createElement('div');
     this.chartElement.className = DIALOG_CHART_CLASS;
     
-    this.contentElement.appendChild(this.toggleContainer);
     this.contentElement.appendChild(this.chartElement);
     
     // Assemble the dialog
@@ -310,67 +219,12 @@ export class FrequencyChartDialog {
     }
   }
 
-  private renderAsciiChart(results: FrequencyResult[]) {
-    // Clear existing chart
-    this.chartElement.innerHTML = '';
-    
-    if (results.length === 0) {
-      const emptyMessage = document.createElement('div');
-      emptyMessage.textContent = 'No data available';
-      emptyMessage.style.padding = '10px';
-      emptyMessage.style.color = '#666';
-      this.chartElement.appendChild(emptyMessage);
-      return;
-    }
-    
-    // Find the maximum count for scaling
-    const maxCount = Math.max(...results.map(([_, count]) => count));
-    const MAX_BAR_LENGTH = 40; // Maximum number of '+' characters
-    
-    results.forEach(([value, count, percentage]) => {
-      // Create row
-      const row = document.createElement('div');
-      row.className = DIALOG_CHART_ROW_CLASS;
-      
-      // Value label
-      const label = document.createElement('div');
-      label.className = DIALOG_CHART_LABEL_CLASS;
-      label.textContent = value;
-      label.title = value; // For tooltip on overflow
-      
-      // Count
-      const countElement = document.createElement('div');
-      countElement.className = DIALOG_CHART_COUNT_CLASS;
-      countElement.textContent = `${count} (${percentage.toFixed(1)}%)`;
-      
-      // Bar container
-      const barContainer = document.createElement('div');
-      barContainer.className = DIALOG_CHART_BAR_CLASS;
-      
-      // Calculate bar length
-      const barLength = Math.max(1, Math.round((count / maxCount) * MAX_BAR_LENGTH));
-      
-      // Create ASCII bar
-      const bar = document.createElement('div');
-      bar.className = DIALOG_CHART_BAR_TEXT_CLASS;
-      bar.textContent = '+'.repeat(barLength);
-      bar.setAttribute('aria-label', `${percentage.toFixed(1)}% (${count} items)`);
-      
-      barContainer.appendChild(bar);
-      
-      // Assemble row
-      row.appendChild(label);
-      row.appendChild(countElement);
-      row.appendChild(barContainer);
-      
-      this.chartElement.appendChild(row);
-    });
-  }
+
 
   /**
    * Renders frequency data as an SVG bar chart
    */
-  private renderSvgChart(results: FrequencyResult[]) {
+  private renderChart(results: FrequencyResult[]) {
     // Clear existing chart
     this.chartElement.innerHTML = '';
     
@@ -531,30 +385,9 @@ export class FrequencyChartDialog {
     this.chartElement.appendChild(svg);
   }
 
-  /**
-   * Switch between chart types (ASCII or SVG)
-   */
-  private switchChartType(type: ChartType) {
-    if (this.currentChartType === type) return;
-    
-    this.currentChartType = type;
-    
-    // Update toggle button states
-    if (type === 'ascii') {
-      this.asciiToggleButton.classList.add(DIALOG_CHART_TOGGLE_BUTTON_ACTIVE_CLASS);
-      this.svgToggleButton.classList.remove(DIALOG_CHART_TOGGLE_BUTTON_ACTIVE_CLASS);
-      this.renderAsciiChart(this.currentResults);
-    } else {
-      this.asciiToggleButton.classList.remove(DIALOG_CHART_TOGGLE_BUTTON_ACTIVE_CLASS);
-      this.svgToggleButton.classList.add(DIALOG_CHART_TOGGLE_BUTTON_ACTIVE_CLASS);
-      this.renderSvgChart(this.currentResults);
-    }
-  }
+
 
   public show(results: FrequencyResult[], anchor: HTMLElement, options: FrequencyChartDialogOptions = {}) {
-    // Store the results for later use when switching chart types
-    this.currentResults = results;
-    
     // Update title if column name is provided
     if (options.columnName) {
       const title = this.element.querySelector(`.${DIALOG_TITLE_CLASS}`);
@@ -563,12 +396,8 @@ export class FrequencyChartDialog {
       }
     }
     
-    // Render the current chart type with results
-    if (this.currentChartType === 'ascii') {
-      this.renderAsciiChart(results);
-    } else {
-      this.renderSvgChart(results);
-    }
+    // Render the chart with results
+    this.renderChart(results);
     
     // Position the dialog relative to the anchor
     this.positionDialog(anchor);
