@@ -4,7 +4,7 @@ export const ENRICHMENT_MENU_CLASS = 'gs-enrichment-menu';
 const MENU_ITEM_CLASS = 'gs-enrichment-menu-item';
 const MENU_ITEM_LABEL_CLASS = 'gs-enrichment-menu-item-label';
 
-export type EnrichmentType = 'heatmap' | 'zscore' | 'sort' | 'filter' | 'aggregate' | 'statistics' | 'frequency';
+export type EnrichmentType = 'heatmap' | 'zscore' | 'sort' | 'filter' | 'aggregate' | 'statistics' | 'frequency' | 'frequency-chart';
 
 export interface EnrichmentMenuItem {
   id: EnrichmentType;
@@ -25,7 +25,12 @@ export const ENRICHMENT_ITEMS: EnrichmentMenuItem[] = [
   },
   {
     id: 'frequency',
-    label: 'Frequency Analysis',
+    label: 'Frequency (table)',
+    availableFor: ['categorical']
+  },
+  {
+    id: 'frequency-chart',
+    label: 'Frequency (chart)',
     availableFor: ['categorical']
   }
 ];

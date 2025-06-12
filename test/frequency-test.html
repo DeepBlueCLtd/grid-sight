@@ -102,11 +102,15 @@
     <li>Open the browser's developer console (F12 or right-click -> Inspect -> Console)</li>
     <li>Click the "Load Grid-Sight" button below to initialize the Grid-Sight library</li>
     <li>Click the "GS" button that appears above the table headers</li>
-    <li>Select "Frequency Analysis" from the menu</li>
-    <li>Check the console for frequency analysis results</li>
+    <li>Select "Frequency (table)" or "Frequency (chart)" from the menu</li>
+    <li>Compare the two visualization methods</li>
   </ol>
 
   <button id="loadGridSight">Load Grid-Sight</button>
+  <div class="button-group" style="margin-top: 10px;">
+    <button id="testFrequencyTable" style="margin-right: 10px;">Test Frequency (table)</button>
+    <button id="testFrequencyChart">Test Frequency (chart)</button>
+  </div>
 
   <!-- Load the Grid-Sight library -->
   <script src="../dist/grid-sight.iife.js"></script>
@@ -149,30 +153,92 @@
       }
     });
     
-    // Add a test button to manually trigger frequency analysis for the first column
+    // Add test buttons for both frequency table and chart
     document.addEventListener('DOMContentLoaded', function() {
-      const testButton = document.createElement('button');
-      testButton.id = 'testFrequency';
-      testButton.textContent = 'Test Frequency Analysis';
-      testButton.style.margin = '10px 0';
-      testButton.style.padding = '8px 16px';
-      testButton.addEventListener('click', function() {
+      // Function to simulate clicking on a specific column and selecting an enrichment type
+      function testFrequencyEnrichment(columnIndex, enrichmentType) {
         const table = document.getElementById('sampleTable');
-        if (table && table.rows.length > 0 && table.rows[0].cells.length > 0) {
-          const headerCell = table.rows[0].cells[0];
+        if (!table || !table.rows.length || !table.rows[0].cells[columnIndex]) {
+          console.error('Table or column not found');
+          return;
+        }
+
+        // First, make sure Grid-Sight is initialized
+        if (!table.classList.contains('grid-sight-enabled')) {
+          document.getElementById('loadGridSight').click();
+          // Wait a bit for initialization
+          setTimeout(() => triggerEnrichment(), 300);
+        } else {
+          triggerEnrichment();
+        }
+
+        function triggerEnrichment() {
+          // Get the header cell
+          const headerCell = table.rows[0].cells[columnIndex];
+          
+          // Find the GS toggle and click it if it's not already active
           const gsToggle = headerCell.querySelector('.grid-sight-toggle');
-          if (gsToggle) {
-            gsToggle.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-          } else {
+          if (!gsToggle) {
             console.error('Could not find Grid-Sight toggle button');
+            return;
+          }
+          
+          // If toggle is not active, click it
+          if (!gsToggle.classList.contains('grid-sight-toggle--active')) {
+            gsToggle.click();
+            // Wait a bit for the plus icons to appear
+            setTimeout(() => clickPlusIcon(), 300);
+          } else {
+            clickPlusIcon();
+          }
+          
+          function clickPlusIcon() {
+            // Find the plus icon for the column
+            const plusIcon = headerCell.querySelector('.gs-plus-icon');
+            if (!plusIcon) {
+              console.error('Could not find plus icon');
+              return;
+            }
+            
+            // Click the plus icon to open the menu
+            plusIcon.click();
+            
+            // Wait for the menu to appear
+            setTimeout(() => selectMenuItem(), 300);
+          }
+          
+          function selectMenuItem() {
+            // Find the menu item for frequency analysis
+            const menuItems = document.querySelectorAll('.gs-enrichment-menu-item');
+            let targetItem = null;
+            
+            for (const item of menuItems) {
+              if (item.textContent.trim().includes(enrichmentType)) {
+                targetItem = item;
+                break;
+              }
+            }
+            
+            if (!targetItem) {
+              console.error(`Could not find menu item for ${enrichmentType}`);
+              return;
+            }
+            
+            // Click the menu item
+            targetItem.click();
+            console.log(`Triggered ${enrichmentType} for column ${columnIndex}`);
           }
         }
+      }
+      
+      // Add event listeners to the test buttons
+      document.getElementById('testFrequencyTable').addEventListener('click', function() {
+        testFrequencyEnrichment(1, 'Frequency (table)');
       });
       
-      const instructions = document.querySelector('ol');
-      if (instructions) {
-        instructions.parentNode.insertBefore(testButton, instructions);
-      }
+      document.getElementById('testFrequencyChart').addEventListener('click', function() {
+        testFrequencyEnrichment(1, 'Frequency (chart)');
+      });
     });
   </script>
 </body>
