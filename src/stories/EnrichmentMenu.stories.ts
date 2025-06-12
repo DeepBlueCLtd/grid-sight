@@ -1,7 +1,5 @@
-import '@testing-library/jest-dom';
 import type { Meta, StoryObj } from '@storybook/html';
-import { within, userEvent } from '@storybook/testing-library';
-import { expect } from 'vitest';
+import { within, userEvent, expect } from '@storybook/test';
 import { initializeGridSight } from '../main';
 // Import HTML table from external file
 import testTable from './tables/numeric-and-categorical.html?raw';

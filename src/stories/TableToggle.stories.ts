@@ -1,7 +1,5 @@
-import '@testing-library/jest-dom';
 import type { Meta, StoryObj } from '@storybook/html';
-import { within } from '@storybook/testing-library';
-import { expect } from 'vitest';
+import { within, expect } from '@storybook/test';
 import { initializeGridSight } from '../main';
 
 // Import table HTML content
