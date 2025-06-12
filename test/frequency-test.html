@@ -108,86 +108,70 @@
 
   <button id="loadGridSight">Load Grid-Sight</button>
 
+  <!-- Load the Grid-Sight library -->
+  <script src="../dist/grid-sight.umd.js"></script>
+  
   <script>
     document.getElementById('loadGridSight').addEventListener('click', function() {
-      // This would normally be loaded from your build/dist folder
-      console.log('Loading Grid-Sight...');
+      console.log('Initializing Grid-Sight...');
       
-      // For testing, we'll just add the toggle button manually
+      // Initialize Grid-Sight on the sample table
       const table = document.getElementById('sampleTable');
       if (table) {
-        // Add the GS toggle button to each header cell
-        const headers = table.querySelectorAll('th');
-        headers.forEach((header, index) => {
-          const toggle = document.createElement('div');
-          toggle.className = 'grid-sight-toggle-container';
-          toggle.innerHTML = `
-            <button class="grid-sight-toggle" aria-label="Toggle Grid-Sight" aria-expanded="false" role="button" tabindex="0" 
-                    style="cursor: pointer; border: 1px solid #ccc; background: #f8f8f8; border-radius: 3px; padding: 2px 6px; font-size: 11px; font-weight: bold; color: #555; margin-right: 8px; vertical-align: middle; transition: all 0.2s ease;">
-              GS
-            </button>
-          `;
+        // Convert the table to use proper thead/tbody structure if needed
+        if (!table.tHead || !table.tBodies.length) {
+          const thead = document.createElement('thead');
+          const tbody = document.createElement('tbody');
+          const headerRow = table.rows[0];
           
-          // Add click handler to show frequency analysis
-          const button = toggle.querySelector('.grid-sight-toggle');
-          if (button) {
-            button.addEventListener('click', (e) => {
-              e.stopPropagation();
-              
-              // Get all cells in this column
-              const rows = Array.from(table.rows);
-              const columnIndex = index;
-              const values = [];
-              
-              // Skip header row
-              for (let i = 1; i < rows.length; i++) {
-                const cell = rows[i].cells[columnIndex];
-                values.push(cell ? cell.textContent || '' : '');
-              }
-              
-              // This would normally be handled by the Grid-Sight library
-              console.log(`Frequency analysis for column "${header.textContent}":`, values);
-              
-              // Simulate the frequency analysis
-              const frequencyMap = {};
-              values.forEach(value => {
-                const normalized = String(value || '').trim().toLowerCase() || '[Empty]';
-                frequencyMap[normalized] = (frequencyMap[normalized] || 0) + 1;
-              });
-              
-              // Convert to array and sort
-              const frequencies = Object.entries(frequencyMap)
-                .map(([value, count]) => ({
-                  value,
-                  count,
-                  percentage: (count / values.length) * 100
-                }))
-                .sort((a, b) => a.value.localeCompare(b.value));
-              
-              console.log('Frequency Analysis Results:', frequencies);
-              
-              // Show results in an alert
-              const resultText = frequencies
-                .map(({ value, count, percentage }) => 
-                  `${value}: ${count} (${percentage.toFixed(1)}%)`
-                )
-                .join('\n');
-              
-              alert(`Frequency Analysis for "${header.textContent}":\n\n${resultText}`);
-            });
+          if (headerRow) {
+            thead.appendChild(headerRow);
+            
+            // Move remaining rows to tbody
+            while (table.rows.length > 0) {
+              tbody.appendChild(table.rows[0]);
+            }
+            
+            // Rebuild the table with proper structure
+            table.appendChild(thead);
+            table.appendChild(tbody);
           }
-          
-          // Insert the toggle before the header text
-          if (header.firstChild) {
-            header.insertBefore(toggle, header.firstChild);
-          } else {
-            header.appendChild(toggle);
-          }
+        }
+        
+        // Initialize Grid-Sight
+        window.GridSight.init({
+          // Any Grid-Sight configuration options would go here
         });
         
-        console.log('Grid-Sight toggle buttons added to table headers.');
+        console.log('Grid-Sight initialized. Click on the "GS" buttons above the table headers to see the frequency analysis.');
       } else {
         console.error('Could not find the sample table.');
+      }
+    });
+    
+    // Add a test button to manually trigger frequency analysis for the first column
+    document.addEventListener('DOMContentLoaded', function() {
+      const testButton = document.createElement('button');
+      testButton.id = 'testFrequency';
+      testButton.textContent = 'Test Frequency Analysis';
+      testButton.style.margin = '10px 0';
+      testButton.style.padding = '8px 16px';
+      testButton.addEventListener('click', function() {
+        const table = document.getElementById('sampleTable');
+        if (table && table.rows.length > 0 && table.rows[0].cells.length > 0) {
+          const headerCell = table.rows[0].cells[0];
+          const gsToggle = headerCell.querySelector('.grid-sight-toggle');
+          if (gsToggle) {
+            gsToggle.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+          } else {
+            console.error('Could not find Grid-Sight toggle button');
+          }
+        }
+      });
+      
+      const instructions = document.querySelector('ol');
+      if (instructions) {
+        instructions.parentNode.insertBefore(testButton, instructions);
       }
     });
   </script>
