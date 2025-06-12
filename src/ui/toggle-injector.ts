@@ -151,48 +151,77 @@ function handleEnrichmentSelected(event: Event) {
         alert(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
       }
     }
-  } else if ((enrichmentType === 'frequency' || enrichmentType === 'frequency-chart') && type === 'column') {
-    // Type assertion for table header cell
-    const th = header as HTMLTableCellElement;
-    const columnIndex = th.cellIndex;
-    if (columnIndex >= 0) {
-      try {
+  } else if ((enrichmentType === 'frequency' || enrichmentType === 'frequency-chart')) {
+    try {
+      let values: string[] = [];
+      let itemName = '';
+      
+      if (type === 'column') {
+        // Type assertion for table header cell
+        const th = header as HTMLTableCellElement;
+        const columnIndex = th.cellIndex;
+        if (columnIndex < 0) {
+          throw new Error('Invalid column index');
+        }
+        
         // Get all cell values from the column, excluding the header row
         const rows = Array.from(table.rows);
-        const values = rows
+        values = rows
           .filter((_, rowIndex) => rowIndex > 0) // Skip the header row
           .map(row => {
             const cell = row.cells[columnIndex];
             return cell ? cell.textContent || '' : '';
           });
         
-        // Calculate frequencies
-        const frequencyResult = analyzeFrequencies(values);
-        
         // Get column name
-        const columnName = th.textContent?.trim() || `Column ${columnIndex + 1}`;
-        
-        if (enrichmentType === 'frequency') {
-          // Create or reuse frequency dialog instance
-          if (!window._gsFrequencyDialog) {
-            window._gsFrequencyDialog = new FrequencyDialog();
-          }
-          
-          // Show the dialog with the frequency results
-          window._gsFrequencyDialog.show(frequencyResult, header, { columnName });
-        } else if (enrichmentType === 'frequency-chart') {
-          // Create or reuse frequency chart dialog instance
-          if (!window._gsFrequencyChartDialog) {
-            window._gsFrequencyChartDialog = new FrequencyChartDialog();
-          }
-          
-          // Show the chart dialog with the frequency results
-          window._gsFrequencyChartDialog.show(frequencyResult, header, { columnName });
+        itemName = th.textContent?.trim() || `Column ${columnIndex + 1}`;
+      } else if (type === 'row') {
+        // Type assertion for table row
+        const tr = header.closest('tr') as HTMLTableRowElement;
+        if (!tr) {
+          throw new Error('Could not find row');
         }
-      } catch (error) {
-        console.error('Error performing frequency analysis:', error);
-        alert(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        
+        // Get row index
+        const rowIndex = tr.rowIndex;
+        
+        // Get all cell values from the row, excluding the first cell if it's a header
+        const cells = Array.from(tr.cells);
+        const startIndex = cells.length > 0 && cells[0].tagName.toLowerCase() === 'th' ? 1 : 0;
+        
+        values = cells.slice(startIndex).map(cell => cell.textContent || '');
+        
+        // Get row name/identifier (typically first cell or row number)
+        itemName = cells.length > 0 ? 
+          (cells[0].textContent?.trim() || `Row ${rowIndex + 1}`) : 
+          `Row ${rowIndex + 1}`;
+      } else {
+        throw new Error('Unsupported enrichment target type');
       }
+      
+      // Calculate frequencies
+      const frequencyResult = analyzeFrequencies(values);
+      
+      if (enrichmentType === 'frequency') {
+        // Create or reuse frequency dialog instance
+        if (!window._gsFrequencyDialog) {
+          window._gsFrequencyDialog = new FrequencyDialog();
+        }
+        
+        // Show the dialog with the frequency results
+        window._gsFrequencyDialog.show(frequencyResult, header, { columnName: itemName });
+      } else if (enrichmentType === 'frequency-chart') {
+        // Create or reuse frequency chart dialog instance
+        if (!window._gsFrequencyChartDialog) {
+          window._gsFrequencyChartDialog = new FrequencyChartDialog();
+        }
+        
+        // Show the chart dialog with the frequency results
+        window._gsFrequencyChartDialog.show(frequencyResult, header, { columnName: itemName });
+      }
+    } catch (error) {
+      console.error('Error calculating frequencies:', error);
+      alert(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
   
