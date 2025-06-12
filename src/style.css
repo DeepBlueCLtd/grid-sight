@@ -82,6 +82,16 @@ button:focus-visible {
   outline: 4px auto -webkit-focus-ring-color;
 }
 
+.gs-plus-icon {
+  opacity: 0;
+  transform: scale(0.7);
+  transition: opacity 500ms cubic-bezier(0.4,0,0.2,1), transform 500ms cubic-bezier(0.4,0,0.2,1);
+}
+.gs-plus-icon.gs-plus-icon--visible {
+  opacity: 1;
+  transform: scale(1);
+}
+
 @media (prefers-color-scheme: light) {
   :root {
     color: #213547;

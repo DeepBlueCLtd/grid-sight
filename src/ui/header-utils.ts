@@ -105,6 +105,12 @@ function addPlusIconToHeader(header: HTMLTableCellElement, type: HeaderType): vo
   plusIcon.textContent = '+';
   plusIcon.style.marginLeft = '4px';
   plusIcon.style.cursor = 'pointer';
+
+  // Animate appearance
+  // Add the visible class after a tick to trigger the transition
+  setTimeout(() => {
+    plusIcon.classList.add('gs-plus-icon--visible');
+  }, 10);
   
   // Add click handler
   plusIcon.addEventListener('click', (e) => {
