@@ -1,5 +1,4 @@
 import type { StatisticsResult } from '../enrichments/statistics';
-import { copyToClipboard } from '../utils/clipboard';
 
 const POPUP_CLASS = 'gs-statistics-popup';
 const POPUP_VISIBLE_CLASS = 'gs-statistics-popup--visible';
@@ -10,9 +9,6 @@ const POPUP_CONTENT_CLASS = 'gs-statistics-popup__content';
 const STAT_ITEM_CLASS = 'gs-statistics-popup__stat';
 const STAT_LABEL_CLASS = 'gs-statistics-popup__stat-label';
 const STAT_VALUE_CLASS = 'gs-statistics-popup__stat-value';
-const COPY_BUTTON_CLASS = 'gs-statistics-popup__copy';
-const COPY_ICON = '⎘';
-const CHECK_ICON = '✓';
 
 // CSS styles for the popup
 const POPUP_STYLES = `
@@ -99,40 +95,13 @@ const POPUP_STYLES = `
   text-align: right;
   flex: 1;
 }
-
-.${COPY_BUTTON_CLASS} {
-  background: none;
-  border: 1px solid #e0e0e0;
-  border-radius: 3px;
-  padding: 2px 6px;
-  margin-left: 8px;
-  font-size: 11px;
-  cursor: pointer;
-  color: #666;
-  transition: all 0.15s ease;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 24px;
-}
-
-.${COPY_BUTTON_CLASS}:hover {
-  background: #f5f5f5;
-  border-color: #ccc;
-}
-
-.${COPY_BUTTON_CLASS}.copied {
-  background: #e8f5e9;
-  border-color: #81c784;
-  color: #2e7d32;
-}
 `;
 
 export class StatisticsPopup {
   private element: HTMLElement;
   private contentElement: HTMLElement;
   private closeButton: HTMLButtonElement;
-  private copyButton: HTMLButtonElement;
+
   private stats: StatisticsResult | null = null;
   private onCloseCallback: (() => void) | null = null;
 
@@ -168,16 +137,10 @@ export class StatisticsPopup {
     this.contentElement = document.createElement('div');
     this.contentElement.className = POPUP_CONTENT_CLASS;
     
-    // Create copy button
-    this.copyButton = document.createElement('button');
-    this.copyButton.className = COPY_BUTTON_CLASS;
-    this.copyButton.textContent = 'Copy All';
-    this.copyButton.addEventListener('click', () => this.copyAllToClipboard());
-    
+
     // Assemble the popup
     this.element.appendChild(header);
     this.element.appendChild(this.contentElement);
-    this.element.appendChild(this.copyButton);
     
     // Add to document
     document.body.appendChild(this.element);
@@ -212,7 +175,7 @@ export class StatisticsPopup {
     }
   };
 
-  private createStatItem(label: string, value: string | number, copyValue?: string): HTMLElement {
+  private createStatItem(label: string, value: string | number): HTMLElement {
     const item = document.createElement('div');
     item.className = STAT_ITEM_CLASS;
     
@@ -224,119 +187,10 @@ export class StatisticsPopup {
     valueSpan.className = STAT_VALUE_CLASS;
     valueSpan.textContent = String(value);
     
-    const valueContainer = document.createElement('div');
-    valueContainer.style.display = 'flex';
-    valueContainer.style.alignItems = 'center';
-    valueContainer.appendChild(valueSpan);
-    
-    if (copyValue !== undefined) {
-      const copyButton = document.createElement('button');
-      copyButton.className = COPY_BUTTON_CLASS;
-      copyButton.innerHTML = COPY_ICON;
-      copyButton.setAttribute('aria-label', `Copy ${label}`);
-      copyButton.title = `Copy ${label}`;
-      
-      copyButton.addEventListener('click', (e) => {
-        e.stopPropagation();
-        this.copyToClipboard(copyValue, copyButton);
-      });
-      
-      valueContainer.appendChild(copyButton);
-    }
-    
     item.appendChild(labelSpan);
-    item.appendChild(valueContainer);
+    item.appendChild(valueSpan);
     
     return item;
-  }
-
-  private async copyToClipboard(text: string, button?: HTMLButtonElement): Promise<boolean> {
-    try {
-      const success = await copyToClipboard(text);
-      
-      // Update button state if provided
-      if (button) {
-        const originalText = button.textContent || '';
-        const originalTitle = button.title || '';
-        
-        if (success) {
-          button.textContent = CHECK_ICON;
-          button.title = 'Copied!';
-          button.classList.add('copied');
-          
-          setTimeout(() => {
-            button.textContent = originalText;
-            button.title = originalTitle;
-            button.classList.remove('copied');
-          }, 2000);
-        } else {
-          // Show error state
-          button.textContent = '!';
-          button.title = 'Copy failed - click to try again';
-          button.classList.add('copied');
-          
-          // Make the button clickable to retry
-          const retryCopy = async () => {
-            button.removeEventListener('click', retryCopy);
-            await this.copyToClipboard(text, button);
-          };
-          button.addEventListener('click', retryCopy, { once: true });
-          
-          setTimeout(() => {
-            button.textContent = originalText;
-            button.title = originalTitle;
-            button.classList.remove('copied');
-            button.removeEventListener('click', retryCopy);
-          }, 3000);
-        }
-      }
-      
-      return success;
-    } catch (err) {
-      console.error('Unexpected error in copyToClipboard:', err);
-      if (button) {
-        button.textContent = '!';
-        button.title = 'Copy failed - click to try again';
-        button.classList.add('copied');
-        
-        // Make the button clickable to retry
-        const retryCopy = async () => {
-          button.removeEventListener('click', retryCopy);
-          await this.copyToClipboard(text, button);
-        };
-        button.addEventListener('click', retryCopy, { once: true });
-        
-        setTimeout(() => {
-          button.textContent = 'Copy';
-          button.title = '';
-          button.classList.remove('copied');
-          button.removeEventListener('click', retryCopy);
-        }, 3000);
-      }
-      return false;
-    }
-  }
-
-  private copyAllToClipboard() {
-    if (!this.stats) return;
-    
-    const formattedStats = [
-      `Count: ${this.stats.count}`,
-      `Sum: ${this.formatNumber(this.stats.sum)}`,
-      `Min: ${this.formatNumber(this.stats.min)}`,
-      `Max: ${this.formatNumber(this.stats.max)}`,
-      `Mean: ${this.formatNumber(this.stats.mean)}`,
-      `Median: ${this.formatNumber(this.stats.median)}`,
-      `Std Dev: ${this.formatNumber(this.stats.stdDev)}`,
-      `Variance: ${this.formatNumber(this.stats.variance)}`
-    ].join('\n');
-    
-    this.copyToClipboard(formattedStats, this.copyButton);
-    this.copyButton.textContent = 'Copied!';
-    
-    setTimeout(() => {
-      this.copyButton.textContent = 'Copy All';
-    }, 2000);
   }
 
   private formatNumber(value: number, decimals: number = 2): string {
@@ -353,15 +207,15 @@ export class StatisticsPopup {
     // Clear previous content
     this.contentElement.innerHTML = '';
     
-    // Add stats items
-    this.contentElement.appendChild(this.createStatItem('Count', stats.count, String(stats.count)));
-    this.contentElement.appendChild(this.createStatItem('Sum', this.formatNumber(stats.sum), String(stats.sum)));
-    this.contentElement.appendChild(this.createStatItem('Min', this.formatNumber(stats.min), String(stats.min)));
-    this.contentElement.appendChild(this.createStatItem('Max', this.formatNumber(stats.max), String(stats.max)));
-    this.contentElement.appendChild(this.createStatItem('Mean', this.formatNumber(stats.mean), String(stats.mean)));
-    this.contentElement.appendChild(this.createStatItem('Median', this.formatNumber(stats.median), String(stats.median)));
-    this.contentElement.appendChild(this.createStatItem('Std Dev', this.formatNumber(stats.stdDev), String(stats.stdDev)));
-    this.contentElement.appendChild(this.createStatItem('Variance', this.formatNumber(stats.variance), String(stats.variance)));
+    // Add statistics items
+    this.contentElement.appendChild(this.createStatItem('Count', stats.count.toString()));
+    this.contentElement.appendChild(this.createStatItem('Sum', this.formatNumber(stats.sum)));
+    this.contentElement.appendChild(this.createStatItem('Min', this.formatNumber(stats.min)));
+    this.contentElement.appendChild(this.createStatItem('Max', this.formatNumber(stats.max)));
+    this.contentElement.appendChild(this.createStatItem('Mean', this.formatNumber(stats.mean)));
+    this.contentElement.appendChild(this.createStatItem('Median', this.formatNumber(stats.median)));
+    this.contentElement.appendChild(this.createStatItem('Std Dev', this.formatNumber(stats.stdDev)));
+    this.contentElement.appendChild(this.createStatItem('Variance', this.formatNumber(stats.variance)));
     
     // Position the popup
     this.positionPopup(anchor);
