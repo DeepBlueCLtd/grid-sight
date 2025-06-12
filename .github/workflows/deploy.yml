@@ -25,7 +25,11 @@ jobs:
         run: yarn build
 
       - name: Verify dist folder 
-        run: more dist/demo/index.html
+        run: |
+          ls -la dist/
+          ls -la dist/demo/
+          [ -f dist/demo/index.html ] || (echo "❌ dist/demo/index.html not found" && exit 1)
+          echo "✅ dist/demo/index.html exists"
 
       - name: Deploy to GitHub Pages 
         uses: JamesIves/github-pages-deploy-action@v4
