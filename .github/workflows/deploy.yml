@@ -18,9 +18,6 @@ jobs:
           node-version: '20'
           cache: 'yarn'
 
-      - name: Verify dist folder ✅ (before)
-        run: ls dist
-
       - name: Install dependencies 📦
         run: yarn install
 
