@@ -4,8 +4,11 @@ import { removeAllMenus } from './enrichment-menu';
 import { analyzeTable } from '../core/table-detection';
 import { toggleHeatmap, applyTableHeatmap } from '../enrichments/heatmap';
 import { calculateStatistics } from '../enrichments/statistics';
+import { analyzeFrequencies } from '../utils/frequency';
 import { cleanNumericCell } from '../core/type-detection';
 import { StatisticsPopup } from './statistics-popup';
+import { FrequencyDialog } from './frequency-dialog';
+import { FrequencyChartDialog } from './frequency-chart-dialog';
 
 // CSS class names for the toggle element
 const TOGGLE_CLASS = 'grid-sight-toggle';
@@ -13,10 +16,12 @@ const TOGGLE_CONTAINER_CLASS = 'grid-sight-toggle-container';
 const TOGGLE_ACTIVE_CLASS = 'grid-sight-toggle--active';
 const TABLE_ENABLED_CLASS = 'grid-sight-enabled';
 
-// Add type declaration for the global popup instance
+// Add type declarations for global popup instances
 declare global {
   interface Window {
     _gsStatisticsPopup?: StatisticsPopup;
+    _gsFrequencyDialog?: FrequencyDialog;
+    _gsFrequencyChartDialog?: FrequencyChartDialog;
   }
 }
 
@@ -145,6 +150,78 @@ function handleEnrichmentSelected(event: Event) {
         console.error('Error calculating statistics:', error);
         alert(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
       }
+    }
+  } else if ((enrichmentType === 'frequency' || enrichmentType === 'frequency-chart')) {
+    try {
+      let values: string[] = [];
+      let itemName = '';
+      
+      if (type === 'column') {
+        // Type assertion for table header cell
+        const th = header as HTMLTableCellElement;
+        const columnIndex = th.cellIndex;
+        if (columnIndex < 0) {
+          throw new Error('Invalid column index');
+        }
+        
+        // Get all cell values from the column, excluding the header row
+        const rows = Array.from(table.rows);
+        values = rows
+          .filter((_, rowIndex) => rowIndex > 0) // Skip the header row
+          .map(row => {
+            const cell = row.cells[columnIndex];
+            return cell ? cell.textContent || '' : '';
+          });
+        
+        // Get column name
+        itemName = th.textContent?.trim() || `Column ${columnIndex + 1}`;
+      } else if (type === 'row') {
+        // Type assertion for table row
+        const tr = header.closest('tr') as HTMLTableRowElement;
+        if (!tr) {
+          throw new Error('Could not find row');
+        }
+        
+        // Get row index
+        const rowIndex = tr.rowIndex;
+        
+        // Get all cell values from the row, excluding the first cell if it's a header
+        const cells = Array.from(tr.cells);
+        const startIndex = cells.length > 0 && cells[0].tagName.toLowerCase() === 'th' ? 1 : 0;
+        
+        values = cells.slice(startIndex).map(cell => cell.textContent || '');
+        
+        // Get row name/identifier (typically first cell or row number)
+        itemName = cells.length > 0 ? 
+          (cells[0].textContent?.trim() || `Row ${rowIndex + 1}`) : 
+          `Row ${rowIndex + 1}`;
+      } else {
+        throw new Error('Unsupported enrichment target type');
+      }
+      
+      // Calculate frequencies
+      const frequencyResult = analyzeFrequencies(values);
+      
+      if (enrichmentType === 'frequency') {
+        // Create or reuse frequency dialog instance
+        if (!window._gsFrequencyDialog) {
+          window._gsFrequencyDialog = new FrequencyDialog();
+        }
+        
+        // Show the dialog with the frequency results
+        window._gsFrequencyDialog.show(frequencyResult, header, { columnName: itemName });
+      } else if (enrichmentType === 'frequency-chart') {
+        // Create or reuse frequency chart dialog instance
+        if (!window._gsFrequencyChartDialog) {
+          window._gsFrequencyChartDialog = new FrequencyChartDialog();
+        }
+        
+        // Show the chart dialog with the frequency results
+        window._gsFrequencyChartDialog.show(frequencyResult, header, { columnName: itemName });
+      }
+    } catch (error) {
+      console.error('Error calculating frequencies:', error);
+      alert(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
   
