@@ -1,4 +1,5 @@
 import type { StatisticsResult } from '../enrichments/statistics';
+import { copyToClipboard } from '../utils/clipboard';
 
 const POPUP_CLASS = 'gs-statistics-popup';
 const POPUP_VISIBLE_CLASS = 'gs-statistics-popup--visible';
@@ -250,52 +251,69 @@ export class StatisticsPopup {
   }
 
   private async copyToClipboard(text: string, button?: HTMLButtonElement): Promise<boolean> {
-    // Create a temporary textarea element to hold our text
-    const textarea = document.createElement('textarea');
-    textarea.value = text;
-    textarea.style.position = 'fixed';  // Avoid scrolling to bottom
-    textarea.style.opacity = '0';
-    
     try {
-      // Add to document
-      document.body.appendChild(textarea);
-      
-      // Select and copy
-      textarea.select();
-      textarea.setSelectionRange(0, textarea.value.length);
-      console.log('writing', text)
-      try {
-        // First try the modern clipboard API
-        await navigator.clipboard.writeText(text);
-      } catch (err) {
-        // Fallback to deprecated execCommand if clipboard API fails
-        const success = document.execCommand('copy');
-        if (!success) {
-          throw new Error('Failed to copy text using execCommand');
-        }
-      }
+      const success = await copyToClipboard(text);
       
       // Update button state if provided
       if (button) {
         const originalText = button.textContent || '';
-        button.textContent = CHECK_ICON;
-        button.classList.add('copied');
+        const originalTitle = button.title || '';
         
-        setTimeout(() => {
-          button.textContent = originalText;
-          button.classList.remove('copied');
-        }, 2000);
+        if (success) {
+          button.textContent = CHECK_ICON;
+          button.title = 'Copied!';
+          button.classList.add('copied');
+          
+          setTimeout(() => {
+            button.textContent = originalText;
+            button.title = originalTitle;
+            button.classList.remove('copied');
+          }, 2000);
+        } else {
+          // Show error state
+          button.textContent = '!';
+          button.title = 'Copy failed - click to try again';
+          button.classList.add('copied');
+          
+          // Make the button clickable to retry
+          const retryCopy = async () => {
+            button.removeEventListener('click', retryCopy);
+            await this.copyToClipboard(text, button);
+          };
+          button.addEventListener('click', retryCopy, { once: true });
+          
+          setTimeout(() => {
+            button.textContent = originalText;
+            button.title = originalTitle;
+            button.classList.remove('copied');
+            button.removeEventListener('click', retryCopy);
+          }, 3000);
+        }
       }
       
-      return true;
+      return success;
     } catch (err) {
-      console.error('Failed to copy text: ', err);
-      return false;
-    } finally {
-      // Clean up
-      if (document.body.contains(textarea)) {
-        document.body.removeChild(textarea);
+      console.error('Unexpected error in copyToClipboard:', err);
+      if (button) {
+        button.textContent = '!';
+        button.title = 'Copy failed - click to try again';
+        button.classList.add('copied');
+        
+        // Make the button clickable to retry
+        const retryCopy = async () => {
+          button.removeEventListener('click', retryCopy);
+          await this.copyToClipboard(text, button);
+        };
+        button.addEventListener('click', retryCopy, { once: true });
+        
+        setTimeout(() => {
+          button.textContent = 'Copy';
+          button.title = '';
+          button.classList.remove('copied');
+          button.removeEventListener('click', retryCopy);
+        }, 3000);
       }
+      return false;
     }
   }
 
