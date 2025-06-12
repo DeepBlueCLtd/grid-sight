@@ -1,7 +1,8 @@
 import { injectPlusIcons, removePlusIcons, plusIconStyles } from './header-utils';
+import type { HeaderType } from './header-utils';
 import { removeAllMenus } from './enrichment-menu';
 import { analyzeTable } from '../core/table-detection';
-import { toggleHeatmap } from '../enrichments/heatmap';
+import { toggleHeatmap, applyTableHeatmap } from '../enrichments/heatmap';
 import { calculateStatistics } from '../enrichments/statistics';
 import { analyzeFrequencies } from '../utils/frequency';
 import { cleanNumericCell } from '../core/type-detection';
@@ -96,7 +97,7 @@ export function createToggleElement(): HTMLElement {
  */
 function handleEnrichmentSelected(event: Event) {
   const customEvent = event as CustomEvent<{
-    type: 'row' | 'column';
+    type: HeaderType;
     enrichmentType: string;
     header: HTMLElement;
     headerIndex: number;
@@ -130,6 +131,9 @@ function handleEnrichmentSelected(event: Event) {
         // Add 1 to make the index 1-based for CSS nth-child selector
         toggleHeatmap(table, rowIndex + 1, 'row');
       }
+    } else if (type === 'table') {
+      // Apply heatmap to all numeric cells in the table
+      applyTableHeatmap(table);
     }
   } else if (enrichmentType === 'statistics' && type === 'column') {
     // Type assertion for table header cell
