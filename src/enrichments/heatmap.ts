@@ -27,6 +27,7 @@ interface TrackedCell {
   element: HTMLElement;
   heatmapType: HeatmapType;
   style: {
+    // eslint-disable-next-line no-unused-vars
     removeProperty: (name: string) => void;
   };
 }

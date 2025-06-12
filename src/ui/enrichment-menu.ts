@@ -35,6 +35,7 @@ export const ENRICHMENT_ITEMS: EnrichmentMenuItem[] = [
   }
 ]
 
+// eslint-disable-next-line no-unused-vars
 export function createEnrichmentMenu(columnType: ColumnType, onSelect: (type: EnrichmentType) => void): HTMLElement {
   const menu = document.createElement('div')
   menu.className = ENRICHMENT_MENU_CLASS

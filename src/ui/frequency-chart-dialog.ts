@@ -141,8 +141,10 @@ export class FrequencyChartDialog {
   private chartElement: HTMLElement
   private closeButton: HTMLButtonElement
   private onCloseCallback: (() => void) | null = null
-  private handleOutsideClickBound: (event: MouseEvent) => void
-  private handleKeyDownBound: (event: KeyboardEvent) => void
+  // eslint-disable-next-line no-unused-vars
+  private handleOutsideClickBound: (_event: MouseEvent) => void
+  // eslint-disable-next-line no-unused-vars
+  private handleKeyDownBound: (_event: KeyboardEvent) => void
 
   constructor() {
     // Create and inject styles
@@ -251,6 +253,7 @@ export class FrequencyChartDialog {
     g.setAttribute('transform', `translate(${margin.left},${margin.top})`)
     
     // Find the maximum count for scaling
+    // eslint-disable-next-line no-unused-vars
     const maxCount = Math.max(...results.map(([_, count]) => count))
     
     // Calculate bar width based on number of items

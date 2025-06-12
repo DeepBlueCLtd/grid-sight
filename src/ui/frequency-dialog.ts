@@ -140,7 +140,9 @@ export class FrequencyDialog {
   private tableBody: HTMLTableSectionElement
   private closeButton: HTMLButtonElement
   private onCloseCallback: (() => void) | null = null
+  // eslint-disable-next-line no-unused-vars
   private handleOutsideClickBound: (event: MouseEvent) => void
+  // eslint-disable-next-line no-unused-vars
   private handleKeyDownBound: (event: KeyboardEvent) => void
 
   constructor() {

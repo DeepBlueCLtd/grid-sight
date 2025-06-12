@@ -13,6 +13,7 @@ export interface TableProcessorOptions {
   /** Whether to apply default styling */
   applyStyles?: boolean;
   /** Callback when processing is complete */
+  // eslint-disable-next-line no-unused-vars
   onComplete?: (table: HTMLTableElement) => void;
 }
 
