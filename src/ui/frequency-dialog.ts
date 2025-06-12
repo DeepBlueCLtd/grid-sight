@@ -10,9 +10,6 @@ const DIALOG_CONTENT_CLASS = 'gs-frequency-dialog__content';
 const DIALOG_TABLE_CLASS = 'gs-frequency-dialog__table';
 const DIALOG_TABLE_HEAD_CLASS = 'gs-frequency-dialog__table-head';
 const DIALOG_TABLE_BODY_CLASS = 'gs-frequency-dialog__table-body';
-const DIALOG_ACTIONS_CLASS = 'gs-frequency-dialog__actions';
-const DIALOG_BUTTON_CLASS = 'gs-frequency-dialog__button';
-const DIALOG_BUTTON_PRIMARY_CLASS = 'gs-frequency-dialog__button--primary';
 
 // CSS styles for the dialog
 const DIALOG_STYLES = `
@@ -112,40 +109,6 @@ const DIALOG_STYLES = `
   background-color: #f8f9fa;
 }
 
-.${DIALOG_ACTIONS_CLASS} {
-  display: flex;
-  justify-content: flex-end;
-  padding: 10px 12px;
-  border-top: 1px solid #f0f0f0;
-}
-
-.${DIALOG_BUTTON_CLASS} {
-  padding: 6px 12px;
-  border: 1px solid #e0e0e0;
-  border-radius: 4px;
-  background: white;
-  color: #333;
-  font-size: 13px;
-  cursor: pointer;
-  transition: background-color 0.2s, border-color 0.2s;
-}
-
-.${DIALOG_BUTTON_CLASS}:hover {
-  background-color: #f5f5f5;
-  border-color: #ccc;
-}
-
-.${DIALOG_BUTTON_PRIMARY_CLASS} {
-  background-color: #007bff;
-  border-color: #007bff;
-  color: white;
-}
-
-.${DIALOG_BUTTON_PRIMARY_CLASS}:hover {
-  background-color: #0069d9;
-  border-color: #0062cc;
-}
-
 /* Scrollbar styling */
 .${DIALOG_CONTENT_CLASS}::-webkit-scrollbar {
   width: 6px;
@@ -176,7 +139,6 @@ export class FrequencyDialog {
   private contentElement: HTMLElement;
   private tableBody: HTMLTableSectionElement;
   private closeButton: HTMLButtonElement;
-  private copyButton: HTMLButtonElement;
   private onCloseCallback: (() => void) | null = null;
   private handleOutsideClickBound: (event: MouseEvent) => void;
   private handleKeyDownBound: (event: KeyboardEvent) => void;
@@ -240,21 +202,9 @@ export class FrequencyDialog {
     
     this.contentElement.appendChild(table);
     
-    // Create actions
-    const actions = document.createElement('div');
-    actions.className = DIALOG_ACTIONS_CLASS;
-    
-    this.copyButton = document.createElement('button');
-    this.copyButton.className = `${DIALOG_BUTTON_CLASS} ${DIALOG_BUTTON_PRIMARY_CLASS}`;
-    this.copyButton.textContent = 'Copy to Clipboard';
-    this.copyButton.addEventListener('click', () => this.handleCopyClick());
-    
-    actions.appendChild(this.copyButton);
-    
     // Assemble the dialog
     this.element.appendChild(header);
     this.element.appendChild(this.contentElement);
-    this.element.appendChild(actions);
     
     // Add to document
     document.body.appendChild(this.element);
@@ -312,50 +262,7 @@ export class FrequencyDialog {
     });
   }
 
-  private async handleCopyClick() {
-    try {
-      // Get the results from the table
-      const rows = Array.from(this.tableBody.rows);
-      const csvData = [
-        ['Value', 'Count', 'Percentage (%)'],
-        ...rows.map(row => [
-          row.cells[0].textContent || '',
-          row.cells[1].textContent || '',
-          row.cells[2].textContent || ''
-        ])
-      ];
-      
-      // Convert to CSV
-      const csvContent = csvData.map(row => 
-        row.map(cell => `"${cell.replace(/"/g, '""')}"`).join(',')
-      ).join('\n');
-      
-      // Copy to clipboard
-      await navigator.clipboard.writeText(csvContent);
-      
-      // Update button text to show success
-      const originalText = this.copyButton.textContent;
-      this.copyButton.textContent = 'Copied!';
-      
-      // Revert after 2 seconds
-      setTimeout(() => {
-        if (this.copyButton) {
-          this.copyButton.textContent = originalText;
-        }
-      }, 2000);
-      
-    } catch (error) {
-      console.error('Failed to copy to clipboard:', error);
-      this.copyButton.textContent = 'Failed to copy';
-      
-      // Revert after 2 seconds
-      setTimeout(() => {
-        if (this.copyButton) {
-          this.copyButton.textContent = 'Copy to Clipboard';
-        }
-      }, 2000);
-    }
-  }
+
 
   public show(results: FrequencyResult[], anchor: HTMLElement, options: FrequencyDialogOptions = {}) {
     // Update title if column name is provided
