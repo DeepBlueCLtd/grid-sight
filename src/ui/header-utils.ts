@@ -2,6 +2,9 @@ import type { ColumnType } from '../core/type-detection';
 import { cleanNumericCell } from '../core/type-detection';
 import { createEnrichmentMenu, positionMenu, removeAllMenus } from './enrichment-menu';
 
+// Define the header type to include 'table' for top-left cell
+export type HeaderType = 'row' | 'column' | 'table';
+
 const PLUS_ICON_CLASS = 'gs-plus-icon';
 const HEADER_WITH_ICON_CLASS = 'gs-has-plus-icon';
 const PLUS_ICON_ACTIVE_CLASS = 'gs-plus-icon--active';
@@ -16,9 +19,13 @@ export function injectPlusIcons(table: HTMLTableElement, columnTypes: ColumnType
 
   // Add plus icons to column headers for both numeric and categorical columns
   Array.from(headerRow.cells).forEach((cell, colIndex) => {
+    // Check if this is the top-left cell (first cell of the first row)
+    const isTopLeftCell = colIndex === 0;
+    
     const type = columnTypes[colIndex];
     if (type === 'numeric' || type === 'categorical') {
-      addPlusIconToHeader(cell, 'column');
+      // Pass 'table' as type for top-left cell, otherwise 'column'
+      addPlusIconToHeader(cell, isTopLeftCell ? 'table' : 'column');
     }
   });
 
@@ -43,7 +50,7 @@ export function removePlusIcons(table: HTMLTableElement): void {
   cells.forEach(cell => cell.classList.remove(HEADER_WITH_ICON_CLASS));
 }
 
-function addPlusIconToHeader(header: HTMLTableCellElement, type: 'row' | 'column'): void {
+function addPlusIconToHeader(header: HTMLTableCellElement, type: HeaderType): void {
   // Skip if already has a plus icon
   if (header.querySelector(`.${PLUS_ICON_CLASS}`)) return;
   
@@ -65,7 +72,7 @@ function addPlusIconToHeader(header: HTMLTableCellElement, type: 'row' | 'column
         }
       }
     }
-  } else {
+  } else if (type === 'row') {
     // For row headers, check if any cell in the row is numeric
     const row = header.closest('tr');
     if (row) {
@@ -74,6 +81,20 @@ function addPlusIconToHeader(header: HTMLTableCellElement, type: 'row' | 'column
         const value = cell.textContent?.trim() || '';
         return cleanNumericCell(value) !== null;
       });
+      columnType = hasNumeric ? 'numeric' : 'categorical';
+    }
+  } else if (type === 'table') {
+    // For the top-left cell (table-wide operations), set to numeric if any numeric cells exist
+    const table = header.closest('table');
+    if (table) {
+      // Check if there are any numeric cells in the table
+      const rows = Array.from(table.rows).slice(1); // Skip header row
+      const hasNumeric = rows.some(row => 
+        Array.from(row.cells).some(cell => {
+          const value = cell.textContent?.trim() || '';
+          return cleanNumericCell(value) !== null;
+        })
+      );
       columnType = hasNumeric ? 'numeric' : 'categorical';
     }
   }
@@ -104,12 +125,14 @@ function addPlusIconToHeader(header: HTMLTableCellElement, type: 'row' | 'column
         const event = new CustomEvent('gridsight:enrichmentSelected', {
           bubbles: true,
           detail: {
-            type,
+            type, // Now includes 'table' as a possible value
             enrichmentType,
             header,
             headerIndex: type === 'column' ? 
               Array.from(header.parentElement?.children || []).indexOf(header) :
-              Array.from(header.closest('tr')?.parentElement?.children || []).indexOf(header.closest('tr') as HTMLTableRowElement)
+              type === 'row' ?
+                Array.from(header.closest('tr')?.parentElement?.children || []).indexOf(header.closest('tr') as HTMLTableRowElement) :
+                0 // For 'table' type, headerIndex is not relevant but we provide 0
           }
         });
         header.dispatchEvent(event);
