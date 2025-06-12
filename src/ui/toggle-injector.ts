@@ -3,6 +3,7 @@ import { removeAllMenus } from './enrichment-menu';
 import { analyzeTable } from '../core/table-detection';
 import { toggleHeatmap } from '../enrichments/heatmap';
 import { calculateStatistics } from '../enrichments/statistics';
+import { analyzeFrequencies } from '../utils/frequency';
 import { cleanNumericCell } from '../core/type-detection';
 import { StatisticsPopup } from './statistics-popup';
 
@@ -139,6 +140,37 @@ function handleEnrichmentSelected(event: Event) {
         window._gsStatisticsPopup.show(stats, header);
       } catch (error) {
         console.error('Error calculating statistics:', error);
+        alert(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      }
+    }
+  } else if (enrichmentType === 'frequency' && type === 'column') {
+    // Type assertion for table header cell
+    const th = header as HTMLTableCellElement;
+    const columnIndex = th.cellIndex;
+    if (columnIndex >= 0) {
+      try {
+        // Get all cell values from the column
+        const rows = Array.from(table.rows);
+        const values = rows.map(row => {
+          const cell = row.cells[columnIndex];
+          return cell ? cell.textContent || '' : '';
+        });
+        
+        // Calculate frequencies
+        const frequencyResult = analyzeFrequencies(values);
+        
+        // Format the results for display
+        const resultText = frequencyResult
+          .map((item: [string, number, number]) => {
+            const [value, count, percentage] = item;
+            return `${value}: ${count} (${percentage.toFixed(1)}%)`;
+          })
+          .join('\n');
+        
+        // Show results in an alert for now (will be replaced with a dialog in Phase 2)
+        alert(`Frequency Analysis:\n\n${resultText}`);
+      } catch (error) {
+        console.error('Error performing frequency analysis:', error);
         alert(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
       }
     }

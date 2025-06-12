@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Frequency Analysis Test</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      margin: 20px 0;
+    }
+    th, td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      text-align: left;
+    }
+    th {
+      background-color: #f2f2f2;
+      position: relative;
+    }
+    tr:nth-child(even) {
+      background-color: #f9f9f9;
+    }
+  </style>
+</head>
+<body>
+  <h1>Frequency Analysis Test</h1>
+  
+  <h2>Sample Data</h2>
+  <table id="sampleTable">
+    <tr>
+      <th>Name</th>
+      <th>Category</th>
+      <th>Status</th>
+      <th>Priority</th>
+    </tr>
+    <tr>
+      <td>Alice</td>
+      <td>Admin</td>
+      <td>Active</td>
+      <td>High</td>
+    </tr>
+    <tr>
+      <td>Bob</td>
+      <td>User</td>
+      <td>Inactive</td>
+      <td>Medium</td>
+    </tr>
+    <tr>
+      <td>Charlie</td>
+      <td>Admin</td>
+      <td>Active</td>
+      <td>High</td>
+    </tr>
+    <tr>
+      <td>David</td>
+      <td>User</td>
+      <td>Pending</td>
+      <td>Low</td>
+    </tr>
+    <tr>
+      <td>Eve</td>
+      <td>Guest</td>
+      <td>Active</td>
+      <td>Medium</td>
+    </tr>
+    <tr>
+      <td>Frank</td>
+      <td>User</td>
+      <td>Inactive</td>
+      <td>High</td>
+    </tr>
+    <tr>
+      <td>Grace</td>
+      <td>Admin</td>
+      <td>Active</td>
+      <td>High</td>
+    </tr>
+    <tr>
+      <td>Heidi</td>
+      <td>User</td>
+      <td>Pending</td>
+      <td>Low</td>
+    </tr>
+    <tr>
+      <td>Ivan</td>
+      <td>Guest</td>
+      <td>Inactive</td>
+      <td>Medium</td>
+    </tr>
+  </table>
+
+  <h2>Instructions</h2>
+  <ol>
+    <li>Open the browser's developer console (F12 or right-click -> Inspect -> Console)</li>
+    <li>Click the "Load Grid-Sight" button below to initialize the Grid-Sight library</li>
+    <li>Click the "GS" button that appears above the table headers</li>
+    <li>Select "Frequency Analysis" from the menu</li>
+    <li>Check the console for frequency analysis results</li>
+  </ol>
+
+  <button id="loadGridSight">Load Grid-Sight</button>
+
+  <script>
+    document.getElementById('loadGridSight').addEventListener('click', function() {
+      // This would normally be loaded from your build/dist folder
+      console.log('Loading Grid-Sight...');
+      
+      // For testing, we'll just add the toggle button manually
+      const table = document.getElementById('sampleTable');
+      if (table) {
+        // Add the GS toggle button to each header cell
+        const headers = table.querySelectorAll('th');
+        headers.forEach((header, index) => {
+          const toggle = document.createElement('div');
+          toggle.className = 'grid-sight-toggle-container';
+          toggle.innerHTML = `
+            <button class="grid-sight-toggle" aria-label="Toggle Grid-Sight" aria-expanded="false" role="button" tabindex="0" 
+                    style="cursor: pointer; border: 1px solid #ccc; background: #f8f8f8; border-radius: 3px; padding: 2px 6px; font-size: 11px; font-weight: bold; color: #555; margin-right: 8px; vertical-align: middle; transition: all 0.2s ease;">
+              GS
+            </button>
+          `;
+          
+          // Add click handler to show frequency analysis
+          const button = toggle.querySelector('.grid-sight-toggle');
+          if (button) {
+            button.addEventListener('click', (e) => {
+              e.stopPropagation();
+              
+              // Get all cells in this column
+              const rows = Array.from(table.rows);
+              const columnIndex = index;
+              const values = [];
+              
+              // Skip header row
+              for (let i = 1; i < rows.length; i++) {
+                const cell = rows[i].cells[columnIndex];
+                values.push(cell ? cell.textContent || '' : '');
+              }
+              
+              // This would normally be handled by the Grid-Sight library
+              console.log(`Frequency analysis for column "${header.textContent}":`, values);
+              
+              // Simulate the frequency analysis
+              const frequencyMap = {};
+              values.forEach(value => {
+                const normalized = String(value || '').trim().toLowerCase() || '[Empty]';
+                frequencyMap[normalized] = (frequencyMap[normalized] || 0) + 1;
+              });
+              
+              // Convert to array and sort
+              const frequencies = Object.entries(frequencyMap)
+                .map(([value, count]) => ({
+                  value,
+                  count,
+                  percentage: (count / values.length) * 100
+                }))
+                .sort((a, b) => a.value.localeCompare(b.value));
+              
+              console.log('Frequency Analysis Results:', frequencies);
+              
+              // Show results in an alert
+              const resultText = frequencies
+                .map(({ value, count, percentage }) => 
+                  `${value}: ${count} (${percentage.toFixed(1)}%)`
+                )
+                .join('\n');
+              
+              alert(`Frequency Analysis for "${header.textContent}":\n\n${resultText}`);
+            });
+          }
+          
+          // Insert the toggle before the header text
+          if (header.firstChild) {
+            header.insertBefore(toggle, header.firstChild);
+          } else {
+            header.appendChild(toggle);
+          }
+        });
+        
+        console.log('Grid-Sight toggle buttons added to table headers.');
+      } else {
+        console.error('Could not find the sample table.');
+      }
+    });
+  </script>
+</body>
+</html>
