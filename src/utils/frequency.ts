@@ -41,20 +41,25 @@ function sortFrequencies(frequencies: Record<string, number>): Array<[string, nu
 }
 
 /**
- * Calculates frequency distribution with percentages
- * @returns Array of [value, count, percentage] tuples, sorted alphabetically
+ * Represents a frequency analysis result: [value, count, percentage]
  */
-function analyzeFrequencies(values: unknown[]): Array<[string, number, number]> {
+type FrequencyResult = [string, number, number];
+
+/**
+ * Calculates frequency distribution with percentages
+ * @returns Array of FrequencyResult tuples, sorted alphabetically
+ */
+function analyzeFrequencies(values: unknown[]): FrequencyResult[] {
   const total = values.length
   if (total === 0) return []
   
   const frequencies = calculateFrequency(values)
-  const sorted = sortFrequencies(frequencies)
+  const sortedFrequencies = sortFrequencies(frequencies)
   
-  return sorted.map(([value, count]) => [
+  return sortedFrequencies.map(([value, count]) => [
     value,
     count,
-    Math.round((count / total) * 1000) / 10 // Round to 1 decimal place
+    (count / total) * 100
   ])
 }
 
@@ -62,5 +67,6 @@ export {
   normalizeCellValue,
   calculateFrequency,
   analyzeFrequencies,
-  sortFrequencies
+  sortFrequencies,
+  type FrequencyResult
 }

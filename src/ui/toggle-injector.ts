@@ -6,6 +6,7 @@ import { calculateStatistics } from '../enrichments/statistics';
 import { analyzeFrequencies } from '../utils/frequency';
 import { cleanNumericCell } from '../core/type-detection';
 import { StatisticsPopup } from './statistics-popup';
+import { FrequencyDialog } from './frequency-dialog';
 
 // CSS class names for the toggle element
 const TOGGLE_CLASS = 'grid-sight-toggle';
@@ -13,10 +14,11 @@ const TOGGLE_CONTAINER_CLASS = 'grid-sight-toggle-container';
 const TOGGLE_ACTIVE_CLASS = 'grid-sight-toggle--active';
 const TABLE_ENABLED_CLASS = 'grid-sight-enabled';
 
-// Add type declaration for the global popup instance
+// Add type declarations for global popup instances
 declare global {
   interface Window {
     _gsStatisticsPopup?: StatisticsPopup;
+    _gsFrequencyDialog?: FrequencyDialog;
   }
 }
 
@@ -159,16 +161,14 @@ function handleEnrichmentSelected(event: Event) {
         // Calculate frequencies
         const frequencyResult = analyzeFrequencies(values);
         
-        // Format the results for display
-        const resultText = frequencyResult
-          .map((item: [string, number, number]) => {
-            const [value, count, percentage] = item;
-            return `${value}: ${count} (${percentage.toFixed(1)}%)`;
-          })
-          .join('\n');
+        // Create or reuse frequency dialog instance
+        if (!window._gsFrequencyDialog) {
+          window._gsFrequencyDialog = new FrequencyDialog();
+        }
         
-        // Show results in an alert for now (will be replaced with a dialog in Phase 2)
-        alert(`Frequency Analysis:\n\n${resultText}`);
+        // Show the dialog with the frequency results
+        const columnName = th.textContent?.trim() || `Column ${columnIndex + 1}`;
+        window._gsFrequencyDialog.show(frequencyResult, header, { columnName });
       } catch (error) {
         console.error('Error performing frequency analysis:', error);
         alert(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
