@@ -2,7 +2,6 @@ import type { ColumnType } from '../core/type-detection';
 
 export const ENRICHMENT_MENU_CLASS = 'gs-enrichment-menu';
 const MENU_ITEM_CLASS = 'gs-enrichment-menu-item';
-const MENU_ITEM_ICON_CLASS = 'gs-enrichment-menu-item-icon';
 const MENU_ITEM_LABEL_CLASS = 'gs-enrichment-menu-item-label';
 
 export type EnrichmentType = 'heatmap' | 'zscore' | 'sort' | 'filter' | 'aggregate' | 'statistics';
@@ -10,7 +9,6 @@ export type EnrichmentType = 'heatmap' | 'zscore' | 'sort' | 'filter' | 'aggrega
 export interface EnrichmentMenuItem {
   id: EnrichmentType;
   label: string;
-  icon: string;
   availableFor: ColumnType[];
 }
 
@@ -18,13 +16,11 @@ export const ENRICHMENT_ITEMS: EnrichmentMenuItem[] = [
   {
     id: 'heatmap',
     label: 'Heatmap',
-    icon: '🔥',
     availableFor: ['numeric']
   },
   {
     id: 'statistics',
     label: 'Statistics',
-    icon: '📊',
     availableFor: ['numeric']
   }
 ];
@@ -61,26 +57,25 @@ export function createEnrichmentMenu(columnType: ColumnType, onSelect: (type: En
       cursor: pointer;
       transition: background-color 0.1s;
     `;
-    
+
     menuItem.innerHTML = `
-      <span class="${MENU_ITEM_ICON_CLASS}" style="margin-right: 8px; font-size: 14px;">${item.icon}</span>
       <span class="${MENU_ITEM_LABEL_CLASS}">${item.label}</span>
     `;
-    
+
     menuItem.addEventListener('click', (e) => {
       e.stopPropagation();
       onSelect(item.id);
     });
-    
+
     // Add hover effect
     menuItem.addEventListener('mouseenter', () => {
       menuItem.style.backgroundColor = '#f5f5f5';
     });
-    
+
     menuItem.addEventListener('mouseleave', () => {
       menuItem.style.backgroundColor = '';
     });
-    
+
     menu.appendChild(menuItem);
   });
 
