@@ -6,9 +6,9 @@
  */
 
 // Import core modules
-import { processTable } from './core/table-processor';
-import type { TableProcessorOptions } from './core/table-processor';
-import { detectColumnTypes, extractTableData } from './core/type-detection';
+import { processTable } from './core/table-processor'
+import type { TableProcessorOptions } from './core/table-processor'
+import { detectColumnTypes, extractTableData } from './core/type-detection'
 
 // Define HeatmapOptions interface since it's not exported from heatmap.ts
 interface HeatmapOptions {
@@ -23,22 +23,22 @@ import {
   removeHeatmap, 
   toggleHeatmap, 
   isHeatmapActive
-} from './enrichments/heatmap';
+} from './enrichments/heatmap'
 
 // Import UI components
-import { injectToggle } from './ui/toggle-injector';
+import { injectToggle } from './ui/toggle-injector'
 
 // Re-export types for external use
 export type { 
   TableProcessorOptions, 
   HeatmapOptions 
-};
+}
 
 /**
  * The main GridSight API object that will be exposed to the window
  */
 // Table state management
-const tableRegistry = new Map<string, HTMLTableElement>();
+const tableRegistry = new Map<string, HTMLTableElement>()
 
 /**
  * The main GridSight API object that will be exposed to the window
@@ -57,19 +57,19 @@ const GridSight = {
     document.querySelectorAll<HTMLTableElement>('table').forEach((table, index) => {
       // Skip tables that don't meet our validity criteria
       if (!this.isValidTable(table)) {
-        console.warn(`Skipping invalid table at index ${index}: Table must have at least two rows`);
-        return;
+        console.warn(`Skipping invalid table at index ${index}: Table must have at least two rows`)
+        return
       }
       try {
         this.processTable(table, { 
           id: `table-${index}`,
           ...options 
-        });
+        })
       } catch (error) {
-        console.error(`Failed to process table ${index}:`, error);
+        console.error(`Failed to process table ${index}:`, error)
       }
-    });
-    return this;
+    })
+    return this
   },
   
   /**
@@ -79,28 +79,28 @@ const GridSight = {
    */
   processTable(table: HTMLTableElement, options: TableProcessorOptions = {}) {
     if (!table) {
-      throw new Error('No table element provided');
+      throw new Error('No table element provided')
     }
     
     // Ensure the table has an ID
     if (!table.id) {
-      table.id = options.id || `grid-sight-${Math.random().toString(36).substr(2, 9)}`;
+      table.id = options.id || `grid-sight-${Math.random().toString(36).substr(2, 9)}`
     }
     
     // Process the table
-    const processedTable = processTable(table, options);
+    const processedTable = processTable(table, options)
     
     // Add to registry
-    tableRegistry.set(table.id, table);
+    tableRegistry.set(table.id, table)
     
     try {
       // Inject toggle which will handle the enrichment menu
-      injectToggle(table);
+      injectToggle(table)
     } catch (error) {
-      console.warn('Failed to inject UI elements:', error);
+      console.warn('Failed to inject UI elements:', error)
     }
     
-    return processedTable;
+    return processedTable
   },
   
   /**
@@ -111,12 +111,12 @@ const GridSight = {
   isValidTable(table: HTMLTableElement | null): boolean {
     // Check if table exists and is an HTMLTableElement
     if (!table || !(table instanceof HTMLTableElement)) {
-      return false;
+      return false
     }
     
     // Check if table has at least two rows (one for header, one for data)
-    const rowCount = table.rows.length;
-    return rowCount >= 2;
+    const rowCount = table.rows.length
+    return rowCount >= 2
   },
   
   /**
@@ -124,14 +124,14 @@ const GridSight = {
    * @param id The ID of the table to retrieve
    */
   getTableById(id: string): HTMLTableElement | undefined {
-    return tableRegistry.get(id);
+    return tableRegistry.get(id)
   },
   
   /**
    * Get all processed tables
    */
   getAllTables(): HTMLTableElement[] {
-    return Array.from(tableRegistry.values());
+    return Array.from(tableRegistry.values())
   },
   
   /**
@@ -147,11 +147,11 @@ const GridSight = {
     type: 'row' | 'column' = 'column',
     options: HeatmapOptions = {}
   ): void {
-    const targetTable = typeof table === 'string' ? this.getTableById(table) : table;
+    const targetTable = typeof table === 'string' ? this.getTableById(table) : table
     if (!targetTable) {
-      throw new Error('Table not found');
+      throw new Error('Table not found')
     }
-    applyHeatmap(targetTable, index, type, options);
+    applyHeatmap(targetTable, index, type, options)
   },
   
   /**
@@ -166,12 +166,12 @@ const GridSight = {
     type?: 'row' | 'column'
   ): void {
     if (typeof table === 'string') {
-      const targetTable = this.getTableById(table);
+      const targetTable = this.getTableById(table)
       if (targetTable) {
-        removeHeatmap(targetTable, index, type);
+        removeHeatmap(targetTable, index, type)
       }
     } else {
-      removeHeatmap(table, index, type);
+      removeHeatmap(table, index, type)
     }
   },
   
@@ -188,11 +188,11 @@ const GridSight = {
     type: 'row' | 'column' = 'column',
     options: HeatmapOptions = {}
   ): void {
-    const targetTable = typeof table === 'string' ? this.getTableById(table) : table;
+    const targetTable = typeof table === 'string' ? this.getTableById(table) : table
     if (!targetTable) {
-      throw new Error('Table not found');
+      throw new Error('Table not found')
     }
-    toggleHeatmap(targetTable, index, type, options);
+    toggleHeatmap(targetTable, index, type, options)
   },
   
   /**
@@ -206,11 +206,11 @@ const GridSight = {
     index: number, 
     type: 'row' | 'column' = 'column'
   ): boolean {
-    const targetTable = typeof table === 'string' ? this.getTableById(table) : table;
+    const targetTable = typeof table === 'string' ? this.getTableById(table) : table
     if (!targetTable) {
-      return false;
+      return false
     }
-    return isHeatmapActive(targetTable, index, type);
+    return isHeatmapActive(targetTable, index, type)
   },
   
   /**
@@ -222,17 +222,17 @@ const GridSight = {
     table: HTMLTableElement | string, 
     columnIndex: number
   ): string {
-    const targetTable = typeof table === 'string' ? this.getTableById(table) : table;
+    const targetTable = typeof table === 'string' ? this.getTableById(table) : table
     if (!targetTable) {
-      throw new Error('Table not found');
+      throw new Error('Table not found')
     }
     
     // Extract table data first
-    const tableData = extractTableData(targetTable);
+    const tableData = extractTableData(targetTable)
     
     // Then detect column types
-    const types = detectColumnTypes(tableData);
-    return types[columnIndex] || 'unknown';
+    const types = detectColumnTypes(tableData)
+    return types[columnIndex] || 'unknown'
   },
   
   /**
@@ -242,18 +242,18 @@ const GridSight = {
   getTableStructure(
     table: HTMLTableElement | string
   ): { rows: number; cols: number; hasHeader: boolean } {
-    const targetTable = typeof table === 'string' ? this.getTableById(table) : table;
+    const targetTable = typeof table === 'string' ? this.getTableById(table) : table
     if (!targetTable) {
-      throw new Error('Table not found');
+      throw new Error('Table not found')
     }
     
     // Extract table data and analyze its structure
-    const tableData = extractTableData(targetTable);
+    const tableData = extractTableData(targetTable)
     return {
       rows: tableData.length,
       cols: tableData[0]?.length || 0,
       hasHeader: this.detectIfTableHasHeader(targetTable)
-    };
+    }
   },
   
   /**
@@ -264,54 +264,54 @@ const GridSight = {
   detectIfTableHasHeader(table: HTMLTableElement): boolean {
     // Simple heuristic: check if the first row contains mostly text content
     // and the second row contains more varied content
-    if (table.rows.length < 2) return false;
+    if (table.rows.length < 2) return false
     
-    const firstRow = table.rows[0];
-    const secondRow = table.rows[1];
+    const firstRow = table.rows[0]
+    const secondRow = table.rows[1]
     
     // Count non-empty cells in first row
     const firstRowNonEmpty = Array.from(firstRow.cells).filter(
-      cell => cell.textContent && cell.textContent.trim() !== ''
-    ).length;
+      (cell) => cell.textContent && cell.textContent.trim() !== ''
+    ).length
     
     // If first row is empty, it's probably not a header
-    if (firstRowNonEmpty === 0) return false;
+    if (firstRowNonEmpty === 0) return false
     
     // If first row has significantly fewer non-empty cells than second row,
     // it's probably not a header
     const secondRowNonEmpty = Array.from(secondRow.cells).filter(
-      cell => cell.textContent && cell.textContent.trim() !== ''
-    ).length;
+      (cell) => cell.textContent && cell.textContent.trim() !== ''
+    ).length
     
-    return firstRowNonEmpty >= secondRowNonEmpty;
+    return firstRowNonEmpty >= secondRowNonEmpty
   }
-};
+}
 
 // Auto-initialize when the DOM is ready
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', () => {
-    GridSight.init();
-  });
+    GridSight.init()
+  })
 } else {
   // DOMContentLoaded has already fired, run immediately
-  setTimeout(() => GridSight.init(), 0);
+  setTimeout(() => GridSight.init(), 0)
 }
 
 // Export the GridSight API
-export default GridSight;
+export default GridSight
 
 // Expose to window for direct script include
 // Use a more direct approach to ensure it's available globally
 if (typeof window !== 'undefined') {
-  (window as any).gridSight = GridSight;
+  (window as any).gridSight = GridSight
 }
 
 // Also assign to globalThis for better compatibility
 if (typeof globalThis !== 'undefined') {
-  (globalThis as any).gridSight = GridSight;
+  (globalThis as any).gridSight = GridSight
 }
 
 // For CommonJS environments
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = GridSight;
+  module.exports = GridSight
 }

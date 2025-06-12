@@ -6,7 +6,7 @@ import {
   standardDeviation, 
   variance as sampleVariance,
   sum
-} from 'simple-statistics';
+} from 'simple-statistics'
 
 export interface StatisticsResult {
   count: number;
@@ -26,14 +26,14 @@ export interface StatisticsResult {
  */
 export function calculateStatistics(values: number[]): StatisticsResult {
   if (!values.length) {
-    throw new Error('Cannot calculate statistics for an empty array');
+    throw new Error('Cannot calculate statistics for an empty array')
   }
 
   // Filter out any non-finite numbers
-  const validValues = values.filter(Number.isFinite);
+  const validValues = values.filter(Number.isFinite)
   
   if (validValues.length === 0) {
-    throw new Error('No valid numeric values provided');
+    throw new Error('No valid numeric values provided')
   }
 
   return {
@@ -45,7 +45,7 @@ export function calculateStatistics(values: number[]): StatisticsResult {
     median: median(validValues),
     stdDev: standardDeviation(validValues),
     variance: sampleVariance(validValues)
-  };
+  }
 }
 
 /**
@@ -55,11 +55,11 @@ export function calculateStatistics(values: number[]): StatisticsResult {
  * @returns Formatted number as a string
  */
 export function formatNumber(value: number, decimals: number = 2): string {
-  if (!Number.isFinite(value)) return 'N/A';
+  if (!Number.isFinite(value)) return 'N/A'
   return value.toLocaleString(undefined, {
     minimumFractionDigits: 0,
     maximumFractionDigits: decimals
-  });
+  })
 }
 
 /**
@@ -77,5 +77,5 @@ export function formatStatistics(stats: StatisticsResult): string {
     `Median: ${formatNumber(stats.median)}`,
     `Std Dev: ${formatNumber(stats.stdDev)}`,
     `Variance: ${formatNumber(stats.variance)}`
-  ].join('\n');
+  ].join('\n')
 }

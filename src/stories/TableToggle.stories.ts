@@ -1,13 +1,13 @@
-import type { Meta, StoryObj } from '@storybook/html';
-import { within, expect } from '@storybook/test';
-import { initializeGridSight } from '../main';
+import type { Meta, StoryObj } from '@storybook/html'
+import { within, expect } from '@storybook/test'
+import { initializeGridSight } from '../main'
 
 // Import table HTML content
-import numericTable from './tables/numeric-and-categorical.html?raw';
-import categoricalTable from './tables/categorical.html?raw';
-import mixedTable from './tables/mixed.html?raw';
-import twoDimTable from './tables/two-dim-data.html?raw';
-import unsuitableTable from './tables/unsuitable.html?raw';
+import numericTable from './tables/numeric-and-categorical.html?raw'
+import categoricalTable from './tables/categorical.html?raw'
+import mixedTable from './tables/mixed.html?raw'
+import twoDimTable from './tables/two-dim-data.html?raw'
+import unsuitableTable from './tables/unsuitable.html?raw'
 
 // Define the metadata for the story
 const meta: Meta = {
@@ -23,11 +23,11 @@ const meta: Meta = {
     }
   },
   render: () => {
-    const container = document.createElement('div');
-    container.style.maxWidth = '800px';
-    container.style.margin = '0 auto';
-    container.style.padding = '20px';
-    container.style.fontFamily = 'Arial, sans-serif';
+    const container = document.createElement('div')
+    container.style.maxWidth = '800px'
+    container.style.margin = '0 auto'
+    container.style.padding = '20px'
+    container.style.fontFamily = 'Arial, sans-serif'
     
     container.innerHTML = `
       <style>
@@ -117,13 +117,13 @@ const meta: Meta = {
         <p>This table doesn't have enough suitable columns (only one row). The GS toggle should NOT appear.</p>
         ${unsuitableTable}
       </div>
-    `;
+    `
     
-    return container;
-  },
-};
+    return container
+  }
+}
 
-export default meta;
+export default meta
 
 type Story = StoryObj;
 
@@ -132,60 +132,60 @@ export const Default: Story = {
   name: 'Table Detection Examples',
   play: async () => {
     // Run the main logic to inject the toggles
-    initializeGridSight();
+    initializeGridSight()
 
     // Helper function to test if a table has the toggle
     const expectToggle = async (tableId: string, shouldHaveToggle: boolean) => {
-      const table = document.getElementById(tableId) as HTMLTableElement;
-      const canvas = within(table);
+      const table = document.getElementById(tableId) as HTMLTableElement
+      const canvas = within(table)
       
       if (shouldHaveToggle) {
-        const toggle = await canvas.findByText('GS');
-        expect(toggle).toBeInTheDocument();
-        expect(table.classList.contains('grid-sight-enabled')).toBe(true);
+        const toggle = await canvas.findByText('GS')
+        expect(toggle).toBeInTheDocument()
+        expect(table.classList.contains('grid-sight-enabled')).toBe(true)
       } else {
-        const toggle = canvas.queryByText('GS');
-        expect(toggle).not.toBeInTheDocument();
-        expect(table.classList.contains('grid-sight-enabled')).toBe(false);
+        const toggle = canvas.queryByText('GS')
+        expect(toggle).not.toBeInTheDocument()
+        expect(table.classList.contains('grid-sight-enabled')).toBe(false)
       }
-    };
+    }
 
     // Test each table
-    await expectToggle('test-table', true); // numeric-and-categorical.html
-    await expectToggle('categorical-table', true);
-    await expectToggle('mixed-table', true);
-    await expectToggle('unsuitable-table', false);
-  },
-};
+    await expectToggle('test-table', true) // numeric-and-categorical.html
+    await expectToggle('categorical-table', true)
+    await expectToggle('mixed-table', true)
+    await expectToggle('unsuitable-table', false)
+  }
+}
 
 // Add a story to test the toggle interaction
 export const ToggleInteraction: Story = {
   name: 'Toggle Interaction',
   play: async () => {
     // Run the main logic to inject the toggles
-    initializeGridSight();
+    initializeGridSight()
     
     // Get the first suitable table
-    const table = document.getElementById('test-table') as HTMLTableElement; // numeric-and-categorical.html
-    const canvas = within(table);
+    const table = document.getElementById('test-table') as HTMLTableElement // numeric-and-categorical.html
+    const canvas = within(table)
     
     // Find the toggle and click it
-    const toggle = await canvas.findByText('GS');
+    const toggle = await canvas.findByText('GS')
     
     // Test initial state
-    expect(toggle.getAttribute('aria-expanded')).toBe('false');
+    expect(toggle.getAttribute('aria-expanded')).toBe('false')
     
     // Click the toggle
-    toggle.click();
+    toggle.click()
     
     // Test that the active class is added and aria-expanded is updated
-    const container = toggle.closest('.grid-sight-toggle-container');
-    expect(container?.classList.contains('grid-sight-toggle--active')).toBe(true);
-    expect(toggle.getAttribute('aria-expanded')).toBe('true');
+    const container = toggle.closest('.grid-sight-toggle-container')
+    expect(container?.classList.contains('grid-sight-toggle--active')).toBe(true)
+    expect(toggle.getAttribute('aria-expanded')).toBe('true')
     
     // Click again to toggle off
-    toggle.click();
-    expect(container?.classList.contains('grid-sight-toggle--active')).toBe(false);
-    expect(toggle.getAttribute('aria-expanded')).toBe('false');
-  },
-};
+    toggle.click()
+    expect(container?.classList.contains('grid-sight-toggle--active')).toBe(false)
+    expect(toggle.getAttribute('aria-expanded')).toBe('false')
+  }
+}

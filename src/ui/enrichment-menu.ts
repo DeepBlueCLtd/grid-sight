@@ -1,8 +1,8 @@
-import type { ColumnType } from '../core/type-detection';
+import type { ColumnType } from '../core/type-detection'
 
-export const ENRICHMENT_MENU_CLASS = 'gs-enrichment-menu';
-const MENU_ITEM_CLASS = 'gs-enrichment-menu-item';
-const MENU_ITEM_LABEL_CLASS = 'gs-enrichment-menu-item-label';
+export const ENRICHMENT_MENU_CLASS = 'gs-enrichment-menu'
+const MENU_ITEM_CLASS = 'gs-enrichment-menu-item'
+const MENU_ITEM_LABEL_CLASS = 'gs-enrichment-menu-item-label'
 
 export type EnrichmentType = 'heatmap' | 'zscore' | 'sort' | 'filter' | 'aggregate' | 'statistics' | 'frequency' | 'frequency-chart';
 
@@ -33,11 +33,11 @@ export const ENRICHMENT_ITEMS: EnrichmentMenuItem[] = [
     label: 'Frequency (chart)',
     availableFor: ['categorical']
   }
-];
+]
 
 export function createEnrichmentMenu(columnType: ColumnType, onSelect: (type: EnrichmentType) => void): HTMLElement {
-  const menu = document.createElement('div');
-  menu.className = ENRICHMENT_MENU_CLASS;
+  const menu = document.createElement('div')
+  menu.className = ENRICHMENT_MENU_CLASS
   menu.style.cssText = `
     position: absolute;
     background: white;
@@ -49,73 +49,73 @@ export function createEnrichmentMenu(columnType: ColumnType, onSelect: (type: En
     overflow: hidden;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     font-size: 13px;
-  `;
+  `
 
   // Filter items based on column type
-  const availableItems = ENRICHMENT_ITEMS.filter(item => 
+  const availableItems = ENRICHMENT_ITEMS.filter((item) => 
     item.availableFor.includes(columnType)
-  );
+  )
 
   // Add menu items
-  availableItems.forEach(item => {
-    const menuItem = document.createElement('div');
-    menuItem.className = MENU_ITEM_CLASS;
+  availableItems.forEach((item) => {
+    const menuItem = document.createElement('div')
+    menuItem.className = MENU_ITEM_CLASS
     menuItem.style.cssText = `
       display: flex;
       align-items: center;
       padding: 8px 12px;
       cursor: pointer;
       transition: background-color 0.1s;
-    `;
+    `
 
     menuItem.innerHTML = `
       <span class="${MENU_ITEM_LABEL_CLASS}">${item.label}</span>
-    `;
+    `
 
     menuItem.addEventListener('click', (e) => {
-      e.stopPropagation();
-      onSelect(item.id);
-    });
+      e.stopPropagation()
+      onSelect(item.id)
+    })
 
     // Add hover effect
     menuItem.addEventListener('mouseenter', () => {
-      menuItem.style.backgroundColor = '#f5f5f5';
-    });
+      menuItem.style.backgroundColor = '#f5f5f5'
+    })
 
     menuItem.addEventListener('mouseleave', () => {
-      menuItem.style.backgroundColor = '';
-    });
+      menuItem.style.backgroundColor = ''
+    })
 
-    menu.appendChild(menuItem);
-  });
+    menu.appendChild(menuItem)
+  })
 
-  return menu;
+  return menu
 }
 
 export function positionMenu(menu: HTMLElement, anchor: HTMLElement): void {
-  const rect = anchor.getBoundingClientRect();
-  const viewportHeight = window.innerHeight;
+  const rect = anchor.getBoundingClientRect()
+  const viewportHeight = window.innerHeight
   
   // Position below the anchor by default
-  let top = rect.bottom + window.scrollY;
-  let left = rect.left + window.scrollX;
+  let top = rect.bottom + window.scrollY
+  let left = rect.left + window.scrollX
   
   // Check if there's enough space below, if not, position above
   if (rect.bottom + menu.offsetHeight > viewportHeight) {
-    top = rect.top + window.scrollY - menu.offsetHeight;
+    top = rect.top + window.scrollY - menu.offsetHeight
   }
   
   // Ensure the menu stays within viewport
   if (left + menu.offsetWidth > window.innerWidth) {
-    left = window.innerWidth - menu.offsetWidth - 10;
+    left = window.innerWidth - menu.offsetWidth - 10
   }
   
-  menu.style.top = `${Math.max(0, top)}px`;
-  menu.style.left = `${Math.max(0, left)}px`;
+  menu.style.top = `${Math.max(0, top)}px`
+  menu.style.left = `${Math.max(0, left)}px`
 }
 
 export function removeAllMenus(): void {
-  document.querySelectorAll(`.${ENRICHMENT_MENU_CLASS}`).forEach(menu => {
-    menu.remove();
-  });
+  document.querySelectorAll(`.${ENRICHMENT_MENU_CLASS}`).forEach((menu) => {
+    menu.remove()
+  })
 }
