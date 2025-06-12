@@ -40,7 +40,12 @@ async function copyDemoFiles() {
       // Update the script path to point to the correct location in the dist folder
       content = content.replace(
         /<script src="[^"]*\/dist\/[^"]*\.js"><\/script>/,
-        '<script src="../grid-sight.iife.js"></script>'
+        '<script src="grid-sight.iife.js"></script>'
+      );
+      // Also update any other relative paths if needed
+      content = content.replace(
+        /(href|src)="(\.\.?\/)?(assets|images|styles)/g,
+        '$1="$3"'
       );
       await fs.writeFile(demoHtmlPath, content, 'utf8');
       console.log('✅ Updated script paths in demo HTML');
