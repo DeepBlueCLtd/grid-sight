@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/html';
-import { expect } from '@storybook/test';
+import { expect, userEvent, within } from '@storybook/test';
 import { initializeGridSight } from '../main';
 // Import HTML table from external file
 import testTable from './tables/numeric-and-categorical.html?raw';
