@@ -21,8 +21,13 @@ const GridSight = {
    * Initialize Grid-Sight on all valid tables in the document
    */
   init() {
-    // Find all tables with both thead and tbody
-    document.querySelectorAll<HTMLTableElement>('table:has(thead):has(tbody)').forEach((table, index) => {
+    // Find all tables that have at least two rows
+    document.querySelectorAll<HTMLTableElement>('table').forEach((table, index) => {
+      // Skip tables that don't meet our validity criteria
+      if (!this.isValidTable(table)) {
+        console.warn(`Skipping invalid table at index ${index}: Table must have at least two rows`);
+        return;
+      }
       try {
         this.processTable(table, { id: `table-${index}` });
       } catch (error) {
@@ -52,13 +57,18 @@ const GridSight = {
   
   /**
    * Check if a table is valid for processing
+   * A valid table must have at least two rows (header + data)
    * @param table The table element to check
    */
   isValidTable(table: HTMLTableElement | null): boolean {
-    return table !== null && 
-           table instanceof HTMLTableElement && 
-           table.tHead !== null && 
-           table.tBodies.length > 0;
+    // Check if table exists and is an HTMLTableElement
+    if (!table || !(table instanceof HTMLTableElement)) {
+      return false;
+    }
+    
+    // Check if table has at least two rows (one for header, one for data)
+    const rowCount = table.rows.length;
+    return rowCount >= 2;
   }
 };
 

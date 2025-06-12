@@ -32,9 +32,10 @@ async function copyDemoFiles() {
     const demoHtmlPath = path.join(targetDir, 'index.html');
     if (await fs.pathExists(demoHtmlPath)) {
       let content = await fs.readFile(demoHtmlPath, 'utf8');
+      // Update the script path to point to the correct location in the dist folder
       content = content.replace(
-        /<script src="\.\.\/dist\/grid-sight\.min\.js"><\/script>/,
-        '<script src="../grid-sight.min.js"></script>'
+        /<script src="[^"]*\/dist\/[^"]*\.js"><\/script>/,
+        '<script src="../grid-sight.iife.js"></script>'
       );
       await fs.writeFile(demoHtmlPath, content, 'utf8');
       console.log('✅ Updated script paths in demo HTML');

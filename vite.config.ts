@@ -34,24 +34,23 @@ export default defineConfig({
     lib: {
       entry: resolve(__dirname, 'src/index.ts'),
       name: 'gridSight',
-      fileName: (format) => `index.${format === 'iife' ? 'min.js' : format + '.js'}`,
-      formats: ['iife'], // Only build IIFE format
+      fileName: 'grid-sight',
+      formats: ['iife'],
     },
     rollupOptions: {
-      // Ensure we don't bundle dependencies that should be external
+      // Make sure to externalize deps that shouldn't be bundled
       external: [],
       output: {
-        // Ensure the IIFE is properly scoped and exposed as window.gridSight
-        globals: {
-          gridSight: 'gridSight',
-          // Add any other global dependencies here if needed
-        },
-        // Ensure file:// compatibility
-        assetFileNames: '[name][extname]',
-        entryFileNames: '[name].min.js',
-        // Ensure the library is properly exposed as window.gridSight
+        // Provide global variables to use in the UMD build
+        // for externalized deps
+        globals: {},
+        // Set the global variable name for the IIFE build
         name: 'gridSight',
-        format: 'iife',
+        // Ensure the global variable is properly set
+        extend: true,
+        // Use a self-executing function to ensure proper scoping
+        intro: 'var gridSight;',
+        outro: 'window.gridSight = gridSight;',
       },
     },
     // Ensure all assets are properly copied
