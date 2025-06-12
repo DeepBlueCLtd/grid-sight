@@ -7,6 +7,7 @@ import { initializeGridSight } from '../main';
 import numericTable from './tables/numeric-and-categorical.html?raw';
 import categoricalTable from './tables/categorical.html?raw';
 import mixedTable from './tables/mixed.html?raw';
+import twoDimTable from './tables/two-dim-data.html?raw';
 
 const unsuitableTable = `
   <table id="unsuitable-table" class="demo-table">
@@ -110,6 +111,12 @@ const meta: Meta = {
         <h3>Mixed Data Table <span class="status status-suitable">Suitable</span></h3>
         <p>This table contains both numeric (Population, Area) and categorical (City, Country) data. The GS toggle should appear.</p>
         ${mixedTable}
+      </div>
+
+      <div class="example">
+        <h3>Two-Dimensional Data Table <span class="status status-suitable">Suitable</span></h3>
+        <p>This table two dimensional array of data. The GS toggle should appear.</p>
+        ${twoDimTable}
       </div>
 
       <div class="example">
