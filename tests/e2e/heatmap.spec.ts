@@ -24,7 +24,7 @@ test.describe('Grid-Sight Heatmap', () => {
     // Store the server in the test info
     test.info().attachments.push({
       name: 'server',
-      body: JSON.stringify(server),
+      body: Buffer.from(JSON.stringify(server as unknown as Record<string, unknown>)),
       contentType: 'application/json'
     })
 
@@ -43,10 +43,10 @@ test.describe('Grid-Sight Heatmap', () => {
   })
 
   // Close the server after each test
-  test.afterEach(async ({}, testInfo) => {
+  test.afterEach(async ({ page: _page }, testInfo) => {
     // Get the server from the test info
     const serverAttachment = testInfo.attachments.find(a => a.name === 'server')
-    if (serverAttachment) {
+    if (serverAttachment && serverAttachment.body) {
       const server = JSON.parse(serverAttachment.body.toString())
       // Close the preview server
       await new Promise(resolve => server.httpServer.close(resolve))
