@@ -157,12 +157,14 @@ function handleEnrichmentSelected(event: Event) {
     const columnIndex = th.cellIndex;
     if (columnIndex >= 0) {
       try {
-        // Get all cell values from the column
+        // Get all cell values from the column, excluding the header row
         const rows = Array.from(table.rows);
-        const values = rows.map(row => {
-          const cell = row.cells[columnIndex];
-          return cell ? cell.textContent || '' : '';
-        });
+        const values = rows
+          .filter((_, rowIndex) => rowIndex > 0) // Skip the header row
+          .map(row => {
+            const cell = row.cells[columnIndex];
+            return cell ? cell.textContent || '' : '';
+          });
         
         // Calculate frequencies
         const frequencyResult = analyzeFrequencies(values);
