@@ -14,6 +14,15 @@ const DIALOG_CHART_COUNT_CLASS = 'gs-frequency-chart-dialog__chart-count';
 const DIALOG_CHART_BAR_CLASS = 'gs-frequency-chart-dialog__chart-bar';
 const DIALOG_CHART_BAR_TEXT_CLASS = 'gs-frequency-chart-dialog__chart-bar-text';
 
+// SVG chart specific classes
+const DIALOG_SVG_CHART_CLASS = 'gs-frequency-chart-dialog__svg-chart';
+const DIALOG_SVG_AXIS_CLASS = 'gs-frequency-chart-dialog__svg-axis';
+const DIALOG_SVG_BAR_CLASS = 'gs-frequency-chart-dialog__svg-bar';
+const DIALOG_SVG_LABEL_CLASS = 'gs-frequency-chart-dialog__svg-label';
+const DIALOG_CHART_TOGGLE_CLASS = 'gs-frequency-chart-dialog__toggle';
+const DIALOG_CHART_TOGGLE_BUTTON_CLASS = 'gs-frequency-chart-dialog__toggle-button';
+const DIALOG_CHART_TOGGLE_BUTTON_ACTIVE_CLASS = 'gs-frequency-chart-dialog__toggle-button--active';
+
 // CSS styles for the dialog
 const DIALOG_STYLES = `
 .${DIALOG_CLASS} {
@@ -117,6 +126,56 @@ const DIALOG_STYLES = `
   overflow: hidden;
 }
 
+/* SVG Chart Styles */
+.${DIALOG_SVG_CHART_CLASS} {
+  width: 100%;
+  height: 300px;
+  margin-top: 10px;
+}
+
+.${DIALOG_SVG_AXIS_CLASS} {
+  stroke: #999;
+  stroke-width: 1px;
+}
+
+.${DIALOG_SVG_BAR_CLASS} {
+  fill: #0066cc;
+  transition: fill 0.2s ease;
+}
+
+.${DIALOG_SVG_BAR_CLASS}:hover {
+  fill: #004c99;
+}
+
+.${DIALOG_SVG_LABEL_CLASS} {
+  font-size: 10px;
+  fill: #666;
+}
+
+.${DIALOG_CHART_TOGGLE_CLASS} {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 10px;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 8px;
+}
+
+.${DIALOG_CHART_TOGGLE_BUTTON_CLASS} {
+  background: #f5f5f5;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 4px 8px;
+  margin: 0 4px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.${DIALOG_CHART_TOGGLE_BUTTON_ACTIVE_CLASS} {
+  background: #e0e0e0;
+  border-color: #ccc;
+  font-weight: bold;
+}
+
 /* Scrollbar styling */
 .${DIALOG_CONTENT_CLASS}::-webkit-scrollbar {
   width: 6px;
@@ -142,14 +201,21 @@ type FrequencyChartDialogOptions = {
   columnName?: string;
 };
 
+type ChartType = 'ascii' | 'svg';
+
 export class FrequencyChartDialog {
   private element: HTMLElement;
   private contentElement: HTMLElement;
   private chartElement: HTMLElement;
+  private toggleContainer: HTMLElement;
+  private asciiToggleButton: HTMLButtonElement;
+  private svgToggleButton: HTMLButtonElement;
   private closeButton: HTMLButtonElement;
   private onCloseCallback: (() => void) | null = null;
   private handleOutsideClickBound: (event: MouseEvent) => void;
   private handleKeyDownBound: (event: KeyboardEvent) => void;
+  private currentResults: FrequencyResult[] = [];
+  private currentChartType: ChartType = 'ascii';
 
   constructor() {
     // Create and inject styles
@@ -183,10 +249,30 @@ export class FrequencyChartDialog {
     this.contentElement = document.createElement('div');
     this.contentElement.className = DIALOG_CONTENT_CLASS;
     
+    // Create toggle container
+    this.toggleContainer = document.createElement('div');
+    this.toggleContainer.className = DIALOG_CHART_TOGGLE_CLASS;
+    
+    // Create ASCII toggle button
+    this.asciiToggleButton = document.createElement('button');
+    this.asciiToggleButton.className = `${DIALOG_CHART_TOGGLE_BUTTON_CLASS} ${DIALOG_CHART_TOGGLE_BUTTON_ACTIVE_CLASS}`;
+    this.asciiToggleButton.textContent = 'ASCII Chart';
+    this.asciiToggleButton.addEventListener('click', () => this.switchChartType('ascii'));
+    
+    // Create SVG toggle button
+    this.svgToggleButton = document.createElement('button');
+    this.svgToggleButton.className = DIALOG_CHART_TOGGLE_BUTTON_CLASS;
+    this.svgToggleButton.textContent = 'Bar Chart';
+    this.svgToggleButton.addEventListener('click', () => this.switchChartType('svg'));
+    
+    this.toggleContainer.appendChild(this.asciiToggleButton);
+    this.toggleContainer.appendChild(this.svgToggleButton);
+    
     // Create chart container
     this.chartElement = document.createElement('div');
     this.chartElement.className = DIALOG_CHART_CLASS;
     
+    this.contentElement.appendChild(this.toggleContainer);
     this.contentElement.appendChild(this.chartElement);
     
     // Assemble the dialog
@@ -229,20 +315,20 @@ export class FrequencyChartDialog {
     this.chartElement.innerHTML = '';
     
     if (results.length === 0) {
-      const emptyMessage = document.createElement('p');
-      emptyMessage.textContent = 'No data available for chart.';
+      const emptyMessage = document.createElement('div');
+      emptyMessage.textContent = 'No data available';
+      emptyMessage.style.padding = '10px';
+      emptyMessage.style.color = '#666';
       this.chartElement.appendChild(emptyMessage);
       return;
     }
     
     // Find the maximum count for scaling
     const maxCount = Math.max(...results.map(([_, count]) => count));
+    const MAX_BAR_LENGTH = 40; // Maximum number of '+' characters
     
-    // Maximum bar length (number of + characters)
-    const MAX_BAR_LENGTH = 40;
-    
-    // Create rows for each result
     results.forEach(([value, count, percentage]) => {
+      // Create row
       const row = document.createElement('div');
       row.className = DIALOG_CHART_ROW_CLASS;
       
@@ -255,7 +341,7 @@ export class FrequencyChartDialog {
       // Count
       const countElement = document.createElement('div');
       countElement.className = DIALOG_CHART_COUNT_CLASS;
-      countElement.textContent = count.toString();
+      countElement.textContent = `${count} (${percentage.toFixed(1)}%)`;
       
       // Bar container
       const barContainer = document.createElement('div');
@@ -281,7 +367,194 @@ export class FrequencyChartDialog {
     });
   }
 
+  /**
+   * Renders frequency data as an SVG bar chart
+   */
+  private renderSvgChart(results: FrequencyResult[]) {
+    // Clear existing chart
+    this.chartElement.innerHTML = '';
+    
+    if (results.length === 0) {
+      const emptyMessage = document.createElement('div');
+      emptyMessage.textContent = 'No data available';
+      emptyMessage.style.padding = '10px';
+      emptyMessage.style.color = '#666';
+      this.chartElement.appendChild(emptyMessage);
+      return;
+    }
+    
+    // SVG dimensions and margins
+    const margin = { top: 20, right: 30, bottom: 60, left: 60 };
+    const width = 500 - margin.left - margin.right;
+    const height = 300 - margin.top - margin.bottom;
+    
+    // Create SVG element
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('width', (width + margin.left + margin.right).toString());
+    svg.setAttribute('height', (height + margin.top + margin.bottom).toString());
+    svg.setAttribute('class', DIALOG_SVG_CHART_CLASS);
+    svg.setAttribute('role', 'img');
+    svg.setAttribute('aria-label', 'Frequency bar chart');
+    
+    // Create chart group with margins
+    const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    g.setAttribute('transform', `translate(${margin.left},${margin.top})`);
+    
+    // Find the maximum count for scaling
+    const maxCount = Math.max(...results.map(([_, count]) => count));
+    
+    // Calculate bar width based on number of items
+    const barWidth = Math.max(10, Math.min(60, width / results.length - 10));
+    
+    // Create Y axis
+    const yAxisLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    yAxisLine.setAttribute('x1', '0');
+    yAxisLine.setAttribute('y1', '0');
+    yAxisLine.setAttribute('x2', '0');
+    yAxisLine.setAttribute('y2', height.toString());
+    yAxisLine.setAttribute('class', DIALOG_SVG_AXIS_CLASS);
+    
+    // Create X axis
+    const xAxisLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    xAxisLine.setAttribute('x1', '0');
+    xAxisLine.setAttribute('y1', height.toString());
+    xAxisLine.setAttribute('x2', width.toString());
+    xAxisLine.setAttribute('y2', height.toString());
+    xAxisLine.setAttribute('class', DIALOG_SVG_AXIS_CLASS);
+    
+    g.appendChild(yAxisLine);
+    g.appendChild(xAxisLine);
+    
+    // Add Y axis ticks and labels
+    const numTicks = 5;
+    for (let i = 0; i <= numTicks; i++) {
+      const tickValue = Math.round(maxCount * (i / numTicks));
+      const yPos = height - (height * (i / numTicks));
+      
+      // Tick mark
+      const tick = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+      tick.setAttribute('x1', '-5');
+      tick.setAttribute('y1', yPos.toString());
+      tick.setAttribute('x2', '0');
+      tick.setAttribute('y2', yPos.toString());
+      tick.setAttribute('class', DIALOG_SVG_AXIS_CLASS);
+      
+      // Tick label
+      const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      label.setAttribute('x', '-10');
+      label.setAttribute('y', yPos.toString());
+      label.setAttribute('text-anchor', 'end');
+      label.setAttribute('alignment-baseline', 'middle');
+      label.setAttribute('class', DIALOG_SVG_LABEL_CLASS);
+      label.textContent = tickValue.toString();
+      
+      g.appendChild(tick);
+      g.appendChild(label);
+      
+      // Grid line (optional)
+      if (i > 0) {
+        const gridLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        gridLine.setAttribute('x1', '0');
+        gridLine.setAttribute('y1', yPos.toString());
+        gridLine.setAttribute('x2', width.toString());
+        gridLine.setAttribute('y2', yPos.toString());
+        gridLine.setAttribute('stroke', '#eee');
+        gridLine.setAttribute('stroke-dasharray', '2,2');
+        g.appendChild(gridLine);
+      }
+    }
+    
+    // Y-axis label
+    const yAxisLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    yAxisLabel.setAttribute('transform', `translate(-40,${height/2}) rotate(-90)`);
+    yAxisLabel.setAttribute('text-anchor', 'middle');
+    yAxisLabel.setAttribute('class', DIALOG_SVG_LABEL_CLASS);
+    yAxisLabel.textContent = 'Count';
+    g.appendChild(yAxisLabel);
+    
+    // X-axis label
+    const xAxisLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    xAxisLabel.setAttribute('transform', `translate(${width/2},${height + 45})`);
+    xAxisLabel.setAttribute('text-anchor', 'middle');
+    xAxisLabel.setAttribute('class', DIALOG_SVG_LABEL_CLASS);
+    xAxisLabel.textContent = 'Values';
+    g.appendChild(xAxisLabel);
+    
+    // Create bars for each value
+    results.forEach(([value, count, percentage], index) => {
+      const barHeight = (count / maxCount) * height;
+      const xPosition = (width / results.length) * index + (width / results.length - barWidth) / 2;
+      
+      // Create bar
+      const bar = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+      bar.setAttribute('x', xPosition.toString());
+      bar.setAttribute('y', (height - barHeight).toString());
+      bar.setAttribute('width', barWidth.toString());
+      bar.setAttribute('height', barHeight.toString());
+      bar.setAttribute('class', DIALOG_SVG_BAR_CLASS);
+      
+      // Add tooltip with data
+      bar.setAttribute('data-value', value);
+      bar.setAttribute('data-count', count.toString());
+      bar.setAttribute('data-percentage', percentage.toFixed(1));
+      
+      // Add event listeners for interactive tooltips
+      bar.addEventListener('mouseover', (e) => {
+        const target = e.target as SVGRectElement;
+        const tooltip = document.createElementNS('http://www.w3.org/2000/svg', 'title');
+        tooltip.textContent = `${value}: ${count} (${percentage.toFixed(1)}%)`;
+        target.appendChild(tooltip);
+      });
+      
+      g.appendChild(bar);
+      
+      // Add x-axis label for the bar
+      const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      label.setAttribute('x', (xPosition + barWidth / 2).toString());
+      label.setAttribute('y', (height + 15).toString());
+      label.setAttribute('text-anchor', 'middle');
+      label.setAttribute('class', DIALOG_SVG_LABEL_CLASS);
+      
+      // Truncate long labels
+      const maxLabelLength = 10;
+      const displayValue = value.length > maxLabelLength 
+        ? value.substring(0, maxLabelLength) + '...' 
+        : value;
+      
+      label.textContent = displayValue;
+      label.setAttribute('title', value); // For full text on hover
+      
+      g.appendChild(label);
+    });
+    
+    svg.appendChild(g);
+    this.chartElement.appendChild(svg);
+  }
+
+  /**
+   * Switch between chart types (ASCII or SVG)
+   */
+  private switchChartType(type: ChartType) {
+    if (this.currentChartType === type) return;
+    
+    this.currentChartType = type;
+    
+    // Update toggle button states
+    if (type === 'ascii') {
+      this.asciiToggleButton.classList.add(DIALOG_CHART_TOGGLE_BUTTON_ACTIVE_CLASS);
+      this.svgToggleButton.classList.remove(DIALOG_CHART_TOGGLE_BUTTON_ACTIVE_CLASS);
+      this.renderAsciiChart(this.currentResults);
+    } else {
+      this.asciiToggleButton.classList.remove(DIALOG_CHART_TOGGLE_BUTTON_ACTIVE_CLASS);
+      this.svgToggleButton.classList.add(DIALOG_CHART_TOGGLE_BUTTON_ACTIVE_CLASS);
+      this.renderSvgChart(this.currentResults);
+    }
+  }
+
   public show(results: FrequencyResult[], anchor: HTMLElement, options: FrequencyChartDialogOptions = {}) {
+    // Store the results for later use when switching chart types
+    this.currentResults = results;
+    
     // Update title if column name is provided
     if (options.columnName) {
       const title = this.element.querySelector(`.${DIALOG_TITLE_CLASS}`);
@@ -290,8 +563,12 @@ export class FrequencyChartDialog {
       }
     }
     
-    // Render the ASCII chart with results
-    this.renderAsciiChart(results);
+    // Render the current chart type with results
+    if (this.currentChartType === 'ascii') {
+      this.renderAsciiChart(results);
+    } else {
+      this.renderSvgChart(results);
+    }
     
     // Position the dialog relative to the anchor
     this.positionDialog(anchor);
