@@ -121,9 +121,11 @@ function handleEnrichmentSelected(event: Event) {
         toggleHeatmap(table, columnIndex, 'column');
       }
     } else if (type === 'row') {
+      // Get the row index (0-based) and add 1 to make it 1-based for CSS nth-child
       const rowIndex = Array.from(header.closest('tr')?.parentElement?.children || []).indexOf(header.closest('tr') as HTMLTableRowElement);
       if (rowIndex >= 0) {
-        toggleHeatmap(table, rowIndex, 'row');
+        // Add 1 to make the index 1-based for CSS nth-child selector
+        toggleHeatmap(table, rowIndex + 1, 'row');
       }
     }
   } else if (enrichmentType === 'statistics' && type === 'column') {

@@ -7,15 +7,8 @@ import { initializeGridSight } from '../main';
 import numericTable from './tables/numeric-and-categorical.html?raw';
 import categoricalTable from './tables/categorical.html?raw';
 import mixedTable from './tables/mixed.html?raw';
-
-const unsuitableTable = `
-  <table id="unsuitable-table" class="demo-table">
-    <tr>
-      <th>ID</th>
-      <th>Description</th>
-    </tr>
-  </table>
-`;
+import twoDimTable from './tables/two-dim-data.html?raw';
+import unsuitableTable from './tables/unsuitable.html?raw';
 
 // Define the metadata for the story
 const meta: Meta = {
@@ -99,6 +92,14 @@ const meta: Meta = {
         <p>This table contains multiple numeric columns (Price, Stock, Rating). The GS toggle should appear.</p>
         ${numericTable}
       </div>
+
+      <div class="example">
+        <h3>Two-Dimensional Data Table <span class="status status-suitable">Suitable</span></h3>
+        <p>This table two dimensional array of data. The GS toggle should appear.</p>
+        ${twoDimTable}
+      </div>
+
+
 
       <div class="example">
         <h3>Categorical Data Table <span class="status status-suitable">Suitable</span></h3>

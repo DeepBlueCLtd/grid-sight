@@ -20,12 +20,18 @@ interface HeatmapOptions {
 }
 
 // Store heatmap info for each table
-type HeatmapInfo = {
+interface TrackedCell {
+  element: HTMLElement;
+  heatmapType: 'row' | 'column';
+  style: {
+    removeProperty: (name: string) => void;
+  };
+}
+
+interface HeatmapInfo {
   index: number;
   type: 'row' | 'column';
-  styleElement?: HTMLStyleElement;
-  cellClasses: string[];
-  cellElements: HTMLElement[]; // Track cell elements for cleanup
+  cellElements: TrackedCell[]; // Track cell elements and their heatmap types for cleanup
 };
 
 declare global {
@@ -34,11 +40,11 @@ declare global {
   }
 }
 
-// Add CSS class for heatmap cells
+// Add hover and split cell styles for heatmaps
 const style = document.createElement('style');
 style.textContent = `
   .gs-heatmap-cell {
-    transition: background-color 0.2s ease;
+    transition: all 0.2s ease;
     position: relative;
   }
   .gs-heatmap-cell:hover {
@@ -46,7 +52,20 @@ style.textContent = `
     outline-offset: -1px;
     z-index: 1;
   }
-`;
+  .gs-heatmap-split {
+    position: relative;
+    overflow: hidden;
+  }
+  .gs-heatmap-split::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, var(--split-color-1, transparent) 0%, var(--split-color-1, transparent) 50%, var(--split-color-2, transparent) 50%, var(--split-color-2, transparent) 100%);
+    pointer-events: none;
+  }`;
 // Only add the style once
 if (!document.head.querySelector('style[data-heatmap-styles]')) {
   style.setAttribute('data-heatmap-styles', '');
@@ -93,9 +112,13 @@ export function applyHeatmap(
   
   if (type === 'column') {
     // For columns, get all cells in the specified column index (1-based for querySelector)
-    const columnCells = table.querySelectorAll<HTMLTableCellElement>(
-      `tbody td:nth-child(${index + 1})`
-    );
+    // Try with tbody first, then fall back to direct tr children if no tbody exists
+    const hasTbody = !!table.querySelector('tbody');
+    const selector = hasTbody 
+      ? `tbody tr:not(.gs-header-row) td:nth-child(${index + 1})`
+      : `tr:not(.gs-header-row) td:nth-child(${index + 1})`;
+      
+    const columnCells = table.querySelectorAll<HTMLTableCellElement>(selector);
     
     columnCells.forEach((cell) => {
       const value = cleanNumericCell(cell.textContent || '');
@@ -133,98 +156,121 @@ export function applyHeatmap(
   const max = maxValue !== undefined ? maxValue : Math.max(...values);
   const range = max - min;
   
-  // Create a style element for this heatmap
-  const styleId = `heatmap-style-${table.id || 'table'}-${index}-${type}`;
-  let styleElement = document.getElementById(styleId) as HTMLStyleElement;
+  // Track cell elements for cleanup and their heatmap types
+  const trackedCellElements: Array<TrackedCell> = [];
   
-  if (!styleElement) {
-    styleElement = document.createElement('style');
-    styleElement.id = styleId;
-    document.head.appendChild(styleElement);
-  }
-  
-  // Generate CSS for this heatmap
-  let css = '';
+  // Function to apply or update cell styling
+  const applyCellStyle = (cell: HTMLElement, color: string, heatmapType: 'row' | 'column') => {
+    // Check if this cell already has a heatmap of a different type
+    const existingType = cell.dataset.heatmapType as 'row' | 'column' | undefined;
+    
+    if (existingType && existingType !== heatmapType) {
+      // This cell has both row and column heatmaps - apply split style
+      cell.classList.add('gs-heatmap-split');
+      cell.style.setProperty('--split-color-1', existingType === 'row' ? cell.style.backgroundColor || '' : color);
+      cell.style.setProperty('--split-color-2', existingType === 'column' ? cell.style.backgroundColor || '' : color);
+      cell.style.backgroundColor = ''; // Clear solid background
+    } else {
+      // Single heatmap type for this cell
+      cell.style.backgroundColor = color;
+      cell.classList.remove('gs-heatmap-split');
+      cell.style.removeProperty('--split-color-1');
+      cell.style.removeProperty('--split-color-2');
+    }
+    
+    // Track the heatmap type for this cell
+    cell.dataset.heatmapType = heatmapType;
+  };
   
   if (range === 0) {
     // All values are the same, use the middle color
     const colorIndex = Math.floor(colorScale.length / 2);
-    const selector = type === 'column' 
-      ? `#${table.id || 'table'} tbody td:nth-child(${index + 1})`
-      : `#${table.id || 'table'} tbody tr:nth-child(${index}) td`;
+    const color = colorScale[colorIndex];
     
-    css = `${selector} {
-      background-color: ${colorScale[colorIndex]} !important;
-    }`;
+    // Apply color to all cells
+    cells.forEach(cell => {
+      applyCellStyle(cell, color, type);
+      trackedCellElements.push({ element: cell, heatmapType: type, style: cell.style });
+    });
   } else {
-    // Track cell classes and elements for cleanup
-    const trackedCellClasses: string[] = [];
-    const trackedCellElements: HTMLTableCellElement[] = [];
-    const timestamp = Date.now();
-  
-    // Generate CSS for each cell with a unique class
+    // Different values, calculate color for each cell
     cells.forEach((cell, idx) => {
       const normalized = (values[idx] - min) / range;
       const colorIndex = Math.min(
         colorScale.length - 1,
         Math.max(0, Math.floor(normalized * colorScale.length))
       );
-    
-      // Generate a unique class for this cell
-      const cellClass = `heatmap-cell-${idx}-${timestamp}`;
-    
-      // Add the class to the cell
-      cell.classList.add(cellClass, 'gs-heatmap-cell');
-    
-      // Add CSS for this cell
-      css += `#${table.id || 'table'}.gs-heatmap .${cellClass} {
-        background-color: ${colorScale[colorIndex]} !important;
-      }`;
-    
-      // Track the cell class and element for cleanup
-      trackedCellClasses.push(cellClass);
-      trackedCellElements.push(cell);
+      
+      applyCellStyle(cell, colorScale[colorIndex], type);
+      trackedCellElements.push({ element: cell, heatmapType: type, style: cell.style });
     });
-  
-    // Initialize _heatmapInfos if it doesn't exist
-    if (!table._heatmapInfos) {
-      table._heatmapInfos = [];
-    }
-  
-    // Add the heatmap info to the table
-    const heatmapInfo: HeatmapInfo = {
-      index,
-      type,
-      styleElement,
-      cellClasses: trackedCellClasses,
-      cellElements: trackedCellElements
-    };
-    
-    table._heatmapInfos.push(heatmapInfo);
-    
-    // Apply the styles
-    styleElement.textContent = css;
-    
-    // Track the active heatmap
-    setHeatmapActive(table, index, type, true);
-    
-    // Add the heatmap class to the table
-    table.classList.add(HEATMAP_CLASS);
-    
-    // Force a reflow to ensure styles are applied before the test checks them
-    // This is needed for the test environment
-    if (process.env.NODE_ENV === 'test') {
-      // eslint-disable-next-line @typescript-eslint/no-unused-expressions
-      table.offsetHeight;
-    }
-    
-    // Dispatch event to notify about the heatmap change
-    const event = new CustomEvent('gridsight:heatmapChanged', {
-      bubbles: true,
-      detail: { table, index, type, active: true }
-    });
-    table.dispatchEvent(event);
   }
+  
+  // Initialize _heatmapInfos if it doesn't exist
+  if (!table._heatmapInfos) {
+    table._heatmapInfos = [];
+  }
+  
+  // Track the active heatmap
+  setHeatmapActive(table, index, type, true);
+  
+  // Add the heatmap class to the table
+  table.classList.add(HEATMAP_CLASS);
+  
+  // Store the heatmap info for cleanup
+  table._heatmapInfos.push({
+    index,
+    type,
+    cellElements: trackedCellElements.map(({ element, heatmapType }) => ({
+      element,
+      heatmapType,
+      style: element.style
+    }))
+  });
+  
+  // Force a reflow to ensure styles are applied before the test checks them
+  // This is needed for the test environment
+  if (process.env.NODE_ENV === 'test') {
+    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+    table.offsetHeight;
+  }
+  
+  // Dispatch event to notify about the heatmap change
+  const event = new CustomEvent('gridsight:heatmapChanged', {
+    bubbles: true,
+    detail: { table, index, type, active: true }
+  });
+  table.dispatchEvent(event);
+}
+
+// Helper function to clean up a cell's heatmap styles and classes
+function cleanupCell(cell: HTMLElement, heatmapType: 'row' | 'column'): void {
+  // If this cell has a split, we need to handle it specially
+  if (cell.classList.contains('gs-heatmap-split')) {
+    // Get the other heatmap type
+    const otherType = heatmapType === 'row' ? 'column' : 'row';
+    const otherColor = cell.style.getPropertyValue(`--split-color-${otherType === 'row' ? '1' : '2'}`);
+    
+    if (otherColor) {
+      // Restore the other heatmap's color
+      cell.style.backgroundColor = otherColor;
+    } else {
+      // No other heatmap, clear the background
+      cell.style.removeProperty('background-color');
+    }
+    
+    // Clean up split-related styles
+    cell.classList.remove('gs-heatmap-split');
+    cell.style.removeProperty('--split-color-1');
+    cell.style.removeProperty('--split-color-2');
+  } else {
+    // Regular cell, just remove the background color
+    cell.style.removeProperty('background-color');
+  }
+  
+  // Remove the heatmap class and data attribute
+  cell.classList.remove('gs-heatmap-cell');
+  delete cell.dataset.heatmapType;
 }
 
 export function removeHeatmap(table: HTMLTableElement, index?: number, type?: 'row' | 'column'): void {
@@ -240,14 +286,10 @@ export function removeHeatmap(table: HTMLTableElement, index?: number, type?: 'r
     
     if (heatmapIndex !== -1) {
       const heatmap = table._heatmapInfos[heatmapIndex];
-      if (heatmap.styleElement) {
-        heatmap.styleElement.remove();
-      }
       
-      // Remove cell classes and reset styles
-      heatmap.cellElements.forEach(cell => {
-        cell.classList.remove('gs-heatmap-cell');
-        cell.style.removeProperty('background-color');
+      // Remove cell styles
+      heatmap.cellElements.forEach(({ element, heatmapType }) => {
+        cleanupCell(element, heatmapType);
       });
       
       // Remove from active heatmaps
@@ -275,14 +317,10 @@ export function removeHeatmap(table: HTMLTableElement, index?: number, type?: 'r
     const heatmapsToRemove = [...(table._heatmapInfos || [])];
     
     heatmapsToRemove.forEach(heatmap => {
-      if (heatmap.styleElement) {
-        heatmap.styleElement.remove();
-      }
       
-      // Remove cell classes and reset styles
-      heatmap.cellElements.forEach(cell => {
-        cell.classList.remove('gs-heatmap-cell');
-        cell.style.removeProperty('background-color');
+      // Remove cell styles
+      heatmap.cellElements.forEach(({ element, heatmapType }) => {
+        cleanupCell(element, heatmapType);
       });
       
       // Remove from active heatmaps
