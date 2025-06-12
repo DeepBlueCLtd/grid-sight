@@ -75,6 +75,6 @@ export default defineConfig({
   // Configure public directory for static assets
   publicDir: 'public',
   
-  // Ensure file:// protocol works
-  base: './',
+  // Base public path when served in production
+  base: process.env.NODE_ENV === 'production' ? '/grid-sight/' : '/',
 });
