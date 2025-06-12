@@ -20,6 +20,8 @@
   "devDependencies": {
     "@playwright/test": "^1.53.0",
     "@storybook/addon-docs": "^9.0.6",
+    "@storybook/addon-essentials": "^9.0.0-alpha.12",
+    "@storybook/addon-interactions": "^9.0.0-alpha.10",
     "@storybook/html-vite": "^9.0.6",
     "@storybook/test-runner": "^0.22.1",
     "@storybook/testing-library": "^0.2.2",
