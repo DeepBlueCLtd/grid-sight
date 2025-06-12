@@ -102,7 +102,6 @@ export class StatisticsPopup {
   private contentElement: HTMLElement;
   private closeButton: HTMLButtonElement;
 
-  private stats: StatisticsResult | null = null;
   private onCloseCallback: (() => void) | null = null;
 
   constructor() {
@@ -201,9 +200,7 @@ export class StatisticsPopup {
     });
   }
 
-  show(stats: StatisticsResult, anchor: HTMLElement): void {
-    this.stats = stats;
-    
+  show(stats: StatisticsResult, anchor: HTMLElement): void {   
     // Clear previous content
     this.contentElement.innerHTML = '';
     
