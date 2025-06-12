@@ -13,18 +13,23 @@ const __dirname = path.dirname(__filename);
 
 const rootDir = path.resolve(__dirname, '..');
 const sourceDir = path.join(rootDir, 'public', 'demo');
-const targetDir = path.join(rootDir, 'dist', 'demo');
+const targetDir = path.join(rootDir, 'dist');
 
 async function copyDemoFiles() {
   try {
     // Ensure the target directory exists
     await fs.ensureDir(targetDir);
     
-    // Copy all files from source to target
-    await fs.copy(sourceDir, targetDir, {
-      overwrite: true,
-      preserveTimestamps: true,
-    });
+    // Copy all files from source to target root
+    const files = await fs.readdir(sourceDir);
+    for (const file of files) {
+      const sourceFile = path.join(sourceDir, file);
+      const targetFile = path.join(targetDir, file);
+      await fs.copy(sourceFile, targetFile, {
+        overwrite: true,
+        preserveTimestamps: true,
+      });
+    }
     
     console.log(`✅ Copied demo files to ${targetDir}`);
     

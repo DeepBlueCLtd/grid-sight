@@ -11,7 +11,7 @@ function copyDemoFolder() {
     name: 'copy-demo-folder',
     writeBundle() {
       // This will be implemented in the build script
-      console.log('Demo files will be copied in the build script');
+      console.log('Demo files will be copied to the dist root in the build script');
     },
   };
 }
