@@ -93,9 +93,13 @@ export function applyHeatmap(
   
   if (type === 'column') {
     // For columns, get all cells in the specified column index (1-based for querySelector)
-    const columnCells = table.querySelectorAll<HTMLTableCellElement>(
-      `tbody td:nth-child(${index + 1})`
-    );
+    // Try with tbody first, then fall back to direct tr children if no tbody exists
+    const hasTbody = !!table.querySelector('tbody');
+    const selector = hasTbody 
+      ? `tbody tr:not(.gs-header-row) td:nth-child(${index + 1})`
+      : `tr:not(.gs-header-row) td:nth-child(${index + 1})`;
+      
+    const columnCells = table.querySelectorAll<HTMLTableCellElement>(selector);
     
     columnCells.forEach((cell) => {
       const value = cleanNumericCell(cell.textContent || '');
@@ -149,9 +153,10 @@ export function applyHeatmap(
   if (range === 0) {
     // All values are the same, use the middle color
     const colorIndex = Math.floor(colorScale.length / 2);
+    const tableSelector = table.id ? `#${table.id}` : 'table';
     const selector = type === 'column' 
-      ? `#${table.id || 'table'} tbody td:nth-child(${index + 1})`
-      : `#${table.id || 'table'} tbody tr:nth-child(${index}) td`;
+      ? `${tableSelector} tr:not(.gs-header-row) > td:nth-child(${index + 1})`
+      : `${tableSelector} tr:nth-child(${index + 1}) > td:not(:first-child)`;
     
     css = `${selector} {
       background-color: ${colorScale[colorIndex]} !important;
@@ -177,7 +182,8 @@ export function applyHeatmap(
       cell.classList.add(cellClass, 'gs-heatmap-cell');
     
       // Add CSS for this cell
-      css += `#${table.id || 'table'}.gs-heatmap .${cellClass} {
+      const tableSelector = table.id ? `#${table.id}` : 'table';
+      css += `${tableSelector}.gs-heatmap .${cellClass} {
         background-color: ${colorScale[colorIndex]} !important;
       }`;
     
