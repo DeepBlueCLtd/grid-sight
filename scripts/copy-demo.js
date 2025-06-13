@@ -20,6 +20,16 @@ async function copyDemoFiles() {
     // Ensure the target directory exists
     await fs.ensureDir(targetDir);
     
+    // Copy Shepherd.js files to dist
+    const shepherdDir = path.join(rootDir, 'node_modules', 'shepherd.js', 'dist');
+    const targetShepherdDir = path.join(targetDir, 'shepherd.js', 'dist');
+    await fs.ensureDir(targetShepherdDir);
+    await fs.copy(shepherdDir, targetShepherdDir, {
+      overwrite: true,
+      preserveTimestamps: true,
+    });
+    console.log(`✅ Copied Shepherd.js files to ${targetShepherdDir}`);
+    
     // Copy all files from source to target root
     const files = await fs.readdir(sourceDir);
     for (const file of files) {
@@ -42,10 +52,16 @@ async function copyDemoFiles() {
         /<script src="[^"]*\/dist\/[^"]*\.js"><\/script>/,
         '<script src="grid-sight.iife.js"></script>'
       );
+      
+      // Make sure Shepherd.js paths are correct
+      content = content.replace(
+        /<link rel="stylesheet" href="shepherd\.js\/dist\/css\/shepherd\.css"\/>\s*<script type="module" src="shepherd\.js\/dist\/shepherd\.mjs"><\/script>/,
+        '<link rel="stylesheet" href="shepherd.js/dist/css/shepherd.css"/>\n  <script type="module" src="shepherd.js/dist/shepherd.mjs"></script>'
+      );
       // Also update any other relative paths if needed
       content = content.replace(
-        /(href|src)="(\.\.?\/)?(assets|images|styles)/g,
-        '$1="$3"'
+        /(href|src)="(\.\.?\/)?(?!(http|shepherd))(assets|images|styles)/g,
+        '$1="$4"'
       );
       await fs.writeFile(demoHtmlPath, content, 'utf8');
       console.log('✅ Updated script paths in demo HTML');
