@@ -498,26 +498,21 @@ export function toggleHeatmap(
   type: HeatmapType = 'column',
   options: HeatmapOptions = {}
 ): void {
-  if (type === 'table') {
-    // For table-wide heatmap, delegate to applyTableHeatmap
-    applyTableHeatmap(table, options)
-    return
-  }
-  
   // Check if this specific heatmap is already active
-  const isActive = isHeatmapActive(table, type === 'table' ? -1 : index, type);
+  // For table type, use index -1
+  const effectiveIndex = type === 'table' ? -1 : index
+  const isActive = isHeatmapActive(table, effectiveIndex, type)
   
-
   if (isActive) {
     // If it's active, remove just this specific heatmap
-    removeHeatmap(table, type === 'table' ? -1 : index, type);
+    removeHeatmap(table, effectiveIndex, type)
   } else {
     // If not active, apply the new heatmap
     if (type === 'table') {
-      applyTableHeatmap(table, options);
+      applyTableHeatmap(table, options)
     } else {
       // For row/column, apply the new heatmap
-      applyHeatmap(table, index, type, options);
+      applyHeatmap(table, index, type, options)
     }
   }
 }
