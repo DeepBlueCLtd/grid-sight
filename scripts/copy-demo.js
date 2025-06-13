@@ -24,10 +24,25 @@ async function copyDemoFiles() {
     const shepherdDir = path.join(rootDir, 'node_modules', 'shepherd.js', 'dist');
     const targetShepherdDir = path.join(targetDir, 'shepherd.js', 'dist');
     await fs.ensureDir(targetShepherdDir);
-    await fs.copy(shepherdDir, targetShepherdDir, {
+    
+    // Copy CSS directory
+    const shepherdCssDir = path.join(shepherdDir, 'css');
+    const targetShepherdCssDir = path.join(targetShepherdDir, 'css');
+    await fs.ensureDir(targetShepherdCssDir);
+    await fs.copy(shepherdCssDir, targetShepherdCssDir, {
       overwrite: true,
       preserveTimestamps: true,
     });
+    
+    // Copy ESM directory
+    const shepherdEsmDir = path.join(shepherdDir, 'esm');
+    const targetShepherdEsmDir = path.join(targetShepherdDir, 'esm');
+    await fs.ensureDir(targetShepherdEsmDir);
+    await fs.copy(shepherdEsmDir, targetShepherdEsmDir, {
+      overwrite: true,
+      preserveTimestamps: true,
+    });
+    
     console.log(`✅ Copied Shepherd.js files to ${targetShepherdDir}`);
     
     // Copy all files from source to target root
