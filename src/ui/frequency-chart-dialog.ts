@@ -6,6 +6,12 @@ const BAR_COLORS = [
   '#edc949', '#af7aa1', '#ff9da7', '#9c755f', '#bab0ab'
 ];
 
+// Color palette for frequency chart bars
+const BAR_COLORS = [
+  '#4e79a7', '#f28e2c', '#e15759', '#76b7b2', '#59a14f',
+  '#edc949', '#af7aa1', '#ff9da7', '#9c755f', '#bab0ab'
+];
+
 // CSS class names
 const DIALOG_CLASS = 'gs-frequency-chart-dialog'
 const DIALOG_VISIBLE_CLASS = 'gs-frequency-chart-dialog--visible'
@@ -350,6 +356,10 @@ export class FrequencyChartDialog {
       bar.setAttribute('width', barWidth.toString())
       bar.setAttribute('height', barHeight.toString())
       bar.setAttribute('class', DIALOG_SVG_BAR_CLASS)
+      
+      // Assign different colors to each bar
+      const colorIndex = index % BAR_COLORS.length;
+      bar.setAttribute('fill', BAR_COLORS[colorIndex]);
       
       // Assign different colors to each bar
       const colorIndex = index % BAR_COLORS.length;
