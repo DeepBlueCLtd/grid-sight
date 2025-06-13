@@ -109,7 +109,7 @@ function createTour(): Shepherd.Tour {
       })
     },
     when: {
-      show: function() {
+      show() {
         // Add a listener for the enrichment menu selection
         const handleEnrichmentSelected = () => {
           // Complete the tour when an enrichment option is selected
@@ -122,11 +122,10 @@ function createTour(): Shepherd.Tour {
         
         document.addEventListener('gridsight:enrichmentSelected', handleEnrichmentSelected)
         
-        // Clean up listener when the step is hidden
-        // Using type assertion to satisfy the TypeScript compiler
-        return (() => {
+        // Return cleanup function
+        return () => {
           document.removeEventListener('gridsight:enrichmentSelected', handleEnrichmentSelected)
-        }) as unknown as (() => void)
+        }
       }
     }
   })
