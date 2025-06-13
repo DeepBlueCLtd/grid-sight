@@ -5,17 +5,6 @@ import { dirname } from 'path';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
-// Simple plugin to copy the demo folder from public to dist
-function copyDemoFolder() {
-  return {
-    name: 'copy-demo-folder',
-    writeBundle() {
-      // This will be implemented in the build script
-      console.log('Demo files will be copied to the dist root in the build script');
-    },
-  };
-}
-
 export default defineConfig({
   // Configure how Vite handles different file types
   assetsInclude: ['**/*.html'],
@@ -68,7 +57,6 @@ export default defineConfig({
   
   // Configure plugins
   plugins: [
-    copyDemoFolder(),
     // Add any other Vite plugins here
   ],
 
