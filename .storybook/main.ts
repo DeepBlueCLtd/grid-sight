@@ -5,6 +5,7 @@ const config: StorybookConfig = {
   addons: [
     '@storybook/addon-essentials',
     '@storybook/addon-interactions',
+    '@storybook/addon-vitest'
   ],
   framework: {
     name: '@storybook/html-vite',
