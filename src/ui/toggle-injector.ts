@@ -137,17 +137,54 @@ function handleEnrichmentSelected(event: Event) {
       // Toggle heatmap on all numeric cells in the table
       toggleHeatmap(table, -1, 'table');
     }
-  } else if (enrichmentType === 'statistics' && type === 'column') {
-    // Type assertion for table header cell
-    const th = header as HTMLTableCellElement;
-    const columnIndex = th.cellIndex;
-    if (columnIndex >= 0) {
+  } else if (enrichmentType === 'statistics') {
+    if (type === 'column') {
+      // Type assertion for table header cell
+      const th = header as HTMLTableCellElement;
+      const columnIndex = th.cellIndex;
+      if (columnIndex >= 0) {
+        try {
+          const values = extractNumericColumnValues(table, columnIndex);
+          const stats = calculateStatistics(values);
+          window._gsStatisticsPopup.show(stats, header);
+        } catch (error) {
+          console.error('Error calculating statistics:', error);
+          alert(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        }
+      }
+    } else if (type === 'row') {
+      // Type assertion for table row
+      const tr = header.closest('tr') as HTMLTableRowElement;
+      if (!tr) {
+        console.error('Could not find row');
+        return;
+      }
+      
       try {
-        const values = extractNumericColumnValues(table, columnIndex);
+        const values = extractNumericRowValues(tr);
+        if (values.length === 0) {
+          alert('No numeric values found in this row');
+          return;
+        }
+        
         const stats = calculateStatistics(values);
         window._gsStatisticsPopup.show(stats, header);
       } catch (error) {
-        console.error('Error calculating statistics:', error);
+        console.error('Error calculating statistics for row:', error);
+        alert(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      }
+    } else if (type === 'table') {
+      try {
+        const values = extractNumericTableValues(table);
+        if (values.length === 0) {
+          alert('No numeric values found in this table');
+          return;
+        }
+        
+        const stats = calculateStatistics(values);
+        window._gsStatisticsPopup.show(stats, header);
+      } catch (error) {
+        console.error('Error calculating statistics for table:', error);
         alert(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
       }
     }
@@ -262,6 +299,64 @@ function extractNumericColumnValues(table: HTMLTableElement, columnIndex: number
     const value = cleanNumericCell(cell.textContent || '');
     if (value !== null) {
       values.push(value);
+    }
+  }
+  
+  return values;
+}
+
+/**
+ * Extracts numeric values from a table row
+ */
+function extractNumericRowValues(row: HTMLTableRowElement): number[] {
+  const values: number[] = [];
+  
+  // Get all cells in the row
+  const cells = Array.from(row.cells);
+  
+  // Skip the first cell if it's a header
+  const startIndex = cells.length > 0 && cells[0].tagName.toLowerCase() === 'th' ? 1 : 0;
+  
+  for (let i = startIndex; i < cells.length; i++) {
+    const value = cleanNumericCell(cells[i].textContent || '');
+    if (value !== null) {
+      values.push(value);
+    }
+  }
+  
+  return values;
+}
+
+/**
+ * Extracts all numeric values from a table, excluding headers
+ */
+function extractNumericTableValues(table: HTMLTableElement): number[] {
+  const values: number[] = [];
+  
+  // Get all rows in the table
+  const rows = Array.from(table.rows);
+  
+  // Skip the header row(s)
+  // If there's a thead, skip all rows in it
+  // Otherwise, skip the first row as it's likely a header
+  const startIndex = table.tHead ? table.tHead.rows.length : 1;
+  
+  // Process all non-header rows
+  for (let i = startIndex; i < rows.length; i++) {
+    const row = rows[i];
+    
+    // Get all cells in the row
+    const cells = Array.from(row.cells);
+    
+    // Skip the first cell if it's a header
+    const cellStartIndex = cells.length > 0 && cells[0].tagName.toLowerCase() === 'th' ? 1 : 0;
+    
+    // Process all non-header cells
+    for (let j = cellStartIndex; j < cells.length; j++) {
+      const value = cleanNumericCell(cells[j].textContent || '');
+      if (value !== null) {
+        values.push(value);
+      }
     }
   }
   
