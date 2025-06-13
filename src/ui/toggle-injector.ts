@@ -1,14 +1,14 @@
-import { injectPlusIcons, removePlusIcons, plusIconStyles } from './header-utils'
-import type { HeaderType } from './header-utils'
-import { removeAllMenus } from './enrichment-menu'
-import { analyzeTable } from '../core/table-detection'
-import { toggleHeatmap, applyTableHeatmap } from '../enrichments/heatmap'
-import { calculateStatistics } from '../enrichments/statistics'
-import { analyzeFrequencies } from '../utils/frequency'
-import { cleanNumericCell } from '../core/type-detection'
-import { StatisticsPopup } from './statistics-popup'
-import { FrequencyDialog } from './frequency-dialog'
-import { FrequencyChartDialog } from './frequency-chart-dialog'
+import { injectPlusIcons, removePlusIcons, plusIconStyles } from './header-utils';
+import type { HeaderType } from './header-utils';
+import { removeAllMenus } from './enrichment-menu';
+import { analyzeTable } from '../core/table-detection';
+import { toggleHeatmap } from '../enrichments/heatmap';
+import { calculateStatistics } from '../enrichments/statistics';
+import { analyzeFrequencies } from '../utils/frequency';
+import { cleanNumericCell } from '../core/type-detection';
+import { StatisticsPopup } from './statistics-popup';
+import { FrequencyDialog } from './frequency-dialog';
+import { FrequencyChartDialog } from './frequency-chart-dialog';
 
 // CSS class names for the toggle element
 const TOGGLE_CLASS = 'grid-sight-toggle'
@@ -134,8 +134,8 @@ function handleEnrichmentSelected(event: Event) {
         toggleHeatmap(table, rowIndex + 1, 'row')
       }
     } else if (type === 'table') {
-      // Apply heatmap to all numeric cells in the table
-      applyTableHeatmap(table)
+      // Toggle heatmap on all numeric cells in the table
+      toggleHeatmap(table, -1, 'table');
     }
   } else if (enrichmentType === 'statistics' && type === 'column') {
     // Type assertion for table header cell
