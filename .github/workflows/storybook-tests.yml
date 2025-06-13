@@ -46,8 +46,11 @@ jobs:
           # Wait for Storybook to be ready
           yarn wait-on http://localhost:6006
           
-          # Run the tests using test-runner directly
-          yarn test:storybook --url http://localhost:6006 --browsers chromium
+          # Set environment variable for Storybook URL
+          export STORYBOOK_URL=http://localhost:6006
+          
+          # Run the tests using Vitest
+          yarn test:storybook
         
       - name: Upload test artifacts on failure
         if: failure()
