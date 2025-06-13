@@ -4,6 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Grid-Sight Demo</title>
+  <!-- Shepherd.js for walkthrough -->
+  <link rel="stylesheet" href="shepherd.js/dist/css/shepherd.css"/>
+  <script type="module">
+    import Shepherd from './shepherd.js/dist/esm/shepherd.mjs';
+    window.Shepherd = Shepherd;
+  </script>
   <style>
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
@@ -44,12 +50,70 @@
       margin-top: 0;
       color: #34495e;
     }
+    /* Shepherd.js custom styles */
+    .gs-shepherd-theme {
+      max-width: 400px;
+      background-color:rgb(242, 242, 244);
+    }
+    
+    .gs-shepherd-theme h3 {
+      font-size: 1.2em;
+      margin-top: 0;
+      margin-bottom: 0.5em;
+      color: #1976d2;
+    }
+    
+    .shepherd-button {
+      background: #1976d2;
+      border: none;
+      color: white;
+      cursor: pointer;
+      margin-right: 0.5rem;
+      padding: 0.5rem 1.5rem;
+      border-radius: 3px;
+      font-size: 0.9em;
+    }
+    
+    .shepherd-button:hover {
+      background: #1565c0;
+    }
+    
+    .shepherd-button.shepherd-button-secondary {
+      background: #f1f1f1;
+      color: rgba(0, 0, 0, 0.75);
+    }
+    
+    .shepherd-button.shepherd-button-secondary:hover {
+      background: #e7e7e7;
+      color: rgba(0, 0, 0, 0.95);
+    }
+    
+    .shepherd-text p {
+      margin-top: 0.5em;
+    }
+    
+    /* Walkthrough button */
+    .walkthrough-btn {
+      background: #1976d2;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-top: 10px;
+      font-size: 14px;
+    }
+    
+    .walkthrough-btn:hover {
+      background: #1565c0;
+    }
   </style>
 </head>
 <body>
   <header>
     <h1>Grid-Sight Demo</h1>
     <p>This page demonstrates the Grid-Sight library automatically processing tables on page load.</p>
+    <button id="start-walkthrough" class="walkthrough-btn">Start Walkthrough</button>
   </header>
 
   <section class="demo-section">
@@ -158,7 +222,7 @@
   </footer>
 
   <!-- Load Grid-Sight library -->
-  <script src="../dist/grid-sight.iife.js"></script>
+  <script src="grid-sight.iife.js"></script>
   
   <script>
     // Simple console logger for the demo
@@ -169,6 +233,207 @@
       consoleEl.appendChild(line);
       consoleEl.scrollTop = consoleEl.scrollHeight;
       console.log(message);
+    }
+
+    // Grid-Sight Walkthrough
+    let activeTour = null;
+    
+    function createWalkthrough() {
+      // Create a new tour
+      const tour = new Shepherd.Tour({
+        useModalOverlay: true,
+        defaultStepOptions: {
+          cancelIcon: {
+            enabled: true
+          },
+          classes: 'gs-shepherd-theme',
+          scrollTo: true
+        }
+      });
+
+      // Step 1: Introduction to Grid-Sight (centered, no target)
+      tour.addStep({
+        id: 'intro',
+        text: `
+          <h3>Welcome to Grid-Sight!</h3>
+          <p>Grid-Sight enhances HTML tables with powerful analysis and visualization tools.</p>
+          <p>The tool has scanned this page, and found one or more tables that can be enriched.</p>
+          <p>This brief walkthrough will show you how to get started.</p>
+        `,
+        buttons: [
+          {
+            text: 'Cancel',
+            action: function() { this.cancel(); },
+            classes: 'shepherd-button-secondary'
+          },
+          {
+            text: 'Next',
+            action: tour.next
+          }
+        ]
+      });
+
+      // Step 2: G-S Toggle Introduction
+      tour.addStep({
+        id: 'gs-toggle',
+        text: `
+          <h3>The Grid-Sight Toggle</h3>
+          <p>The tool has added a [GS] toggle button to the top-left cell of this table.</p>
+          <p>Click the toggle button to activate Grid-Sight on this table, and notice the '+' icons that appear on applicable row and column headers.</p>
+        `,
+        attachTo: {
+          element: '.sales-table [data-gs-cell-index="0"]',
+          on: 'top'
+
+        },
+        advanceOn: {
+          selector: '.sales-table .grid-sight-toggle',
+          event: 'click'
+        },
+        beforeShowPromise: function() {
+          // Return a promise that resolves when the toggle is available
+          return new Promise((resolve) => {
+            const checkForToggle = () => {
+              const toggle = document.querySelector('.grid-sight-toggle');
+              if (toggle) {
+                resolve();
+              } else {
+                // Check again in 100ms
+                setTimeout(checkForToggle, 100);
+              }
+            };
+            checkForToggle();
+          });
+        }
+      });
+
+      // Step 3: Plus Icons Introduction
+      tour.addStep({
+        id: 'numeric-plus-icons',
+        text: `
+          <h3>Numeric Data Enrichment</h3>
+          <p>Clicking on the "+" icon will open a menu of data enrichment options for numeric data.</p>
+        `,
+        buttons: [
+          {
+            text: 'Cancel',
+            action: function() { this.cancel(); },
+            classes: 'shepherd-button-secondary'
+          },
+          {
+            text: 'Next',
+            action: tour.next
+          }
+        ],
+        attachTo: {
+          element: '.sales-table [data-gs-cell-index="1"]',
+          on: 'right'
+        },
+        beforeShowPromise: function() {
+          // Return a promise that resolves when plus icons are available
+          return new Promise((resolve) => {
+            const checkForPlusIcons = () => {
+              const plusIcons = document.querySelector('[data-gs-cell-index="1"] .gs-plus-icon');
+              if (plusIcons) {
+                resolve();
+              } else {
+                // Check again in 100ms
+                setTimeout(checkForPlusIcons, 100);
+              }
+            };
+            checkForPlusIcons();
+          });
+        },
+        when: {
+          show: function() {
+            // Add a listener for the enrichment menu selection
+            const handleEnrichmentSelected = function() {
+              // Complete the tour when an enrichment option is selected
+              setTimeout(() => {
+                if (tour) {
+                  tour.complete();
+                }
+              }, 500);
+            };
+            
+            document.addEventListener('gridsight:enrichmentSelected', handleEnrichmentSelected);
+            
+            // Clean up listener when the step is hidden
+            return function() {
+              document.removeEventListener('gridsight:enrichmentSelected', handleEnrichmentSelected);
+            };
+          }
+        }
+      });
+
+      // Step 4: Categorical Data Plus Icons
+      tour.addStep({
+        id: 'categorical-plus-icons',
+        text: `
+          <h3>Categorical Data Enrichment</h3>
+          <p>Now let's look at the options for categorical data.</p>
+          <p>Click on the "+" icon in the "Dominant item" column of the Monthly Sales Data table to see different enrichment options.</p>
+          <p>Options like frequency analysis and filtering are available for categorical columns.</p>
+        `,
+        attachTo: {
+          element: '.sales-table [data-gs-cell-index="4"]',
+          on: 'right'
+        },
+        advanceOn: {
+          selector: '.sales-table [data-gs-cell-index="4"] .gs-plus-icon',
+          event: 'click'
+        },
+        beforeShowPromise: function() {
+          // Return a promise that resolves when plus icons are available
+          return new Promise((resolve) => {
+            const checkForPlusIcons = () => {
+              const plusIcons = document.querySelector('.sales-table [data-gs-cell-index="4"] .gs-plus-icon');
+              if (plusIcons) {
+                resolve();
+              } else {
+                // Check again in 100ms
+                setTimeout(checkForPlusIcons, 100);
+              }
+            };
+            checkForPlusIcons();
+          });
+        },
+        when: {
+          show: function() {
+            // Add a listener for the enrichment menu selection
+            const handleEnrichmentSelected = function() {
+              // Complete the tour when an enrichment option is selected
+              setTimeout(() => {
+                if (tour) {
+                  tour.complete();
+                }
+              }, 500);
+            };
+            
+            document.addEventListener('gridsight:enrichmentSelected', handleEnrichmentSelected);
+            
+            // Clean up listener when the step is hidden
+            return function() {
+              document.removeEventListener('gridsight:enrichmentSelected', handleEnrichmentSelected);
+            };
+          }
+        }
+      });
+
+      return tour;
+    }
+
+    function startWalkthrough() {
+      // Cancel any existing tour
+      if (activeTour) {
+        activeTour.cancel();
+      }
+
+      // Create and start a new tour
+      activeTour = createWalkthrough();
+      activeTour.start();
+      
+      logToPage('Walkthrough started');
     }
 
     // Log initialization
@@ -189,6 +454,15 @@
           const isValid = window.gridSight.isValidTable(table);
           logToPage(`Table ${index + 1}: ${isValid ? '✓ Valid' : '✗ Invalid'} structure (${table.id || 'no id'})`);
         });
+        
+        // Set up walkthrough button
+        document.getElementById('start-walkthrough').addEventListener('click', startWalkthrough);
+        
+        // Automatically start the walkthrough after a short delay
+        setTimeout(() => {
+          startWalkthrough();
+          logToPage('Walkthrough started automatically');
+        }, 1000); // 1 second delay to ensure everything is loaded
       } else {
         logToPage('Error: GridSight not found. Did the build complete successfully?');
         document.getElementById('status').textContent = 'Error: GridSight library not loaded';
