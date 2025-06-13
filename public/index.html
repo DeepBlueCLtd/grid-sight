@@ -316,18 +316,13 @@
         `,
         buttons: [
           {
-            text: 'Cancel',
-            action: function() { this.cancel(); },
-            classes: 'shepherd-button-secondary'
-          },
-          {
             text: 'Next',
             action: tour.next
           }
         ],
         attachTo: {
           element: '.sales-table [data-gs-cell-index="1"]',
-          on: 'right'
+          on: 'top'
         },
         beforeShowPromise: function() {
           // Return a promise that resolves when plus icons are available
@@ -373,16 +368,22 @@
           <h3>Categorical Data Enrichment</h3>
           <p>Now let's look at the options for categorical data.</p>
           <p>Click on the "+" icon in the "Dominant item" column of the Monthly Sales Data table to see different enrichment options.</p>
-          <p>Options like frequency analysis and filtering are available for categorical columns.</p>
         `,
         attachTo: {
           element: '.sales-table [data-gs-cell-index="4"]',
-          on: 'right'
+          on: 'top'
         },
         advanceOn: {
           selector: '.sales-table [data-gs-cell-index="4"] .gs-plus-icon',
           event: 'click'
         },
+        buttons: [
+          {
+            text: 'Close',
+            action: function() { this.cancel(); },
+            classes: 'shepherd-button-secondary'
+          }
+        ],
         beforeShowPromise: function() {
           // Return a promise that resolves when plus icons are available
           return new Promise((resolve) => {
