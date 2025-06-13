@@ -29,7 +29,7 @@ test.describe('Grid-Sight Heatmap', () => {
     })
 
     // Navigate to the demo page
-    await page.goto('http://localhost:3001/')
+    await page.goto('http://localhost:3001/demo/')
     
     // Wait for the page to load completely
     await page.waitForLoadState('domcontentloaded')
@@ -48,12 +48,8 @@ test.describe('Grid-Sight Heatmap', () => {
     const serverAttachment = testInfo.attachments.find(a => a.name === 'server')
     if (serverAttachment && serverAttachment.body) {
       const server = JSON.parse(serverAttachment.body.toString())
-      // Close the preview server - safely handle different server structures
-      if (server.httpServer && typeof server.httpServer.close === 'function') {
-        await new Promise(resolve => server.httpServer.close(resolve))
-      } else if (server.close && typeof server.close === 'function') {
-        await new Promise(resolve => server.close(resolve))
-      }
+      // Close the preview server
+      await new Promise(resolve => server.httpServer.close(resolve))
     }
   })
 
@@ -62,20 +58,11 @@ test.describe('Grid-Sight Heatmap', () => {
     // Get the first table
     const table = page.locator('table').first()
     
-    // Find the Grid-Sight toggle button
-    await page.waitForSelector('.grid-sight-toggle')
+    // Open the table menu
+    await page.click('.gs-table-header-menu-button')
     
-    // Click on the Grid-Sight toggle
-    await page.click('.grid-sight-toggle')
-    
-    // await for the table plus to appear
-    await page.waitForSelector('.gs-table-plus', { timeout: 500 })
-
-    // Click on the table plus
-    await page.click('.gs-table-plus')
-
     // Wait for the menu to appear
-    await page.waitForSelector('.gs-enrichment-menu', { timeout: 500 })
+    await page.waitForSelector('.gs-menu-container')
     
     // Click on the heatmap option
     await page.getByText('Heatmap').click()
@@ -104,8 +91,8 @@ test.describe('Grid-Sight Heatmap', () => {
     expect(cellsWithColor).toBeGreaterThan(0)
     
     // Toggle the heatmap off by clicking the menu option again
-    await page.click('.gs-plus-icon')
-    await page.waitForSelector('.gs-enrichment-menu', { timeout: 5000 })
+    await page.click('.gs-table-header-menu-button')
+    await page.waitForSelector('.gs-menu-container')
     await page.getByText('Heatmap').click()
     
     // Wait for the heatmap to be removed
