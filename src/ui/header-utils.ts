@@ -9,6 +9,8 @@ const PLUS_ICON_CLASS = 'gs-plus-icon';
 const HEADER_WITH_ICON_CLASS = 'gs-has-plus-icon';
 const PLUS_ICON_ACTIVE_CLASS = 'gs-plus-icon--active';
 
+const SHORT_TIME = 10
+
 export function injectPlusIcons(table: HTMLTableElement, columnTypes: ColumnType[]): void {
   // Remove any existing plus icons first
   removePlusIcons(table);
@@ -110,7 +112,7 @@ function addPlusIconToHeader(header: HTMLTableCellElement, type: HeaderType): vo
   // Add the visible class after a tick to trigger the transition
   setTimeout(() => {
     plusIcon.classList.add('gs-plus-icon--visible');
-  }, 10);
+  }, SHORT_TIME);
   
   // Add click handler
   plusIcon.addEventListener('click', (e) => {
