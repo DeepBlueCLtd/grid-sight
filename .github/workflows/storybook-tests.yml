@@ -35,16 +35,22 @@ jobs:
       - name: Build Storybook
         run: yarn build-storybook
       
+      - name: Install test dependencies
+        run: yarn add --dev http-server wait-on
+
       - name: Run Storybook tests
         run: |
           # Start Storybook in the background
-          npx http-server storybook-static --port 6006 --silent &
+          yarn http-server storybook-static --port 6006 --silent &
           
           # Wait for Storybook to be ready
-          npx wait-on http://localhost:6006
+          yarn wait-on http://localhost:6006
           
-          # Run the tests using test-runner directly
-          npx test-storybook --url http://localhost:6006 --browsers chromium
+          # Set environment variable for Storybook URL
+          export STORYBOOK_URL=http://localhost:6006
+          
+          # Run the tests using Vitest
+          yarn test:storybook
         
       - name: Upload test artifacts on failure
         if: failure()
