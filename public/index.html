@@ -53,7 +53,7 @@
     /* Shepherd.js custom styles */
     .gs-shepherd-theme {
       max-width: 400px;
-      background-color:rgb(223, 225, 240);
+      background-color:rgb(242, 242, 244);
     }
     
     .gs-shepherd-theme h3 {
@@ -273,8 +273,8 @@
         id: 'gs-toggle',
         text: `
           <h3>The Grid-Sight Toggle</h3>
-          <p>The tool has added a [GS] toggle button to the top-left cell of this table. Clicking it enables the addition of data analysis features for the table.</p>
-          <p>Click the "GS" toggle button to activate Grid-Sight on this table, and notice the '+' icons appear on row and column headers.</p>
+          <p>The tool has added a [GS] toggle button to the top-left cell of this table.</p>
+          <p>Click the toggle button to activate Grid-Sight on this table, and notice the '+' icons that appear on applicable row and column headers.</p>
         `,
         attachTo: {
           element: '.sales-table [data-gs-cell-index="0"]',
@@ -307,17 +307,17 @@
         id: 'numeric-plus-icons',
         text: `
           <h3>Numeric Data Enrichment</h3>
-          <p>Click on the "+" icon to access data enrichment options for numeric data.</p>
-          <p>Options like sum, average, and charts are available for numerical columns.</p>
-          <p>Try selecting an option from the menu to see what Grid-Sight can do!</p>
+          <p>Clicking on the "+" icon will open a menu of data enrichment options for numeric data.</p>
         `,
+        buttons: [
+          {
+            text: 'Next',
+            action: tour.next
+          }
+        ],
         attachTo: {
           element: '.sales-table [data-gs-cell-index="1"]',
           on: 'right'
-        },
-        advanceOn: {
-          selector: '.sales-table [data-gs-cell-index="1"] .gs-plus-icon',
-          event: 'click'
         },
         beforeShowPromise: function() {
           // Return a promise that resolves when plus icons are available
