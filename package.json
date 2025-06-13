@@ -7,15 +7,15 @@
     "dev": "vite",
     "build": "tsc && vite build && node scripts/copy-demo.js",
     "preview": "vite preview",
-    "preview:demo": "vite preview --port 3000 --open /demo",
+    "preview:demo": "vite preview --port 3000 --open grid-sight",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
     "test:storybook": "test-storybook",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "test:e2e": "vite build && playwright test tests/e2e/demo.spec.ts",
-    "test:e2e:ui": "vite build && playwright test --ui tests/e2e/demo.spec.ts"
+    "test:e2e": "vite build && playwright test tests/e2e",
+    "test:e2e:ui": "vite build && playwright test --ui tests/e2e"
   },
   "devDependencies": {
     "@playwright/test": "^1.53.0",
