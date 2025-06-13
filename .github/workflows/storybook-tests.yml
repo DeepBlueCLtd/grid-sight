@@ -47,7 +47,7 @@ jobs:
           yarn wait-on http://localhost:6006
           
           # Run the tests using test-runner directly
-          yarn test-storybook --url http://localhost:6006 --browsers chromium
+          yarn test:storybook --url http://localhost:6006 --browsers chromium
         
       - name: Upload test artifacts on failure
         if: failure()
