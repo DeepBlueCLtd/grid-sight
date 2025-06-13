@@ -53,7 +53,7 @@
     /* Shepherd.js custom styles */
     .gs-shepherd-theme {
       max-width: 400px;
-      background-color:rgb(168, 169, 177);
+      background-color:rgb(223, 225, 240);
     }
     
     .gs-shepherd-theme h3 {
@@ -276,11 +276,9 @@
           <p>This will enable data analysis features for the table.</p>
         `,
         attachTo: {
-          element: '.grid-sight-toggle',
-          on: 'bottom-start',
-          options: {
-            padding: { bottom: 15 }
-          }
+          element: '[data-gs-cell-index="0"]',
+          on: 'right'
+
         },
         advanceOn: {
           selector: '.grid-sight-toggle',
@@ -312,8 +310,8 @@
           <p>Try selecting an option from the menu to see what Grid-Sight can do!</p>
         `,
         attachTo: {
-          element: '[data-gs-cell-index="1"] .gs-plus-icon',
-          on: 'bottom'
+          element: '[data-gs-cell-index="1"]',
+          on: 'right'
         },
         advanceOn: {
           selector: '[data-gs-cell-index="1"] .gs-plus-icon',
