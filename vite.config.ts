@@ -12,7 +12,7 @@ export default defineConfig({
   // Configure the development server (optional, for demo serving)
   server: {
     port: 3000,
-    open: '/demo.html',
+    open: '/index.html',
   },
   
   // Configure build options
