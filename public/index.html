@@ -257,6 +257,7 @@
         text: `
           <h3>Welcome to Grid-Sight!</h3>
           <p>Grid-Sight enhances HTML tables with powerful analysis and visualization tools.</p>
+          <p>The tool has scanned this page, and found one or more tables that can be enriched.</p>
           <p>This brief walkthrough will show you how to get started.</p>
         `,
         buttons: [
@@ -272,12 +273,12 @@
         id: 'gs-toggle',
         text: `
           <h3>The Grid-Sight Toggle</h3>
-          <p>Click the "GS" toggle button to activate Grid-Sight on this table.</p>
-          <p>This will enable data analysis features for the table.</p>
+          <p>The tool has added a [GS] toggle button to this table. Clicking it enables the addition of data analysis features for the table.</p>
+          <p>Click the "GS" toggle button to activate Grid-Sight on this table, and notice the '+' icons appear</p>
         `,
         attachTo: {
           element: '[data-gs-cell-index="0"]',
-          on: 'right'
+          on: 'top'
 
         },
         advanceOn: {
@@ -306,7 +307,7 @@
         id: 'plus-icons',
         text: `
           <h3>Plus Icons</h3>
-          <p>Click on any "+" icon to access data enrichment options.</p>
+          <p>Click on the "+" icon to access data enrichment options.</p>
           <p>Try selecting an option from the menu to see what Grid-Sight can do!</p>
         `,
         attachTo: {
