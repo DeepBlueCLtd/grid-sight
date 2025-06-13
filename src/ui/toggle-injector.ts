@@ -328,6 +328,28 @@ function extractNumericRowValues(row: HTMLTableRowElement): number[] {
 }
 
 /**
+ * Extracts numeric values from a table row
+ */
+function extractNumericRowValues(row: HTMLTableRowElement): number[] {
+  const values: number[] = [];
+  
+  // Get all cells in the row
+  const cells = Array.from(row.cells);
+  
+  // Skip the first cell if it's a header
+  const startIndex = cells.length > 0 && cells[0].tagName.toLowerCase() === 'th' ? 1 : 0;
+  
+  for (let i = startIndex; i < cells.length; i++) {
+    const value = cleanNumericCell(cells[i].textContent || '');
+    if (value !== null) {
+      values.push(value);
+    }
+  }
+  
+  return values;
+}
+
+/**
  * Extracts all numeric values from a table, excluding headers
  */
 function extractNumericTableValues(table: HTMLTableElement): number[] {
@@ -358,6 +380,17 @@ function extractNumericTableValues(table: HTMLTableElement): number[] {
         values.push(value);
       }
     }
+  }
+  
+  return values;
+}
+
+export function injectToggle(table: HTMLTableElement): boolean {
+  // Find the first cell in the first row of the thead
+  const firstRow = table.tHead?.rows[0] || table.rows[0];
+  if (!firstRow?.cells.length) {
+    console.warn('Could not find a suitable cell to inject the Grid-Sight toggle');
+    return false;
   }
   
   return values;
