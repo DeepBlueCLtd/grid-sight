@@ -13,6 +13,7 @@ export interface TableProcessorOptions {
   /** Whether to apply default styling */
   applyStyles?: boolean;
   /** Callback when processing is complete */
+  // eslint-disable-next-line no-unused-vars
   onComplete?: (table: HTMLTableElement) => void;
 }
 
@@ -30,34 +31,34 @@ export function processTable(
     id = `table-${Math.random().toString(36).substr(2, 9)}`,
     applyStyles = true,
     onComplete
-  } = options;
+  } = options
 
   // Ensure the table has an ID
   if (!table.id) {
-    table.id = id;
+    table.id = id
   }
 
   try {
     // Add a data attribute to mark the table as processed
-    table.dataset.gridSightProcessed = 'true';
+    table.dataset.gridSightProcessed = 'true'
 
     // Apply default styles if enabled
     if (applyStyles) {
-      applyTableStyles(table);
+      applyTableStyles(table)
     }
 
     // Process table data
-    processTableData(table);
+    processTableData(table)
 
     // Call the completion callback if provided
     if (typeof onComplete === 'function') {
-      onComplete(table);
+      onComplete(table)
     }
 
-    return table;
+    return table
   } catch (error) {
-    console.error('Error processing table:', error);
-    throw error;
+    console.error('Error processing table:', error)
+    throw error
   }
 }
 
@@ -68,12 +69,12 @@ export function processTable(
 function processTableData(table: HTMLTableElement): void {
   // This is a placeholder for future table processing logic
   // For now, we'll just add a data attribute to each cell
-  const cells = table.querySelectorAll('td, th');
+  const cells = table.querySelectorAll('td, th')
   cells.forEach((cell, index) => {
     if (!cell.hasAttribute('data-gs-cell-index')) {
-      cell.setAttribute('data-gs-cell-index', index.toString());
+      cell.setAttribute('data-gs-cell-index', index.toString())
     }
-  });
+  })
 }
 
 /**
@@ -82,12 +83,12 @@ function processTableData(table: HTMLTableElement): void {
  */
 function applyTableStyles(table: HTMLTableElement): void {
   // Add a class to the table for styling
-  table.classList.add('grid-sight-table');
+  table.classList.add('grid-sight-table')
 
   // Add some basic default styles if no styles are already applied
   if (!document.querySelector('style[data-grid-sight-styles]')) {
-    const style = document.createElement('style');
-    style.setAttribute('data-grid-sight-styles', 'true');
+    const style = document.createElement('style')
+    style.setAttribute('data-grid-sight-styles', 'true')
     style.textContent = `
       .grid-sight-table {
         border-collapse: collapse;
@@ -111,8 +112,8 @@ function applyTableStyles(table: HTMLTableElement): void {
       .grid-sight-table tr:hover {
         background-color: #f1f1f1;
       }
-    `;
-    document.head.appendChild(style);
+    `
+    document.head.appendChild(style)
   }
 }
 
@@ -124,5 +125,5 @@ export function isValidTable(table: HTMLTableElement): boolean {
   return table && 
          table instanceof HTMLTableElement && 
          table.tHead !== null && 
-         table.tBodies.length > 0;
+         table.tBodies.length > 0
 }

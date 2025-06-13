@@ -1,8 +1,8 @@
-import { expect, vi } from 'vitest';
-import * as matchers from '@testing-library/jest-dom/matchers';
+import { expect, vi } from 'vitest'
+import * as matchers from '@testing-library/jest-dom/matchers'
 
 // Extend Vitest's expect with jest-dom matchers
-expect.extend(matchers);
+expect.extend(matchers)
 
 // Mock browser globals
 Object.defineProperty(window, 'matchMedia', {
@@ -15,6 +15,6 @@ Object.defineProperty(window, 'matchMedia', {
     removeListener: vi.fn(),
     addEventListener: vi.fn(),
     removeEventListener: vi.fn(),
-    dispatchEvent: vi.fn(),
-  })),
-});
+    dispatchEvent: vi.fn()
+  }))
+})

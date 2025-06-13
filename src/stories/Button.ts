@@ -1,4 +1,4 @@
-import './button.css';
+import './button.css'
 
 export interface ButtonProps {
   /** Is this the principal call to action on the page? */
@@ -19,21 +19,21 @@ export const createButton = ({
   size = 'medium',
   backgroundColor,
   label,
-  onClick,
+  onClick
 }: ButtonProps) => {
-  const btn = document.createElement('button');
-  btn.type = 'button';
-  btn.innerText = label;
+  const btn = document.createElement('button')
+  btn.type = 'button'
+  btn.innerText = label
   if (onClick) {
-    btn.addEventListener('click', onClick);
+    btn.addEventListener('click', onClick)
   }
 
-  const mode = primary ? 'storybook-button--primary' : 'storybook-button--secondary';
-  btn.className = ['storybook-button', `storybook-button--${size}`, mode].join(' ');
+  const mode = primary ? 'storybook-button--primary' : 'storybook-button--secondary'
+  btn.className = ['storybook-button', `storybook-button--${size}`, mode].join(' ')
 
   if (backgroundColor) {
-    btn.style.backgroundColor = backgroundColor;
+    btn.style.backgroundColor = backgroundColor
   }
 
-  return btn;
-};
+  return btn
+}

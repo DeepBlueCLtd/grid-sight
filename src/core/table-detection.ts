@@ -1,16 +1,15 @@
-import { analyzeTable as analyzeTableType, extractTableData } from './type-detection';
-import type { ColumnType } from './type-detection';
+import { analyzeTable as analyzeTableType, extractTableData } from './type-detection'
+import type { ColumnType } from './type-detection'
 
 // Re-export analyzeTable from type-detection
-export { analyzeTableType as analyzeTable };
-
+export { analyzeTableType as analyzeTable }
 
 /**
  * Finds all table elements in the document.
  * @returns A NodeListOf<HTMLTableElement> containing all tables found.
  */
 export function findTables(): NodeListOf<HTMLTableElement> {
-  return document.querySelectorAll('table');
+  return document.querySelectorAll('table')
 }
 
 /**
@@ -19,7 +18,7 @@ export function findTables(): NodeListOf<HTMLTableElement> {
  * @returns True if the table has both thead and tbody, false otherwise.
  */
 function hasValidTableStructure(table: HTMLTableElement): boolean {
-  return table.tHead !== null && table.tBodies.length > 0;
+  return table.tHead !== null && table.tBodies.length > 0
 }
 
 /**
@@ -40,7 +39,7 @@ export function isTableSuitable(table: HTMLTableElement): { isSuitable: boolean;
     return { 
       isSuitable: false, 
       reason: 'Table must have both <thead> and <tbody> elements' 
-    };
+    }
   }
 
   // Check for minimum row count (header + at least one data row)
@@ -48,29 +47,29 @@ export function isTableSuitable(table: HTMLTableElement): { isSuitable: boolean;
     return { 
       isSuitable: false, 
       reason: 'Table must have at least one data row' 
-    };
+    }
   }
 
   // Extract table data and analyze column types
-  const tableData = extractTableData(table);
-  const { columnTypes } = analyzeTableType(tableData);
+  const tableData = extractTableData(table)
+  const { columnTypes } = analyzeTableType(tableData)
   
   // Check if we have at least one suitable column (numeric or categorical)
-  const suitableColumns = columnTypes.filter((t) => t === 'numeric' || t === 'categorical');
-  const hasEnoughSuitableColumns = suitableColumns.length >= 1;
+  const suitableColumns = columnTypes.filter((t) => t === 'numeric' || t === 'categorical')
+  const hasEnoughSuitableColumns = suitableColumns.length >= 1
   
   // Update the reason based on the analysis
-  let reason = '';
+  let reason = ''
   if (!hasEnoughSuitableColumns) {
-    reason = 'Table needs at least one numeric or categorical column';
+    reason = 'Table needs at least one numeric or categorical column'
   } else {
-    reason = 'Table meets all criteria for enrichment';
+    reason = 'Table meets all criteria for enrichment'
   }
   
   return { 
     isSuitable: hasEnoughSuitableColumns, 
     reason 
-  };
+  }
 }
 
 /**
@@ -83,27 +82,27 @@ export function findSuitableTables(): Array<{
   reason: string;
   columnTypes: ColumnType[];
 }> {
-  const tables = findTables();
-  return Array.from(tables).map(table => {
-    const tableData = extractTableData(table);
-    const { columnTypes, isSuitable } = analyzeTableType(tableData);
+  const tables = findTables()
+  return Array.from(tables).map((table) => {
+    const tableData = extractTableData(table)
+    const { columnTypes, isSuitable } = analyzeTableType(tableData)
     
     // Check if we have at least one suitable column
-    const suitableColumns = columnTypes.filter((t: ColumnType) => t === 'numeric' || t === 'categorical');
-    const hasEnoughSuitableColumns = suitableColumns.length >= 1;
+    const suitableColumns = columnTypes.filter((t: ColumnType) => t === 'numeric' || t === 'categorical')
+    const hasEnoughSuitableColumns = suitableColumns.length >= 1
     
     // Get the reason for suitability
-    let reason = '';
+    let reason = ''
     if (!table.tHead || table.tBodies.length === 0) {
-      reason = 'Table must have both <thead> and <tbody> elements';
+      reason = 'Table must have both <thead> and <tbody> elements'
     } else if (table.rows.length < 2) {
-      reason = 'Table must have at least one data row';
+      reason = 'Table must have at least one data row'
     } else if (!hasEnoughSuitableColumns) {
-      reason = 'Table does not have enough suitable columns (need at least 1)';
+      reason = 'Table does not have enough suitable columns (need at least 1)'
     } else {
-      reason = 'Table meets all criteria for enrichment';
+      reason = 'Table meets all criteria for enrichment'
     }
     
-    return { table, isSuitable, reason, columnTypes };
-  });
+    return { table, isSuitable, reason, columnTypes }
+  })
 }

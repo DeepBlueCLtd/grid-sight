@@ -1,14 +1,14 @@
-import type { StatisticsResult } from '../enrichments/statistics';
+import type { StatisticsResult } from '../enrichments/statistics'
 
-const POPUP_CLASS = 'gs-statistics-popup';
-const POPUP_VISIBLE_CLASS = 'gs-statistics-popup--visible';
-const POPUP_HEADER_CLASS = 'gs-statistics-popup__header';
-const POPUP_TITLE_CLASS = 'gs-statistics-popup__title';
-const POPUP_CLOSE_BUTTON_CLASS = 'gs-statistics-popup__close';
-const POPUP_CONTENT_CLASS = 'gs-statistics-popup__content';
-const STAT_ITEM_CLASS = 'gs-statistics-popup__stat';
-const STAT_LABEL_CLASS = 'gs-statistics-popup__stat-label';
-const STAT_VALUE_CLASS = 'gs-statistics-popup__stat-value';
+const POPUP_CLASS = 'gs-statistics-popup'
+const POPUP_VISIBLE_CLASS = 'gs-statistics-popup--visible'
+const POPUP_HEADER_CLASS = 'gs-statistics-popup__header'
+const POPUP_TITLE_CLASS = 'gs-statistics-popup__title'
+const POPUP_CLOSE_BUTTON_CLASS = 'gs-statistics-popup__close'
+const POPUP_CONTENT_CLASS = 'gs-statistics-popup__content'
+const STAT_ITEM_CLASS = 'gs-statistics-popup__stat'
+const STAT_LABEL_CLASS = 'gs-statistics-popup__stat-label'
+const STAT_VALUE_CLASS = 'gs-statistics-popup__stat-value'
 
 // CSS styles for the popup
 const POPUP_STYLES = `
@@ -95,173 +95,172 @@ const POPUP_STYLES = `
   text-align: right;
   flex: 1;
 }
-`;
+`
 
 export class StatisticsPopup {
-  private element: HTMLElement;
-  private contentElement: HTMLElement;
-  private closeButton: HTMLButtonElement;
+  private element: HTMLElement
+  private contentElement: HTMLElement
+  private closeButton: HTMLButtonElement
 
-  private onCloseCallback: (() => void) | null = null;
+  private onCloseCallback: (() => void) | null = null
 
   constructor() {
     // Create and inject styles
-    this.injectStyles();
+    this.injectStyles()
     
     // Create popup element
-    this.element = document.createElement('div');
-    this.element.className = POPUP_CLASS;
-    this.element.setAttribute('role', 'dialog');
-    this.element.setAttribute('aria-labelledby', 'gs-statistics-popup-title');
+    this.element = document.createElement('div')
+    this.element.className = POPUP_CLASS
+    this.element.setAttribute('role', 'dialog')
+    this.element.setAttribute('aria-labelledby', 'gs-statistics-popup-title')
     
     // Create header
-    const header = document.createElement('div');
-    header.className = POPUP_HEADER_CLASS;
+    const header = document.createElement('div')
+    header.className = POPUP_HEADER_CLASS
     
-    const title = document.createElement('h3');
-    title.className = POPUP_TITLE_CLASS;
-    title.id = 'gs-statistics-popup-title';
-    title.textContent = 'Column Statistics';
+    const title = document.createElement('h3')
+    title.className = POPUP_TITLE_CLASS
+    title.id = 'gs-statistics-popup-title'
+    title.textContent = 'Column Statistics'
     
-    this.closeButton = document.createElement('button');
-    this.closeButton.className = POPUP_CLOSE_BUTTON_CLASS;
-    this.closeButton.innerHTML = '&times;';
-    this.closeButton.setAttribute('aria-label', 'Close');
-    this.closeButton.addEventListener('click', () => this.hide());
+    this.closeButton = document.createElement('button')
+    this.closeButton.className = POPUP_CLOSE_BUTTON_CLASS
+    this.closeButton.innerHTML = '&times;'
+    this.closeButton.setAttribute('aria-label', 'Close')
+    this.closeButton.addEventListener('click', () => this.hide())
     
-    header.appendChild(title);
-    header.appendChild(this.closeButton);
+    header.appendChild(title)
+    header.appendChild(this.closeButton)
     
     // Create content area
-    this.contentElement = document.createElement('div');
-    this.contentElement.className = POPUP_CONTENT_CLASS;
-    
+    this.contentElement = document.createElement('div')
+    this.contentElement.className = POPUP_CONTENT_CLASS
 
     // Assemble the popup
-    this.element.appendChild(header);
-    this.element.appendChild(this.contentElement);
+    this.element.appendChild(header)
+    this.element.appendChild(this.contentElement)
     
     // Add to document
-    document.body.appendChild(this.element);
+    document.body.appendChild(this.element)
     
     // Close when clicking outside
-    document.addEventListener('click', this.handleOutsideClick);
+    document.addEventListener('click', this.handleOutsideClick)
     
     // Close on Escape key
-    document.addEventListener('keydown', this.handleKeyDown);
+    document.addEventListener('keydown', this.handleKeyDown)
   }
 
   private injectStyles() {
     // Only inject styles once
-    if (document.getElementById('gs-statistics-popup-styles')) return;
+    if (document.getElementById('gs-statistics-popup-styles')) return
     
-    const style = document.createElement('style');
-    style.id = 'gs-statistics-popup-styles';
-    style.textContent = POPUP_STYLES;
-    document.head.appendChild(style);
+    const style = document.createElement('style')
+    style.id = 'gs-statistics-popup-styles'
+    style.textContent = POPUP_STYLES
+    document.head.appendChild(style)
   }
 
   private handleOutsideClick = (event: MouseEvent) => {
     if (this.element.classList.contains(POPUP_VISIBLE_CLASS) && 
         !this.element.contains(event.target as Node)) {
-      this.hide();
+      this.hide()
     }
-  };
+  }
 
   private handleKeyDown = (event: KeyboardEvent) => {
     if (event.key === 'Escape' && this.element.classList.contains(POPUP_VISIBLE_CLASS)) {
-      this.hide();
+      this.hide()
     }
-  };
+  }
 
   private createStatItem(label: string, value: string | number): HTMLElement {
-    const item = document.createElement('div');
-    item.className = STAT_ITEM_CLASS;
+    const item = document.createElement('div')
+    item.className = STAT_ITEM_CLASS
     
-    const labelSpan = document.createElement('span');
-    labelSpan.className = STAT_LABEL_CLASS;
-    labelSpan.textContent = label;
+    const labelSpan = document.createElement('span')
+    labelSpan.className = STAT_LABEL_CLASS
+    labelSpan.textContent = label
     
-    const valueSpan = document.createElement('span');
-    valueSpan.className = STAT_VALUE_CLASS;
-    valueSpan.textContent = String(value);
+    const valueSpan = document.createElement('span')
+    valueSpan.className = STAT_VALUE_CLASS
+    valueSpan.textContent = String(value)
     
-    item.appendChild(labelSpan);
-    item.appendChild(valueSpan);
+    item.appendChild(labelSpan)
+    item.appendChild(valueSpan)
     
-    return item;
+    return item
   }
 
   private formatNumber(value: number, decimals: number = 2): string {
-    if (!Number.isFinite(value)) return 'N/A';
+    if (!Number.isFinite(value)) return 'N/A'
     return value.toLocaleString(undefined, {
       minimumFractionDigits: 0,
       maximumFractionDigits: decimals
-    });
+    })
   }
 
   show(stats: StatisticsResult, anchor: HTMLElement): void {   
     // Clear previous content
-    this.contentElement.innerHTML = '';
+    this.contentElement.innerHTML = ''
     
     // Add statistics items
-    this.contentElement.appendChild(this.createStatItem('Count', stats.count.toString()));
-    this.contentElement.appendChild(this.createStatItem('Sum', this.formatNumber(stats.sum)));
-    this.contentElement.appendChild(this.createStatItem('Min', this.formatNumber(stats.min)));
-    this.contentElement.appendChild(this.createStatItem('Max', this.formatNumber(stats.max)));
-    this.contentElement.appendChild(this.createStatItem('Mean', this.formatNumber(stats.mean)));
-    this.contentElement.appendChild(this.createStatItem('Median', this.formatNumber(stats.median)));
-    this.contentElement.appendChild(this.createStatItem('Std Dev', this.formatNumber(stats.stdDev)));
-    this.contentElement.appendChild(this.createStatItem('Variance', this.formatNumber(stats.variance)));
+    this.contentElement.appendChild(this.createStatItem('Count', stats.count.toString()))
+    this.contentElement.appendChild(this.createStatItem('Sum', this.formatNumber(stats.sum)))
+    this.contentElement.appendChild(this.createStatItem('Min', this.formatNumber(stats.min)))
+    this.contentElement.appendChild(this.createStatItem('Max', this.formatNumber(stats.max)))
+    this.contentElement.appendChild(this.createStatItem('Mean', this.formatNumber(stats.mean)))
+    this.contentElement.appendChild(this.createStatItem('Median', this.formatNumber(stats.median)))
+    this.contentElement.appendChild(this.createStatItem('Std Dev', this.formatNumber(stats.stdDev)))
+    this.contentElement.appendChild(this.createStatItem('Variance', this.formatNumber(stats.variance)))
     
     // Position the popup
-    this.positionPopup(anchor);
+    this.positionPopup(anchor)
     
     // Show the popup
-    this.element.classList.add(POPUP_VISIBLE_CLASS);
+    this.element.classList.add(POPUP_VISIBLE_CLASS)
     
     // Focus the close button for keyboard navigation
-    this.closeButton.focus();
+    this.closeButton.focus()
   }
 
   hide(): void {
-    this.element.classList.remove(POPUP_VISIBLE_CLASS);
+    this.element.classList.remove(POPUP_VISIBLE_CLASS)
     if (this.onCloseCallback) {
-      this.onCloseCallback();
+      this.onCloseCallback()
     }
   }
 
   private positionPopup(anchor: HTMLElement): void {
-    const rect = anchor.getBoundingClientRect();
-    const scrollX = window.scrollX || document.documentElement.scrollLeft;
-    const scrollY = window.scrollY || document.documentElement.scrollTop;
+    const rect = anchor.getBoundingClientRect()
+    const scrollX = window.scrollX || document.documentElement.scrollLeft
+    const scrollY = window.scrollY || document.documentElement.scrollTop
     
     // Position below the anchor element
-    const top = rect.bottom + scrollY + 5;
-    const left = rect.left + scrollX;
+    const top = rect.bottom + scrollY + 5
+    const left = rect.left + scrollX
     
-    this.element.style.top = `${top}px`;
-    this.element.style.left = `${left}px`;
+    this.element.style.top = `${top}px`
+    this.element.style.left = `${left}px`
     
     // Adjust if going off the right edge of the viewport
-    const viewportWidth = window.innerWidth;
-    const popupWidth = this.element.offsetWidth;
+    const viewportWidth = window.innerWidth
+    const popupWidth = this.element.offsetWidth
     
     if (left + popupWidth > viewportWidth) {
-      this.element.style.left = `${viewportWidth - popupWidth - 10}px`;
+      this.element.style.left = `${viewportWidth - popupWidth - 10}px`
     }
   }
 
   onClose(callback: () => void): void {
-    this.onCloseCallback = callback;
+    this.onCloseCallback = callback
   }
 
   destroy(): void {
-    document.removeEventListener('click', this.handleOutsideClick);
-    document.removeEventListener('keydown', this.handleKeyDown);
+    document.removeEventListener('click', this.handleOutsideClick)
+    document.removeEventListener('keydown', this.handleKeyDown)
     
     if (this.element.parentNode) {
-      this.element.parentNode.removeChild(this.element);
+      this.element.parentNode.removeChild(this.element)
     }
   }
 }
