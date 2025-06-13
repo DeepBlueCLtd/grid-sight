@@ -273,16 +273,16 @@
         id: 'gs-toggle',
         text: `
           <h3>The Grid-Sight Toggle</h3>
-          <p>The tool has added a [GS] toggle button to this table. Clicking it enables the addition of data analysis features for the table.</p>
-          <p>Click the "GS" toggle button to activate Grid-Sight on this table, and notice the '+' icons appear</p>
+          <p>The tool has added a [GS] toggle button to the top-left cell of this table. Clicking it enables the addition of data analysis features for the table.</p>
+          <p>Click the "GS" toggle button to activate Grid-Sight on this table, and notice the '+' icons appear on row and column headers.</p>
         `,
         attachTo: {
-          element: '[data-gs-cell-index="0"]',
+          element: '.sales-table [data-gs-cell-index="0"]',
           on: 'top'
 
         },
         advanceOn: {
-          selector: '.grid-sight-toggle',
+          selector: '.sales-table .grid-sight-toggle',
           event: 'click'
         },
         beforeShowPromise: function() {
@@ -304,19 +304,19 @@
 
       // Step 3: Plus Icons Introduction
       tour.addStep({
-        id: 'plus-icons',
+        id: 'numeric-plus-icons',
         text: `
-          <h3>Plus Icons</h3>
-          <p>Click on the "+" icon to access data enrichment options.</p>
-          <p>Different enrichments are available for numerical or categorical data.</p>
-          <p>Try selecting an option from the menu to see what Grid-Sight can do for this column of numeric data!</p>
+          <h3>Numeric Data Enrichment</h3>
+          <p>Click on the "+" icon to access data enrichment options for numeric data.</p>
+          <p>Options like sum, average, and charts are available for numerical columns.</p>
+          <p>Try selecting an option from the menu to see what Grid-Sight can do!</p>
         `,
         attachTo: {
-          element: '[data-gs-cell-index="1"]',
+          element: '.sales-table [data-gs-cell-index="1"]',
           on: 'right'
         },
         advanceOn: {
-          selector: '[data-gs-cell-index="1"] .gs-plus-icon',
+          selector: '.sales-table [data-gs-cell-index="1"] .gs-plus-icon',
           event: 'click'
         },
         beforeShowPromise: function() {
@@ -324,6 +324,60 @@
           return new Promise((resolve) => {
             const checkForPlusIcons = () => {
               const plusIcons = document.querySelector('[data-gs-cell-index="1"] .gs-plus-icon');
+              if (plusIcons) {
+                resolve();
+              } else {
+                // Check again in 100ms
+                setTimeout(checkForPlusIcons, 100);
+              }
+            };
+            checkForPlusIcons();
+          });
+        },
+        when: {
+          show: function() {
+            // Add a listener for the enrichment menu selection
+            const handleEnrichmentSelected = function() {
+              // Complete the tour when an enrichment option is selected
+              setTimeout(() => {
+                if (tour) {
+                  tour.complete();
+                }
+              }, 500);
+            };
+            
+            document.addEventListener('gridsight:enrichmentSelected', handleEnrichmentSelected);
+            
+            // Clean up listener when the step is hidden
+            return function() {
+              document.removeEventListener('gridsight:enrichmentSelected', handleEnrichmentSelected);
+            };
+          }
+        }
+      });
+
+      // Step 4: Categorical Data Plus Icons
+      tour.addStep({
+        id: 'categorical-plus-icons',
+        text: `
+          <h3>Categorical Data Enrichment</h3>
+          <p>Now let's look at the options for categorical data.</p>
+          <p>Click on the "+" icon in the "Dominant item" column of the Monthly Sales Data table to see different enrichment options.</p>
+          <p>Options like frequency analysis and filtering are available for categorical columns.</p>
+        `,
+        attachTo: {
+          element: '.sales-table [data-gs-cell-index="4"]',
+          on: 'right'
+        },
+        advanceOn: {
+          selector: '.sales-table [data-gs-cell-index="4"] .gs-plus-icon',
+          event: 'click'
+        },
+        beforeShowPromise: function() {
+          // Return a promise that resolves when plus icons are available
+          return new Promise((resolve) => {
+            const checkForPlusIcons = () => {
+              const plusIcons = document.querySelector('.sales-table [data-gs-cell-index="4"] .gs-plus-icon');
               if (plusIcons) {
                 resolve();
               } else {
