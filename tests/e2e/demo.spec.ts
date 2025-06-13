@@ -24,7 +24,7 @@ test.describe('Grid-Sight Demo', () => {
 
     try {
       // Navigate to the demo page
-      await page.goto('http://localhost:3001/demo/');
+      await page.goto('http://localhost:3001/');
       
       // Wait for the page to load completely
       await page.waitForLoadState('domcontentloaded');
@@ -75,7 +75,7 @@ test.describe('Grid-Sight Demo', () => {
     test.skip(!!process.env.CI, 'Skipping file:// test in CI environment');
     
     // Navigate to the demo page directly
-    await page.goto(`file://${process.cwd()}/dist/demo/index.html`);
+    await page.goto(`file://${process.cwd()}/dist/index.html`);
     
     // Wait for the page to load completely
     await page.waitForLoadState('domcontentloaded');
