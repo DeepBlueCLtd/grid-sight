@@ -596,6 +596,16 @@
     "@storybook/global" "^5.0.0"
     ts-dedent "^2.0.0"
 
+"@storybook/addon-vitest@^9.0.9":
+  version "9.0.9"
+  resolved "https://registry.yarnpkg.com/@storybook/addon-vitest/-/addon-vitest-9.0.9.tgz#06460bf0c69faae174b83301e6d28f7997acc41c"
+  integrity sha512-OVGK1mVlbnlLnZmUNw9guweuTAPg3qsxD9kaWuYNSKytMBx3ELqHbCrFL1lhFdlwXPV3e2t5AK/9PQbEtDYZUA==
+  dependencies:
+    "@storybook/global" "^5.0.0"
+    "@storybook/icons" "^1.4.0"
+    prompts "^2.4.0"
+    ts-dedent "^2.2.0"
+
 "@storybook/builder-vite@9.0.9":
   version "9.0.9"
   resolved "https://registry.yarnpkg.com/@storybook/builder-vite/-/builder-vite-9.0.9.tgz#3073a191718c42181d6fb00c8de2a9823ece9636"
@@ -632,7 +642,7 @@
     "@storybook/global" "^5.0.0"
     ts-dedent "^2.0.0"
 
-"@storybook/icons@^1.2.12":
+"@storybook/icons@^1.2.12", "@storybook/icons@^1.4.0":
   version "1.4.0"
   resolved "https://registry.yarnpkg.com/@storybook/icons/-/icons-1.4.0.tgz#7cf7ab3dfb41943930954c4ef493a73798d8b31d"
   integrity sha512-Td73IeJxOyalzvjQL+JXx72jlIYHgs+REaHiREOqfpo3A2AYYG71AUbcv+lg7mEDIweKVCxsMQ0UKo634c8XeA==
@@ -663,7 +673,7 @@
     "@vitest/expect" "2.0.5"
     "@vitest/spy" "2.0.5"
 
-"@testing-library/dom@10.4.0":
+"@testing-library/dom@10.4.0", "@testing-library/dom@^10.4.0":
   version "10.4.0"
   resolved "https://registry.yarnpkg.com/@testing-library/dom/-/dom-10.4.0.tgz#82a9d9462f11d240ecadbf406607c6ceeeff43a8"
   integrity sha512-pemlzrSESWbdAloYml3bAJMEfNh1Z7EduzqPKprCH5S341frlpYnUEW0H72dLxa6IsYr+mPno20GiSm+h9dEdQ==
@@ -926,6 +936,20 @@
   dependencies:
     "@typescript-eslint/types" "8.34.0"
     eslint-visitor-keys "^4.2.0"
+
+"@vitest/browser@3.2.3":
+  version "3.2.3"
+  resolved "https://registry.yarnpkg.com/@vitest/browser/-/browser-3.2.3.tgz#703c1a12e65d6864ba91fc617caa29243c5fa535"
+  integrity sha512-5HpUb0ixGF8JWSAjb/P1x/VPuTYUkL4pL0+YO6DJiuvQgqJN3PREaUEcXwfXjU4nBc37EahfpRbAwdE9pHs9lQ==
+  dependencies:
+    "@testing-library/dom" "^10.4.0"
+    "@testing-library/user-event" "^14.6.1"
+    "@vitest/mocker" "3.2.3"
+    "@vitest/utils" "3.2.3"
+    magic-string "^0.30.17"
+    sirv "^3.0.1"
+    tinyrainbow "^2.0.0"
+    ws "^8.18.2"
 
 "@vitest/coverage-v8@^3.2.3":
   version "3.2.3"
@@ -2576,6 +2600,11 @@ keyv@^4.5.4:
   dependencies:
     json-buffer "3.0.1"
 
+kleur@^3.0.3:
+  version "3.0.3"
+  resolved "https://registry.yarnpkg.com/kleur/-/kleur-3.0.3.tgz#a79c9ecc86ee1ce3fa6206d1216c501f147fc07e"
+  integrity sha512-eTIzlVOSUR+JxdDFepEYcBMtZ9Qqdef+rnzWdRZuMbOywu5tO2w2N7rqjoANZ5k9vywhL6Br1VRjUIgTQx4E8w==
+
 levn@^0.4.1:
   version "0.4.1"
   resolved "https://registry.yarnpkg.com/levn/-/levn-0.4.1.tgz#ae4562c007473b932a6200d403268dd2fffc6ade"
@@ -2902,7 +2931,7 @@ playwright-core@1.53.0:
   resolved "https://registry.yarnpkg.com/playwright-core/-/playwright-core-1.53.0.tgz#bf2738cc143116b6130b78e0c644edf2e7e53ff4"
   integrity sha512-mGLg8m0pm4+mmtB7M89Xw/GSqoNC+twivl8ITteqvAndachozYe2ZA7srU6uleV1vEdAHYqjq+SV8SNxRRFYBw==
 
-playwright@1.53.0:
+playwright@1.53.0, playwright@^1.53.0:
   version "1.53.0"
   resolved "https://registry.yarnpkg.com/playwright/-/playwright-1.53.0.tgz#4eae78aa24e3c714bf71981f80b3310b838692fd"
   integrity sha512-ghGNnIEYZC4E+YtclRn4/p6oYbdPiASELBIYkBXfaTVKreQUYbMUYQDwS12a8F0/HtIjr/CkGjtwABeFPGcS4Q==
@@ -2945,6 +2974,14 @@ pretty-format@^27.0.2:
     ansi-regex "^5.0.1"
     ansi-styles "^5.0.0"
     react-is "^17.0.1"
+
+prompts@^2.4.0:
+  version "2.4.2"
+  resolved "https://registry.yarnpkg.com/prompts/-/prompts-2.4.2.tgz#7b57e73b3a48029ad10ebd44f74b01722a4cb069"
+  integrity sha512-NxNv/kLguCA7p3jE8oL2aEBsrJWgAakBpgmgK6lpPWV+WuOmY6r2/zbAVnP+T8bQlA0nzHXSJSJW0Hq7ylaD2Q==
+  dependencies:
+    kleur "^3.0.3"
+    sisteransi "^1.0.5"
 
 punycode@^2.1.0, punycode@^2.3.1:
   version "2.3.1"
@@ -3239,6 +3276,11 @@ sirv@^3.0.1:
     "@polka/url" "^1.0.0-next.24"
     mrmime "^2.0.0"
     totalist "^3.0.0"
+
+sisteransi@^1.0.5:
+  version "1.0.5"
+  resolved "https://registry.yarnpkg.com/sisteransi/-/sisteransi-1.0.5.tgz#134d681297756437cc05ca01370d3a7a571075ed"
+  integrity sha512-bLGGlR1QxBcynn2d5YmDX4MGjlZvy2MRBDRNHLJ8VI6l6+9FUiyTFNJ0IveOSP0bcXgVDPRcfGqA0pjaqUpfVg==
 
 slash@^3.0.0:
   version "3.0.0"
@@ -3828,7 +3870,7 @@ wrap-ansi@^8.1.0:
     string-width "^5.0.1"
     strip-ansi "^7.0.1"
 
-ws@^8.18.0:
+ws@^8.18.0, ws@^8.18.2:
   version "8.18.2"
   resolved "https://registry.yarnpkg.com/ws/-/ws-8.18.2.tgz#42738b2be57ced85f46154320aabb51ab003705a"
   integrity sha512-DMricUmwGZUVr++AEAe2uiVM7UoO9MAVZMDu05UQOaUII0lp+zOzLLU4Xqh/JvTqklB1T4uELaaPBKyjE1r4fQ==
