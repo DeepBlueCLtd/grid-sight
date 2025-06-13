@@ -504,13 +504,19 @@ export function toggleHeatmap(
   }
   
   // Check if this specific heatmap is already active
-  const isActive = isHeatmapActive(table, index, type);
+  const isActive = isHeatmapActive(table, type === 'table' ? -1 : index, type);
   
+
   if (isActive) {
     // If it's active, remove just this specific heatmap
-    removeHeatmap(table, index, type);
+    removeHeatmap(table, type === 'table' ? -1 : index, type);
   } else {
-    // If not active, apply the new heatmap (can have multiple heatmaps on different rows/columns)
-    applyHeatmap(table, index, type, options);
+    // If not active, apply the new heatmap
+    if (type === 'table') {
+      applyTableHeatmap(table, options);
+    } else {
+      // For row/column, apply the new heatmap
+      applyHeatmap(table, index, type, options);
+    }
   }
 }
