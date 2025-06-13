@@ -59,7 +59,7 @@ function analyzeFrequencies(values: unknown[]): FrequencyResult[] {
   return sortedFrequencies.map(([value, count]) => [
     value,
     count,
-    (count / total) * 100
+    Number(((count / total) * 100).toFixed(1))
   ])
 }
 
