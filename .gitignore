@@ -138,3 +138,6 @@ dist
 *storybook.log
 storybook-static
 .vscode/settings.json
+
+# Claude Code per-user permissions
+.claude/settings.local.json
