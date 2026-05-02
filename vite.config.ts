@@ -63,6 +63,9 @@ export default defineConfig({
   // Configure public directory for static assets
   publicDir: 'public',
   
-  // Base public path when served in production
-  base: process.env.NODE_ENV === 'production' ? '/grid-sight/' : '/',
+  // Base public path. Honour an explicit VITE_BASE_PATH override so PR-preview
+  // builds can land under `/grid-sight/pr-preview/<NUM>/` without breaking
+  // asset resolution. Falls back to the production / dev defaults.
+  base: process.env.VITE_BASE_PATH
+    || (process.env.NODE_ENV === 'production' ? '/grid-sight/' : '/'),
 });

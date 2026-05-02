@@ -1,6 +1,9 @@
 # Grid-Sight
 
-A lightweight, zero-dependency library for enriching HTML tables with data visualization and analysis tools.
+A lightweight library for enriching HTML tables with data visualization and analysis tools.
+The slider, heatmap, and core enrichment runtime add **no runtime dependencies** —
+everything ships in a single IIFE bundle that works offline (`file://` and
+air-gapped servers).
 
 ## Features
 
@@ -8,10 +11,12 @@ A lightweight, zero-dependency library for enriching HTML tables with data visua
 - Heatmap visualization for numeric data
 - Z-score outlier detection
 - Per-table configuration
-- Zero dependencies
+- Dynamic sliders with linear / bilinear interpolation, cross-table sync, and
+  URL-fragment persistence (see `specs/001-dynamic-sliders/`)
+- Heatmap position marker + threshold slider
+- No runtime dependencies (the published IIFE bundle ships standalone)
 - Accessibility-focused design
 - Works with or without a build system
-- Small footprint (~2.5KB gzipped)
 
 ## Installation
 

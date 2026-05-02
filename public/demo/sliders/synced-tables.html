@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Grid-Sight · Slider · Synced Persistent Tables (Story 3)</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 1100px; margin: 24px auto; padding: 0 16px; color: #222; }
+    h1 { margin-top: 0; }
+    .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; }
+    table { border-collapse: collapse; width: 100%; }
+    th, td { border: 1px solid #ccc; padding: 6px 10px; text-align: right; font-variant-numeric: tabular-nums; }
+    thead th { background: #f4f4f4; }
+  </style>
+</head>
+<body>
+  <nav style="margin-bottom:16px; padding:8px 0; border-bottom:1px solid #ddd; font-size:14px;">
+    <strong>Spec 001 demos:</strong>
+    <a href="interpolation.html">1. Interpolation</a> ·
+    <a href="alternate-calc-models.html">2. Alternate calc models</a> ·
+    <a href="synced-tables.html">3. Synced tables + URL persist</a> ·
+    <a href="heatmap.html">4. Dynamic heatmap</a>
+  </nav>
+  <h1>Slider · Synced + Persistent</h1>
+  <p>Two tables share identical numeric axes. Moving a slider on one moves the
+     other; the slider position is encoded in the URL fragment so the page can
+     be bookmarked at a chosen value.</p>
+
+  <div class="pair">
+    <section><h2>North Atlantic</h2>
+      <table id="atlantic">
+        <tr><th></th>  <th>10</th><th>20</th><th>30</th><th>40</th><th>50</th></tr>
+        <tr><th>1000</th> <td>4.2</td><td>5.1</td><td>5.9</td><td>6.4</td><td>6.7</td></tr>
+        <tr><th>6000</th> <td>3.6</td><td>4.4</td><td>5.0</td><td>5.5</td><td>5.8</td></tr>
+        <tr><th>11000</th><td>3.0</td><td>3.7</td><td>4.2</td><td>4.6</td><td>4.9</td></tr>
+        <tr><th>16000</th><td>2.5</td><td>3.0</td><td>3.5</td><td>3.9</td><td>4.2</td></tr>
+        <tr><th>21000</th><td>2.0</td><td>2.5</td><td>2.9</td><td>3.3</td><td>3.6</td></tr>
+      </table>
+    </section>
+
+    <section><h2>South Atlantic</h2>
+      <table id="south-atlantic">
+        <tr><th></th>  <th>10</th><th>20</th><th>30</th><th>40</th><th>50</th></tr>
+        <tr><th>1000</th> <td>4.0</td><td>4.9</td><td>5.7</td><td>6.2</td><td>6.5</td></tr>
+        <tr><th>6000</th> <td>3.4</td><td>4.2</td><td>4.8</td><td>5.3</td><td>5.6</td></tr>
+        <tr><th>11000</th><td>2.8</td><td>3.5</td><td>4.0</td><td>4.4</td><td>4.7</td></tr>
+        <tr><th>16000</th><td>2.3</td><td>2.8</td><td>3.3</td><td>3.7</td><td>4.0</td></tr>
+        <tr><th>21000</th><td>1.8</td><td>2.3</td><td>2.7</td><td>3.1</td><td>3.4</td></tr>
+      </table>
+    </section>
+  </div>
+
+  <script src="../../grid-sight.iife.js"></script>
+</body>
+</html>

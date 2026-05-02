@@ -50,7 +50,10 @@ To be enriched, HTML tables must follow these basic structural rules:
 - Axis coordinate highlighting
 - Global and scoped search/match
 - Basic statistics (mean, z-score, outliers)
-- Interpolation tools (slider alongside relevant axis)
+- Dynamic sliders & interactive examples — continuous, pixel-precise sliders
+  attached to numeric axes (linear 1-D + bilinear 2-D interpolation), auto-syncing
+  across tables on the same page, URL+localStorage persistence, and an optional
+  heatmap threshold slider. See `specs/001-dynamic-sliders/spec.md`.
 - Chart overlays (e.g. row/column plot using uPlot)
 
 ---

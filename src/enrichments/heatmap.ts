@@ -244,9 +244,9 @@ export function applyHeatmap(
     }))
   });
   
-  // Force a reflow to ensure styles are applied before the test checks them
-  // This is needed for the test environment
-  if (process.env.NODE_ENV === 'test') {
+  // Force a reflow to ensure styles are applied before the test checks them.
+  // This is needed for the test environment.
+  if (typeof process !== 'undefined' && process.env && process.env.NODE_ENV === 'test') {
     // eslint-disable-next-line @typescript-eslint/no-unused-expressions
     table.offsetHeight;
   }
@@ -476,9 +476,9 @@ export function applyTableHeatmap(table: HTMLTableElement, options: HeatmapOptio
     cellElements: trackedCellElements
   });
   
-  // Force a reflow to ensure styles are applied before the test checks them
-  // This is needed for the test environment
-  if (process.env.NODE_ENV === 'test') {
+  // Force a reflow to ensure styles are applied before the test checks them.
+  // This is needed for the test environment.
+  if (typeof process !== 'undefined' && process.env && process.env.NODE_ENV === 'test') {
     // eslint-disable-next-line @typescript-eslint/no-unused-expressions
     table.offsetHeight;
   }

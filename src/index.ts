@@ -27,6 +27,23 @@ import {
 
 // Import UI components
 import { injectToggle } from './ui/toggle-injector';
+import { removePlusIcons } from './ui/header-utils';
+
+// Import slider feature (spec 001-dynamic-sliders)
+import {
+  addSlider as sliderAddSlider,
+  getSliders as sliderGetSliders,
+  removeAllSliders as sliderRemoveAllSliders,
+  registerFormula as sliderRegisterFormula,
+  clearFormula as sliderClearFormula,
+} from './enrichments/slider';
+import type { GridSightSlider, Axis as SliderAxis } from './enrichments/slider';
+import { addThresholdSlider as sliderAddThresholdSlider } from './enrichments/slider-threshold';
+import { ensureHeatmapMarkerListener } from './ui/heatmap-marker';
+
+// Activate the heatmap-marker listener once at module load. It is a no-op if no
+// dual-axis sliders are ever added.
+ensureHeatmapMarkerListener();
 
 // Re-export types for external use
 export type { 
@@ -53,23 +70,50 @@ const GridSight = {
    * Initialize Grid-Sight on all valid tables in the document
    */
   init(options: TableProcessorOptions = {}) {
-    // Find all tables that have at least two rows
+    // Find all tables that have at least two rows.
+    // Honour `data-gs-ignore`: tables marked with this attribute are left
+    // untouched (no GS toggle, no lozenges) — useful for "before" reference
+    // tables on demo pages.
     document.querySelectorAll<HTMLTableElement>('table').forEach((table, index) => {
-      // Skip tables that don't meet our validity criteria
+      if (table.hasAttribute('data-gs-ignore')) return;
       if (!this.isValidTable(table)) {
         console.warn(`Skipping invalid table at index ${index}: Table must have at least two rows`);
         return;
       }
       try {
-        this.processTable(table, { 
+        this.processTable(table, {
           id: `table-${index}`,
-          ...options 
+          ...options
         });
       } catch (error) {
         console.error(`Failed to process table ${index}:`, error);
       }
     });
     return this;
+  },
+
+  /**
+   * Tear down all Grid-Sight enrichments on the page: remove sliders, heatmaps,
+   * the GS toggle on every registered table, lozenges, and clear the registry.
+   * Idempotent — safe to call when nothing is attached.
+   */
+  disable() {
+    sliderRemoveAllSliders();
+    for (const table of Array.from(tableRegistry.values())) {
+      try { removeHeatmap(table); } catch (e) { /* ignore */ void e; }
+      const toggle = table.querySelector('.grid-sight-toggle-container');
+      if (toggle) toggle.remove();
+      removePlusIcons(table);
+      table.classList.remove('grid-sight-enabled');
+      table.removeAttribute('data-grid-sight-processed');
+    }
+    tableRegistry.clear();
+    return this;
+  },
+
+  /** Re-attach Grid-Sight to the page (alias for init). */
+  enable() {
+    return this.init();
   },
   
   /**
@@ -256,6 +300,47 @@ const GridSight = {
     };
   },
   
+  // ===== Dynamic sliders (spec 001) =====
+
+  addSlider(table: HTMLTableElement | string, axis: SliderAxis): GridSightSlider {
+    const t = typeof table === 'string' ? this.getTableById(table) : table;
+    if (!t) throw new Error('Table not found');
+    return sliderAddSlider(t, axis);
+  },
+
+  addThresholdSlider(table: HTMLTableElement | string): GridSightSlider {
+    const t = typeof table === 'string' ? this.getTableById(table) : table;
+    if (!t) throw new Error('Table not found');
+    return sliderAddThresholdSlider(t);
+  },
+
+  getSliders(table?: HTMLTableElement | string): GridSightSlider[] {
+    if (!table) return sliderGetSliders();
+    const t = typeof table === 'string' ? this.getTableById(table) : table;
+    return t ? sliderGetSliders(t) : [];
+  },
+
+  removeAllSliders(table?: HTMLTableElement | string): void {
+    if (!table) return sliderRemoveAllSliders();
+    const t = typeof table === 'string' ? this.getTableById(table) : table;
+    if (t) sliderRemoveAllSliders(t);
+  },
+
+  registerFormula(
+    table: HTMLTableElement | string,
+    fn: (rowValue: number, colValue: number) => number
+  ): void {
+    const t = typeof table === 'string' ? this.getTableById(table) : table;
+    if (!t) throw new Error('Table not found');
+    sliderRegisterFormula(t, fn);
+  },
+
+  clearFormula(table: HTMLTableElement | string): void {
+    const t = typeof table === 'string' ? this.getTableById(table) : table;
+    if (!t) return;
+    sliderClearFormula(t);
+  },
+
   /**
    * Detects if a table has a header row by analyzing its structure
    * @param table The table element to check

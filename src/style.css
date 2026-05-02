@@ -93,6 +93,144 @@ button:focus-visible {
   transform: scale(1);
 }
 
+/* === Dynamic Sliders (spec 001-dynamic-sliders) ===================== */
+
+[data-gs-slider] {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 6px;
+  font: 13px/1.2 system-ui, sans-serif;
+}
+
+[data-gs-slider][data-gs-slider-orientation="vertical"] {
+  flex-direction: column;
+}
+
+[data-gs-slider] input[type="range"] {
+  appearance: none;
+  width: 100%;
+  height: 4px;
+  background: #d0d0d0;
+  border-radius: 2px;
+  outline: none;
+  margin: 0;
+}
+
+[data-gs-slider] input[type="range"]:focus-visible {
+  outline: 2px solid #1976d2;
+  outline-offset: 4px;
+}
+
+[data-gs-slider] input[type="range"]::-webkit-slider-thumb {
+  appearance: none; /* WebKit-only pseudo-element; appearance reset to allow custom styling */
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--gs-slider-thumb-color, #1976d2);
+  cursor: pointer;
+  border: 2px solid #fff;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 20%);
+}
+
+[data-gs-slider] input[type="range"]::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--gs-slider-thumb-color, #1976d2);
+  cursor: pointer;
+  border: 2px solid #fff;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 20%);
+}
+
+[data-gs-slider-readout] {
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+  color: #222;
+  min-width: 4ch;
+  display: inline-block;
+}
+
+[data-gs-slider-readout="equation"] {
+  color: #6a1b9a;
+}
+
+[data-gs-slider-readout-label] {
+  color: #666;
+  font-size: 12px;
+}
+
+[data-gs-marker] {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid #1976d2;
+  background: rgb(255 255 255 / 40%);
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+  z-index: 5;
+  box-shadow: 0 0 0 2px rgb(255 255 255 / 70%);
+  transition: top 60ms linear, left 60ms linear;
+}
+
+.gs-threshold-host {
+  position: relative;
+}
+
+.gs-threshold-host.gs-threshold-active [data-gs-cell-fade] {
+  opacity: var(--gs-cell-fade, 1);
+  transition: opacity 80ms linear;
+}
+
+.gs-slider-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 6px 0;
+}
+
+/* === In-table slider injection (spec 001) ============================= */
+[data-gs-injected] {
+  background: #fafafa;
+}
+
+th[data-gs-corner] {
+  font-weight: 600;
+  font-size: 14px;
+  background: #f4f4f4;
+}
+
+th[data-gs-corner] [data-gs-slider-readout="interpolated"] {
+  display: block;
+  min-height: 1.2em;
+}
+
+th[data-gs-corner] [data-gs-slider-readout="equation"] {
+  display: block;
+  min-height: 1.2em;
+}
+
+th[data-gs-col-slot] input[type="range"] {
+  margin: 0;
+}
+
+th[data-gs-row-slot] {
+  background: #fafafa;
+}
+
+th[data-gs-row-slot] input[type="range"] {
+  /* Vertical slider: writing-mode flips the axis on modern engines. */
+  margin: 0;
+  cursor: pointer;
+}
+
+td.gs-slider-highlight {
+  background-color: #ff9 !important;
+  transition: background-color 80ms linear;
+}
+
+
 @media (prefers-color-scheme: light) {
   :root {
     color: #213547;
