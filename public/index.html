@@ -1,472 +1,214 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Grid-Sight Demo</title>
-  <!-- Shepherd.js for walkthrough -->
-  <link rel="stylesheet" href="shepherd.js/dist/css/shepherd.css"/>
-  <script type="module">
-    import Shepherd from './shepherd.js/dist/esm/shepherd.mjs';
-    window.Shepherd = Shepherd;
-  </script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Grid-Sight — Dynamic Sliders Review</title>
   <style>
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-      line-height: 1.6;
-      color: #333;
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 20px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      line-height: 1.5;
+      color: #222;
+      margin: 0;
+      padding: 24px 20px 64px;
+      box-sizing: border-box;
     }
-    h1, h2 {
-      color: #2c3e50;
-    }
-    .demo-section {
-      margin-bottom: 40px;
-      padding: 20px;
-      background: #fff;
-      border-radius: 8px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
-    .code-block {
+    h1 { margin: 0 0 8px; }
+    h2 { margin: 32px 0 8px; }
+    .lede { color: #555; margin: 0 0 12px; max-width: 60ch; }
+    .meta { font-size: 13px; color: #666; max-width: 70ch; }
+
+    .control-bar {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin: 16px 0 24px;
+      padding: 12px 16px;
       background: #f5f7fa;
-      padding: 15px;
-      border-radius: 4px;
-      font-family: 'Courier New', Courier, monospace;
-      overflow-x: auto;
+      border: 1px solid #e0e6ed;
+      border-radius: 6px;
     }
-    .tables-container {
+    .control-bar label { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+    .control-bar code { background: #fff; padding: 2px 6px; border-radius: 3px; font-size: 12px; }
+
+    nav { margin: 16px 0 32px; padding: 12px 0; border-top: 1px solid #ddd; border-bottom: 1px solid #ddd; font-size: 14px; }
+    nav strong { margin-right: 8px; }
+
+    .demo-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-      gap: 20px;
-      margin-top: 20px;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 12px;
+      margin: 16px 0 24px;
     }
-    .table-wrapper {
+    .demo-card {
+      display: block;
+      padding: 12px 14px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      text-decoration: none;
+      color: inherit;
+      transition: border-color 120ms, box-shadow 120ms;
+      background: #fff;
+    }
+    .demo-card:hover { border-color: #1976d2; box-shadow: 0 2px 8px rgba(25, 118, 210, 0.1); }
+    .demo-card h3 { margin: 0 0 4px; color: #1976d2; font-size: 15px; }
+    .demo-card p { margin: 0; font-size: 12px; color: #555; }
+
+    table { border-collapse: collapse; }
+    th, td { border: 1px solid #ccc; padding: 6px 10px; text-align: right; font-variant-numeric: tabular-nums; }
+    tr:first-child th { background: #f4f4f4; }
+
+    .table-row {
+      display: grid;
+      /* The middle table grows wider when sliders attach (extra column +
+         row), so allocate it ~50 % of the page width and 25 % each to the
+         outer reference / contact tables. */
+      grid-template-columns: minmax(0, 1fr) minmax(0, 2fr) minmax(0, 1fr);
+      gap: 16px;
+      margin: 24px 0;
+    }
+    @media (max-width: 900px) { .table-row { grid-template-columns: 1fr; } }
+    .table-section {
+      padding: 16px;
+      background: #fff;
+      border: 1px solid #e0e6ed;
+      border-radius: 6px;
       overflow-x: auto;
-      margin-bottom: 20px;
+      min-width: 0;
     }
-    .table-wrapper h3 {
-      margin-top: 0;
-      color: #34495e;
+    .table-section h3 { margin: 0 0 4px; font-size: 15px; }
+    .table-section p { margin: 0 0 12px; color: #555; font-size: 12px; }
+    .table-section table { font-size: 12px; }
+    .table-section th, .table-section td { padding: 4px 6px; }
+    .pill {
+      display: inline-block;
+      padding: 1px 8px;
+      border-radius: 9px;
+      font-size: 11px;
+      font-weight: 600;
+      margin-left: 8px;
+      vertical-align: middle;
+      letter-spacing: 0.02em;
     }
-    /* Shepherd.js custom styles */
-    .gs-shepherd-theme {
-      max-width: 400px;
-      background-color:rgb(242, 242, 244);
-    }
-    
-    .gs-shepherd-theme h3 {
-      font-size: 1.2em;
-      margin-top: 0;
-      margin-bottom: 0.5em;
-      color: #1976d2;
-    }
-    
-    .shepherd-button {
-      background: #1976d2;
-      border: none;
-      color: white;
-      cursor: pointer;
-      margin-right: 0.5rem;
-      padding: 0.5rem 1.5rem;
-      border-radius: 3px;
-      font-size: 0.9em;
-    }
-    
-    .shepherd-button:hover {
-      background: #1565c0;
-    }
-    
-    .shepherd-button.shepherd-button-secondary {
-      background: #f1f1f1;
-      color: rgba(0, 0, 0, 0.75);
-    }
-    
-    .shepherd-button.shepherd-button-secondary:hover {
-      background: #e7e7e7;
-      color: rgba(0, 0, 0, 0.95);
-    }
-    
-    .shepherd-text p {
-      margin-top: 0.5em;
-    }
-    
-    /* Walkthrough button */
-    .walkthrough-btn {
-      background: #1976d2;
-      color: white;
-      border: none;
-      padding: 8px 16px;
-      border-radius: 4px;
-      cursor: pointer;
-      margin-top: 10px;
-      font-size: 14px;
-    }
-    
-    .walkthrough-btn:hover {
-      background: #1565c0;
-    }
+    .pill-plain { background: #eee; color: #555; }
+    .pill-active { background: #1976d2; color: #fff; }
+    .pill-skipped { background: #fbe9e7; color: #c63b00; }
+
+    table.contacts th, table.contacts td { text-align: left; }
+
+    footer { margin-top: 64px; padding-top: 16px; border-top: 1px solid #eee; color: #888; font-size: 12px; }
   </style>
 </head>
 <body>
-  <header>
-    <h1>Grid-Sight Demo</h1>
-    <p>This page demonstrates the Grid-Sight library automatically processing tables on page load.</p>
-    <button id="start-walkthrough" class="walkthrough-btn">Start Walkthrough</button>
-  </header>
+  <h1>Grid-Sight — Dynamic Sliders</h1>
+  <p class="lede">
+    Continuous, pixel-precise sliders attached to numeric table axes. Live linear / bilinear
+    interpolation, four-cell highlight, optional formula readout, cross-table sync, URL
+    persistence, heatmap marker, and threshold fade — no runtime dependencies, full
+    offline support.
+  </p>
 
-  <section class="demo-section">
-    <h2>Basic Usage</h2>
-    <p>Grid-Sight automatically processes all valid tables on page load.</p>
-    
-    <div class="tables-container">
-      <div class="table-wrapper">
-        <h3>Product Inventory</h3>
-        <table class="inventory-table">
-          <tr>
-            <td>Gear / Revs</td>
-            <td>5</td>
-            <td>10</td>
-            <td>15</td>
-            <td>20</td>
-          </tr>
-          <tr>
-            <td>Low</td>
-            <td>10</td>
-            <td>15</td>
-            <td>20</td>
-            <td>25</td>
-          </tr>
-          <tr>
-            <td>Medium</td>
-            <td>17</td>
-            <td>22</td>
-            <td>27</td>
-            <td>32</td>
-          </tr>
-          <tr>
-            <td>High</td>
-            <td>27</td>
-            <td>25</td>
-            <td>30</td>
-            <td>35</td>
-          </tr>
-        </table>
-      </div>
+  <div class="control-bar">
+    <label>
+      <input type="checkbox" id="gs-page-toggle" checked />
+      <strong>Grid-Sight enabled on this page</strong>
+    </label>
+    <span class="meta">Toggle off to see raw HTML tables — no GS toggle, no lozenges, no enrichment.</span>
+  </div>
 
-      <div class="table-wrapper">
-        <h3>Monthly Sales Data</h3>
-        <table class="sales-table">
-          <thead>
-            <tr>
-              <th>Month</th>
-              <th>Revenue</th>
-              <th>Expenses</th>
-              <th>Profit</th>
-              <th>Dominant item</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>January</td>
-              <td>12500</td>
-              <td>9800</td>
-              <td>2700</td>
-              <td>Corded Mouse</td>
-            </tr>
-            <tr>
-              <td>February</td>
-              <td>11800</td>
-              <td>9200</td>
-              <td>2600</td>
-              <td>Wireless Mouse</td>
-            </tr>
-            <tr>
-              <td>March</td>
-              <td>14200</td>
-              <td>10100</td>
-              <td>4100</td>
-              <td>Corded Mouse</td>
-            </tr>
-            <tr>
-              <td>April</td>
-              <td>13800</td>
-              <td>9900</td>
-              <td>3900</td>
-              <td>Corded Mouse</td>
-            </tr>
-            <tr>
-              <td>May</td>
-              <td>15600</td>
-              <td>10500</td>
-              <td>5100</td>
-              <td>Desk Lamp</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </section>
+  <div class="demo-grid">
+    <a class="demo-card" href="demo/sliders/interpolation.html">
+      <h3>1. Interpolation</h3>
+      <p>Single table — bilinear interpolation with four-cell highlight.</p>
+    </a>
+    <a class="demo-card" href="demo/sliders/alternate-calc-models.html">
+      <h3>2. Alternate calc models</h3>
+      <p>Interpolated and formula readouts side by side.</p>
+    </a>
+    <a class="demo-card" href="demo/sliders/synced-tables.html">
+      <h3>3. Synced + persistent</h3>
+      <p>Cross-table sync via matching axis headers; bookmarkable URL fragment.</p>
+    </a>
+    <a class="demo-card" href="demo/sliders/heatmap.html">
+      <h3>4. Dynamic heatmap</h3>
+      <p>Position marker tracking the slider; threshold slider fading low-value cells.</p>
+    </a>
+  </div>
 
-  <section class="demo-section">
-    <h2>Project Status</h2>
-    <div id="status">Initializing Grid-Sight...</div>
-    
-    <h3>Browser Console</h3>
-    <div id="console" class="code-block" style="min-height: 100px; max-height: 200px; overflow-y: auto; background: #1e1e1e; color: #d4d4d4; padding: 10px; font-family: 'Courier New', Courier, monospace;"></div>
-  </section>
+  <h2>Tables on this page</h2>
+  <p class="meta">
+    Three sample tables to compare side-by-side. The toggle above turns Grid-Sight on or off
+    across all three at once.
+  </p>
+
+  <div class="table-row">
+    <!-- A. Plain reference table — explicitly opted out via data-gs-ignore. -->
+    <section class="table-section">
+      <h3>A. Plain reference <span class="pill pill-plain">opted out</span></h3>
+      <p>Marked <code>data-gs-ignore</code> — GS will not attach. "Before" rendering.</p>
+      <table id="plain-table" data-gs-ignore>
+        <tr><th></th>  <th>10</th><th>20</th><th>30</th><th>40</th><th>50</th></tr>
+        <tr><th>1000</th> <td>4.2</td><td>5.1</td><td>5.9</td><td>6.4</td><td>6.7</td></tr>
+        <tr><th>6000</th> <td>3.6</td><td>4.4</td><td>5.0</td><td>5.5</td><td>5.8</td></tr>
+        <tr><th>11000</th><td>3.0</td><td>3.7</td><td>4.2</td><td>4.6</td><td>4.9</td></tr>
+        <tr><th>16000</th><td>2.5</td><td>3.0</td><td>3.5</td><td>3.9</td><td>4.2</td></tr>
+        <tr><th>21000</th><td>2.0</td><td>2.5</td><td>2.9</td><td>3.3</td><td>3.6</td></tr>
+      </table>
+    </section>
+
+    <!-- B. Numeric lookup table that DOES qualify — full feature set. -->
+    <section class="table-section">
+      <h3>B. Numeric lookup <span class="pill pill-active">auto-detected</span></h3>
+      <p>Identical data, no opt-out. Click <strong>GS</strong> → corner <strong>S</strong> for sliders.
+         Formula pre-registered: <code>√(R/100) − sl/250</code>.</p>
+      <table id="featured-table">
+        <tr><th></th>  <th>10</th><th>20</th><th>30</th><th>40</th><th>50</th></tr>
+        <tr><th>1000</th> <td>4.2</td><td>5.1</td><td>5.9</td><td>6.4</td><td>6.7</td></tr>
+        <tr><th>6000</th> <td>3.6</td><td>4.4</td><td>5.0</td><td>5.5</td><td>5.8</td></tr>
+        <tr><th>11000</th><td>3.0</td><td>3.7</td><td>4.2</td><td>4.6</td><td>4.9</td></tr>
+        <tr><th>16000</th><td>2.5</td><td>3.0</td><td>3.5</td><td>3.9</td><td>4.2</td></tr>
+        <tr><th>21000</th><td>2.0</td><td>2.5</td><td>2.9</td><td>3.3</td><td>3.6</td></tr>
+      </table>
+    </section>
+
+    <!-- C. Unsuitable / categorical-only table. -->
+    <section class="table-section">
+      <h3>C. Contact list <span class="pill pill-skipped">no slider axes</span></h3>
+      <p>No numeric monotonic axis — GS gets a corner toggle but the <strong>S</strong> lozenge
+         never appears.</p>
+      <table id="contact-table" class="contacts">
+        <tr><th>Name</th><th>Department</th><th>Email</th></tr>
+        <tr><td>Alex Morgan</td><td>Engineering</td><td>alex@example.com</td></tr>
+        <tr><td>Priya Shah</td><td>Engineering</td><td>priya@example.com</td></tr>
+        <tr><td>Jordan Lee</td><td>Operations</td><td>jordan@example.com</td></tr>
+        <tr><td>Sam Carter</td><td>Sales</td><td>sam@example.com</td></tr>
+      </table>
+    </section>
+  </div>
 
   <footer>
-    <p>Grid-Sight v<span id="version">0.1.0</span></p>
+    Spec: <code>specs/001-dynamic-sliders/</code> · No runtime dependencies · Works offline (file://).
   </footer>
 
-  <!-- Load Grid-Sight library -->
   <script src="grid-sight.iife.js"></script>
-  
   <script>
-    // Simple console logger for the demo
-    function logToPage(message) {
-      const consoleEl = document.getElementById('console');
-      const line = document.createElement('div');
-      line.textContent = message;
-      consoleEl.appendChild(line);
-      consoleEl.scrollTop = consoleEl.scrollHeight;
-      console.log(message);
+    // Register the formula on the featured table once the IIFE has loaded.
+    function registerFeaturedFormula() {
+      if (!window.gridSight) return;
+      const t = document.getElementById('featured-table');
+      if (t) window.gridSight.registerFormula(t, (range, sl) => Math.sqrt(range / 100) - sl / 250);
     }
+    window.addEventListener('DOMContentLoaded', registerFeaturedFormula);
 
-    // Grid-Sight Walkthrough
-    let activeTour = null;
-    
-    function createWalkthrough() {
-      // Create a new tour
-      const tour = new Shepherd.Tour({
-        useModalOverlay: true,
-        defaultStepOptions: {
-          cancelIcon: {
-            enabled: true
-          },
-          classes: 'gs-shepherd-theme',
-          scrollTo: true
-        }
-      });
-
-      // Step 1: Introduction to Grid-Sight (centered, no target)
-      tour.addStep({
-        id: 'intro',
-        text: `
-          <h3>Welcome to Grid-Sight!</h3>
-          <p>Grid-Sight enhances HTML tables with powerful analysis and visualization tools.</p>
-          <p>The tool has scanned this page, and found one or more tables that can be enriched.</p>
-          <p>This brief walkthrough will show you how to get started.</p>
-        `,
-        buttons: [
-          {
-            text: 'Cancel',
-            action: function() { this.cancel(); },
-            classes: 'shepherd-button-secondary'
-          },
-          {
-            text: 'Next',
-            action: tour.next
-          }
-        ]
-      });
-
-      // Step 2: G-S Toggle Introduction
-      tour.addStep({
-        id: 'gs-toggle',
-        text: `
-          <h3>The Grid-Sight Toggle</h3>
-          <p>The tool has added a [GS] toggle button to the top-left cell of this table.</p>
-          <p>Click the toggle button to activate Grid-Sight on this table, and notice the '+' icons that appear on applicable row and column headers.</p>
-        `,
-        attachTo: {
-          element: '.sales-table [data-gs-cell-index="0"]',
-          on: 'top'
-
-        },
-        advanceOn: {
-          selector: '.sales-table .grid-sight-toggle',
-          event: 'click'
-        },
-        beforeShowPromise: function() {
-          // Return a promise that resolves when the toggle is available
-          return new Promise((resolve) => {
-            const checkForToggle = () => {
-              const toggle = document.querySelector('.grid-sight-toggle');
-              if (toggle) {
-                resolve();
-              } else {
-                // Check again in 100ms
-                setTimeout(checkForToggle, 100);
-              }
-            };
-            checkForToggle();
-          });
-        }
-      });
-
-      // Step 3: Plus Icons Introduction
-      tour.addStep({
-        id: 'numeric-plus-icons',
-        text: `
-          <h3>Numeric Data Enrichment</h3>
-          <p>Clicking on the "+" icon will open a menu of data enrichment options for numeric data.</p>
-        `,
-        buttons: [
-          {
-            text: 'Next',
-            action: tour.next
-          }
-        ],
-        attachTo: {
-          element: '.sales-table [data-gs-cell-index="1"]',
-          on: 'top'
-        },
-        beforeShowPromise: function() {
-          // Return a promise that resolves when plus icons are available
-          return new Promise((resolve) => {
-            const checkForPlusIcons = () => {
-              const plusIcons = document.querySelector('[data-gs-cell-index="1"] .gs-plus-icon');
-              if (plusIcons) {
-                resolve();
-              } else {
-                // Check again in 100ms
-                setTimeout(checkForPlusIcons, 100);
-              }
-            };
-            checkForPlusIcons();
-          });
-        },
-        when: {
-          show: function() {
-            // Add a listener for the enrichment menu selection
-            const handleEnrichmentSelected = function() {
-              // Complete the tour when an enrichment option is selected
-              setTimeout(() => {
-                if (tour) {
-                  tour.complete();
-                }
-              }, 500);
-            };
-            
-            document.addEventListener('gridsight:enrichmentSelected', handleEnrichmentSelected);
-            
-            // Clean up listener when the step is hidden
-            return function() {
-              document.removeEventListener('gridsight:enrichmentSelected', handleEnrichmentSelected);
-            };
-          }
-        }
-      });
-
-      // Step 4: Categorical Data Plus Icons
-      tour.addStep({
-        id: 'categorical-plus-icons',
-        text: `
-          <h3>Categorical Data Enrichment</h3>
-          <p>Now let's look at the options for categorical data.</p>
-          <p>Click on the "+" icon in the "Dominant item" column of the Monthly Sales Data table to see different enrichment options.</p>
-        `,
-        attachTo: {
-          element: '.sales-table [data-gs-cell-index="4"]',
-          on: 'top'
-        },
-        advanceOn: {
-          selector: '.sales-table [data-gs-cell-index="4"] .gs-plus-icon',
-          event: 'click'
-        },
-        buttons: [
-          {
-            text: 'Close',
-            action: function() { this.cancel(); },
-            classes: 'shepherd-button-secondary'
-          }
-        ],
-        beforeShowPromise: function() {
-          // Return a promise that resolves when plus icons are available
-          return new Promise((resolve) => {
-            const checkForPlusIcons = () => {
-              const plusIcons = document.querySelector('.sales-table [data-gs-cell-index="4"] .gs-plus-icon');
-              if (plusIcons) {
-                resolve();
-              } else {
-                // Check again in 100ms
-                setTimeout(checkForPlusIcons, 100);
-              }
-            };
-            checkForPlusIcons();
-          });
-        },
-        when: {
-          show: function() {
-            // Add a listener for the enrichment menu selection
-            const handleEnrichmentSelected = function() {
-              // Complete the tour when an enrichment option is selected
-              setTimeout(() => {
-                if (tour) {
-                  tour.complete();
-                }
-              }, 500);
-            };
-            
-            document.addEventListener('gridsight:enrichmentSelected', handleEnrichmentSelected);
-            
-            // Clean up listener when the step is hidden
-            return function() {
-              document.removeEventListener('gridsight:enrichmentSelected', handleEnrichmentSelected);
-            };
-          }
-        }
-      });
-
-      return tour;
-    }
-
-    function startWalkthrough() {
-      // Cancel any existing tour
-      if (activeTour) {
-        activeTour.cancel();
-      }
-
-      // Create and start a new tour
-      activeTour = createWalkthrough();
-      activeTour.start();
-      
-      logToPage('Walkthrough started');
-    }
-
-    // Log initialization
-    document.addEventListener('DOMContentLoaded', () => {
-      logToPage('DOM fully loaded');
-      
-      // Check if GridSight is available
-      if (window.gridSight) {
-        logToPage('GridSight loaded successfully');
-        document.getElementById('version').textContent = window.gridSight.version;
-        document.getElementById('status').textContent = 'Grid-Sight is active and processing tables...';
-        
-        // Log processed tables
-        const tables = document.querySelectorAll('table');
-        logToPage(`Found ${tables.length} tables on the page`);
-        
-        tables.forEach((table, index) => {
-          const isValid = window.gridSight.isValidTable(table);
-          logToPage(`Table ${index + 1}: ${isValid ? '✓ Valid' : '✗ Invalid'} structure (${table.id || 'no id'})`);
-        });
-        
-        // Set up walkthrough button
-        document.getElementById('start-walkthrough').addEventListener('click', startWalkthrough);
-        
-        // Automatically start the walkthrough after a short delay
-        setTimeout(() => {
-          startWalkthrough();
-          logToPage('Walkthrough started automatically');
-        }, 1000); // 1 second delay to ensure everything is loaded
+    // Page-level enable/disable toggle.
+    const toggle = document.getElementById('gs-page-toggle');
+    toggle.addEventListener('change', () => {
+      if (!window.gridSight) return;
+      if (toggle.checked) {
+        window.gridSight.enable();
+        registerFeaturedFormula();
       } else {
-        logToPage('Error: GridSight not found. Did the build complete successfully?');
-        document.getElementById('status').textContent = 'Error: GridSight library not loaded';
+        window.gridSight.disable();
       }
     });
   </script>

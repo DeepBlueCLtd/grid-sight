@@ -3,6 +3,7 @@ import type { HeaderType } from './header-utils';
 import { removeAllMenus } from './enrichment-menu';
 import { analyzeTable } from '../core/table-detection';
 import { toggleHeatmap } from '../enrichments/heatmap';
+import { addThresholdSlider } from '../enrichments/slider-threshold';
 import { calculateStatistics } from '../enrichments/statistics';
 import { analyzeFrequencies } from '../utils/frequency';
 import { cleanNumericCell } from '../core/type-detection';
@@ -118,6 +119,11 @@ function handleEnrichmentSelected(event: Event) {
   }
 
   // Handle menu item selection
+  if (enrichmentType === 'threshold-slider') {
+    try { addThresholdSlider(table); }
+    catch (e) { console.warn('[gridSight] addThresholdSlider failed:', e); }
+    return;
+  }
   if (enrichmentType === 'heatmap') {
     if (type === 'column') {
       // Type assertion for table header cell

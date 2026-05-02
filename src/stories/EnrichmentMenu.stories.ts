@@ -1,13 +1,11 @@
 import type { Meta, StoryObj } from '@storybook/html';
 import { expect, userEvent, within } from '@storybook/test';
 import { initializeGridSight } from '../main';
-// Import HTML table from external file
 import testTable from './tables/numeric-and-categorical.html?raw';
 
 const meta: Meta = {
   title: 'Enrichment Menu',
   render: () => {
-    // Create container for the table
     const container = document.createElement('div');
     container.style.padding = '20px';
     container.innerHTML = `
@@ -16,19 +14,12 @@ const meta: Meta = {
         ${testTable}
       </div>
     `;
-
-    // Initialize GridSight after a short delay to ensure the table is in the DOM
-    requestAnimationFrame(() => {
-      initializeGridSight();
-    });
-
+    requestAnimationFrame(() => initializeGridSight());
     return container;
   },
   parameters: {
-    // Disable Storybook's default padding
     layout: 'fullscreen',
-    // Add a background color to make the table stand out
-    backgrounds: { default: '#f5f5f5' }
+    backgrounds: { default: '#f5f5f5' },
   },
 };
 
@@ -36,67 +27,41 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-// Helper function to test if heatmap option is available for a column
-async function testHeatmapOptionForColumn(canvasElement: HTMLElement, columnName: string, shouldBeAvailable: boolean) {
-  // Wait for GridSight to initialize
-  await new Promise(resolve => setTimeout(resolve, 100));
-  
+/** Validate that the H (heatmap) lozenge is present (numeric) or absent
+ *  (categorical) on a given column header. */
+async function testHeatmapLozengeForColumn(
+  canvasElement: HTMLElement,
+  columnName: string,
+  shouldBePresent: boolean
+) {
+  await new Promise((r) => setTimeout(r, 100));
   const canvas = within(canvasElement);
-  
-  // First, find and click the GS toggle to enable GridSight
   const gsToggle = canvasElement.querySelector('.grid-sight-toggle');
-  if (!gsToggle) {
-    throw new Error('GridSight toggle not found');
-  }
+  if (!gsToggle) throw new Error('GridSight toggle not found');
   await userEvent.click(gsToggle);
-  
-  // Wait for GridSight to initialize
-  await new Promise(resolve => setTimeout(resolve, 100));
-  
-  // Find the header for the specified column
+  await new Promise((r) => setTimeout(r, 100));
+
   const header = canvas.getByText(columnName).closest('th');
-  if (!header) {
-    throw new Error(`${columnName} header not found`);
-  }
-  
-  // Find the plus icon in the header
-  const plusIcon = header.querySelector('.gs-plus-icon');
-  if (!plusIcon) {
-    throw new Error(`Plus icon not found in ${columnName} header. Make sure GridSight is enabled.`);
-  }
-  
-  // Click the plus icon to open the menu
-  await userEvent.click(plusIcon);
-  
-  try {
-    // Check if the enrichment menu is shown
-    const menu = document.querySelector('.gs-enrichment-menu');
-    expect(menu).toBeInTheDocument();
-    
-    // Check if heatmap option is in the menu as expected
-    const heatmapOption = within(menu as HTMLElement).queryByText('Heatmap');
-    
-    if (shouldBeAvailable) {
-      expect(heatmapOption).toBeInTheDocument();
-    } else {
-      expect(heatmapOption).not.toBeInTheDocument();
-    }
-  } finally {
-    // Always close the menu
-    await userEvent.click(document.body);
+  if (!header) throw new Error(`${columnName} header not found`);
+
+  const heatmapLozenge = header.querySelector('.gs-lozenge[data-gs-lozenge-id="heatmap"]');
+  if (shouldBePresent) {
+    expect(heatmapLozenge).not.toBeNull();
+  } else {
+    expect(heatmapLozenge).toBeNull();
   }
 }
 
 export const ShowsHeatmapForNumericColumns: Story = {
-  name: 'Shows heatmap for numeric columns',
+  name: 'Shows heatmap lozenge for numeric columns',
   play: async ({ canvasElement }) => {
-    await testHeatmapOptionForColumn(canvasElement, 'Price', true);
+    await testHeatmapLozengeForColumn(canvasElement, 'Price', true);
   },
 };
 
 export const NoHeatmapForCategoricalColumns: Story = {
-  name: 'No heatmap for categorical columns',
+  name: 'No heatmap lozenge for categorical columns',
   play: async ({ canvasElement }) => {
-    await testHeatmapOptionForColumn(canvasElement, 'Category', false);
+    await testHeatmapLozengeForColumn(canvasElement, 'Category', false);
   },
 };

@@ -1,134 +1,64 @@
-import { test, expect } from '@playwright/test'
+import { test, expect } from '@playwright/test';
 
 /**
- * End-to-end tests for Grid-Sight heatmap functionality
- * 
- * These tests verify that heatmap enrichments can be applied and removed correctly
+ * Heatmap toggle e2e — exercises the new lozenge UX (H toggle on the
+ * top-left corner cell) on the published landing page.
  */
 
-test.describe('Grid-Sight Heatmap', () => {
-  // Test setup - start server and navigate to demo page
-  test.beforeEach(async ({ page }) => {
-    // Start the preview server
-    const { preview } = await import('vite')
-    const server = await preview({
-      preview: {
-        port: 3001,
-        open: false,
-      },
-      build: {
-        outDir: 'dist'
-      }
-    })
+test.describe('Grid-Sight Heatmap (lozenge UX)', () => {
+  let server: any;
 
-    // Store the server in the test info
-    test.info().attachments.push({
-      name: 'server',
-      body: Buffer.from(JSON.stringify(server as unknown as Record<string, unknown>)),
-      contentType: 'application/json'
-    })
+  test.beforeAll(async () => {
+    const { preview } = await import('vite');
+    server = await preview({
+      preview: { port: 3015, open: false },
+      build: { outDir: 'dist' },
+    });
+  });
 
-    // Navigate to the demo page
-    await page.goto('http://localhost:3001/')
-    
-    // Wait for the page to load completely
-    await page.waitForLoadState('domcontentloaded')
-    
-    // Wait for Grid-Sight to initialize
-    await page.waitForFunction(() => {
-      const consoleEl = document.getElementById('console')
-      return consoleEl && consoleEl.textContent && 
-             consoleEl.textContent.includes('GridSight loaded successfully')
-    }, { timeout: 5000 })
-  })
-
-  // Close the server after each test
-  test.afterEach(async ({ page: _page }, testInfo) => {
-    // Get the server from the test info
-    const serverAttachment = testInfo.attachments.find(a => a.name === 'server')
-    if (serverAttachment && serverAttachment.body) {
-      const server = JSON.parse(serverAttachment.body.toString())
-      // Close the preview server - safely handle different server structures
-      if (server.httpServer && typeof server.httpServer.close === 'function') {
-        await new Promise(resolve => server.httpServer.close(resolve))
-      } else if (server.close && typeof server.close === 'function') {
-        await new Promise(resolve => server.close(resolve))
-      }
+  test.afterAll(async () => {
+    if (server?.httpServer?.close) {
+      await new Promise<void>((resolve) => server.httpServer.close(() => resolve()));
     }
-  })
+  });
 
-  // Test table-wide heatmap toggle functionality
-  test('should toggle table-wide heatmap on and off correctly', async ({ page }) => {
-    // Get the first table
-    const table = page.locator('table').first()
-    
-    // Find the Grid-Sight toggle button
-    await page.waitForSelector('.grid-sight-toggle')
-    
-    // Click on the Grid-Sight toggle
-    await page.click('.grid-sight-toggle')
-    
-    // await for the table plus to appear
-    await page.waitForSelector('.gs-table-plus', { timeout: 500 })
+  test('table-wide heatmap toggle on and off via the H lozenge', async ({ page }) => {
+    await page.goto('http://localhost:3015/grid-sight/');
+    await page.waitForFunction(() => !!(window as any).gridSight);
 
-    // Click on the table plus
-    await page.click('.gs-table-plus')
+    const table = page.locator('#featured-table');
 
-    // Wait for the menu to appear
-    await page.waitForSelector('.gs-enrichment-menu', { timeout: 500 })
-    
-    // Click on the heatmap option
-    await page.getByText('Heatmap').click()
-    
-    // Wait for the heatmap to be applied
+    // Activate GS so lozenges inject.
+    await page.locator('#featured-table .grid-sight-toggle').click();
+
+    // Click the H lozenge on the top-left corner cell (table-wide).
+    const cornerCell = table.locator('tr').first().locator('th, td').first();
+    const heatmapLozenge = cornerCell.locator('.gs-lozenge[data-gs-lozenge-id="heatmap"]');
+    await heatmapLozenge.click();
+
+    // Cells should pick up background colours.
     await page.waitForFunction(() => {
-      const table = document.querySelector('table')
-      return table && table.classList.contains('gs-heatmap')
-    }, { timeout: 5000 })
-    
-    // Verify that the table has the heatmap class
-    await expect(table).toHaveClass(/gs-heatmap/)
-    
-    // Verify that cells have background colors (indicating heatmap is applied)
-    const cellsWithColor = await page.evaluate(() => {
-      const cells = Array.from(document.querySelectorAll('table td'))
-      return cells.filter(cell => {
-        const style = window.getComputedStyle(cell)
-        return style.backgroundColor !== 'rgba(0, 0, 0, 0)' && 
-               style.backgroundColor !== 'rgb(255, 255, 255)' &&
-               style.backgroundColor !== 'transparent'
-      }).length
-    })
-    
-    // Ensure we have cells with background color
-    expect(cellsWithColor).toBeGreaterThan(0)
-    
-    // Toggle the heatmap off by clicking the menu option again
-    await page.click('.gs-plus-icon')
-    await page.waitForSelector('.gs-enrichment-menu', { timeout: 5000 })
-    await page.getByText('Heatmap').click()
-    
-    // Wait for the heatmap to be removed
+      const cells = document.querySelectorAll('#featured-table td');
+      return Array.from(cells).some(c => {
+        const bg = getComputedStyle(c).backgroundColor;
+        return bg && bg !== 'rgba(0, 0, 0, 0)' && bg !== 'rgb(255, 255, 255)' && bg !== 'transparent';
+      });
+    }, { timeout: 3000 });
+
+    // Lozenge should be marked active.
+    await expect(heatmapLozenge).toHaveClass(/gs-lozenge--active/);
+
+    // Click again to toggle off.
+    await heatmapLozenge.click();
+
     await page.waitForFunction(() => {
-      const table = document.querySelector('table')
-      return table && !table.classList.contains('gs-heatmap')
-    }, { timeout: 5000 })
-    
-    // Verify that the table no longer has the heatmap class
-    await expect(table).not.toHaveClass(/gs-heatmap/)
-    
-    // Verify that cells no longer have background colors
-    const cellsWithColorAfterToggle = await page.evaluate(() => {
-      const cells = Array.from(document.querySelectorAll('table td'))
-      return cells.filter(cell => {
-        const style = window.getComputedStyle(cell)
-        return style.backgroundColor !== 'rgba(0, 0, 0, 0)' && 
-               style.backgroundColor !== 'rgb(255, 255, 255)' &&
-               style.backgroundColor !== 'transparent'
-      }).length
-    })
-    
-    // Ensure no cells have background color
-    expect(cellsWithColorAfterToggle).toBe(0)
-  })
-})
+      const cells = document.querySelectorAll('#featured-table td');
+      return Array.from(cells).every(c => {
+        const bg = getComputedStyle(c).backgroundColor;
+        return !bg || bg === 'rgba(0, 0, 0, 0)' || bg === 'rgb(255, 255, 255)' || bg === 'transparent';
+      });
+    }, { timeout: 3000 });
+
+    await expect(heatmapLozenge).not.toHaveClass(/gs-lozenge--active/);
+  });
+});
