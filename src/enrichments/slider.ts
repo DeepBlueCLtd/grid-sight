@@ -67,6 +67,7 @@ interface InternalSlider extends GridSightSlider {
 const sliderRegistry: InternalSlider[] = [];
 const formulaRegistry = new WeakMap<HTMLTableElement, (rowVal: number, colVal: number) => number>();
 const recomputeListeners = new Set<() => void>();
+const destroyListeners = new Set<() => void>();
 
 // Inject CSS once at module load.
 injectSliderStyles();
@@ -106,6 +107,12 @@ function collectAxisRefs(table: HTMLTableElement): {
 
 function notifyRecomputeListeners(): void {
   for (const cb of recomputeListeners) {
+    try { cb(); } catch (err) { console.warn(err); }
+  }
+}
+
+function notifyDestroyListeners(): void {
+  for (const cb of destroyListeners) {
     try { cb(); } catch (err) { console.warn(err); }
   }
 }
@@ -259,6 +266,7 @@ function destroyAxisSlider(slider: InternalSlider, ctx: TableContext): void {
   pruneEntry(slider.id);
   const stillHasAxisSlider = sliderRegistry.some(s => s.kind === 'axis' && s.table === ctx.table);
   tearDownInjection(ctx, stillHasAxisSlider);
+  notifyDestroyListeners();
 }
 
 /* ────────────────────────────────────────────────────────────────────────── */
@@ -394,6 +402,11 @@ export function clearFormula(table: HTMLTableElement): void {
 export function onSliderRecompute(cb: () => void): () => void {
   recomputeListeners.add(cb);
   return () => recomputeListeners.delete(cb);
+}
+
+export function onSliderDestroyed(cb: () => void): () => void {
+  destroyListeners.add(cb);
+  return () => destroyListeners.delete(cb);
 }
 
 export function inspectAxisBinding(table: HTMLTableElement, axis: Axis): AxisBinding | null {

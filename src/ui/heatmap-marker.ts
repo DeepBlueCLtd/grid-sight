@@ -4,11 +4,12 @@
  * (row, col) coordinates of the table whenever both axis sliders are present.
  */
 
-import { onSliderRecompute, getSliders } from '../enrichments/slider';
+import { onSliderRecompute, onSliderDestroyed, getSliders } from '../enrichments/slider';
 import type { GridSightSlider } from '../enrichments/slider';
 import { locateSpan } from '../utils/segment';
 
 const markerByTable = new WeakMap<HTMLTableElement, HTMLElement>();
+const tablesWithMarkers = new Set<HTMLTableElement>();
 let listenerAttached = false;
 
 function findOrCreateMarker(table: HTMLTableElement): HTMLElement {
@@ -22,6 +23,7 @@ function findOrCreateMarker(table: HTMLTableElement): HTMLElement {
   ensureRelativePositioning(table);
   table.parentElement!.appendChild(m);
   markerByTable.set(table, m);
+  tablesWithMarkers.add(table);
   return m;
 }
 
@@ -38,6 +40,7 @@ function removeMarker(table: HTMLTableElement): void {
   const m = markerByTable.get(table);
   if (m?.isConnected) m.remove();
   markerByTable.delete(table);
+  tablesWithMarkers.delete(table);
 }
 
 /** Compute marker pixel position relative to the table, given row/col sliders. */
@@ -136,6 +139,10 @@ function refreshTableMarker(table: HTMLTableElement, entry: MarkerEntry): void {
 function refreshAllMarkers(): void {
   const tables = groupAxisSlidersByTable();
   for (const [table, entry] of tables) refreshTableMarker(table, entry);
+  // Clean up stale markers for tables that no longer have any axis sliders.
+  for (const table of [...tablesWithMarkers]) {
+    if (!tables.has(table)) removeMarker(table);
+  }
 }
 
 /** Initialise the marker subsystem. Idempotent — safe to call repeatedly. */
@@ -143,6 +150,7 @@ export function ensureHeatmapMarkerListener(): void {
   if (listenerAttached) return;
   listenerAttached = true;
   onSliderRecompute(refreshAllMarkers);
+  onSliderDestroyed(refreshAllMarkers);
   if (typeof window !== 'undefined') {
     window.addEventListener('resize', refreshAllMarkers);
   }

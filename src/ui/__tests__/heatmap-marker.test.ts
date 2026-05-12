@@ -49,4 +49,15 @@ describe('heatmap marker', () => {
     refreshHeatmapMarkers();
     expect(tbl.parentElement!.querySelector('[data-gs-marker]')).toBeNull();
   });
+
+  it('removes the marker when the last axis slider is destroyed', () => {
+    const tbl = buildTable();
+    const sR = addSlider(tbl, 'row');
+    const sC = addSlider(tbl, 'col');
+    refreshHeatmapMarkers();
+    expect(tbl.parentElement!.querySelector('[data-gs-marker]')).not.toBeNull();
+    sR.destroy();
+    sC.destroy();
+    expect(tbl.parentElement!.querySelector('[data-gs-marker]')).toBeNull();
+  });
 });

@@ -277,6 +277,74 @@ describe('Heatmap', () => {
     });
   });
 
+  describe('Table heatmap interaction with column/row heatmaps', () => {
+    it('regenerates the table heatmap when a column heatmap is removed', () => {
+      const table = createTestTable();
+      const columnIndex = 1;
+
+      // Apply column heatmap, then table-wide heatmap. The two should
+      // composite into a split on the affected column cells.
+      toggleHeatmap(table, columnIndex, 'column');
+      toggleHeatmap(table, 0, 'table');
+
+      const columnCells = Array.from(
+        table.querySelectorAll<HTMLElement>(`tr:not(.gs-header-row) td:nth-child(${columnIndex + 1})`)
+      ).slice(1); // skip header row
+
+      for (const c of columnCells) {
+        // Both heatmaps cover this cell → split rendering.
+        expect(c.classList.contains('gs-heatmap-split')).toBe(true);
+        expect(c.style.getPropertyValue('--split-color-1')).toBeTruthy();
+        expect(c.style.getPropertyValue('--split-color-2')).toBeTruthy();
+      }
+
+      // Toggle off the column heatmap — the column must not go blank; the
+      // table-wide heatmap should still colour those cells.
+      toggleHeatmap(table, columnIndex, 'column');
+
+      expect(isHeatmapActive(table, -1, 'table')).toBe(true);
+      for (const c of columnCells) {
+        expect(c.classList.contains('gs-heatmap-split')).toBe(false);
+        expect(c.style.backgroundColor).toBeTruthy();
+      }
+    });
+
+    it('shows both colours when row heatmap is applied then table heatmap is added', () => {
+      const table = createTestTable();
+      const rowIndex = 2;
+
+      toggleHeatmap(table, rowIndex, 'row');
+      const rowCells = Array.from(table.rows[rowIndex - 1].cells).slice(1) as HTMLElement[];
+      for (const c of rowCells) {
+        expect(c.style.backgroundColor).toBeTruthy();
+      }
+
+      toggleHeatmap(table, 0, 'table');
+      for (const c of rowCells) {
+        expect(c.classList.contains('gs-heatmap-split')).toBe(true);
+        expect(c.style.getPropertyValue('--split-color-1')).toBeTruthy();
+        expect(c.style.getPropertyValue('--split-color-2')).toBeTruthy();
+      }
+    });
+
+    it('preserves the row heatmap when the table heatmap is removed on top of it', () => {
+      const table = createTestTable();
+      const rowIndex = 2;
+
+      toggleHeatmap(table, rowIndex, 'row');
+      const rowCells = Array.from(table.rows[rowIndex - 1].cells).slice(1) as HTMLElement[];
+      const rowColors = rowCells.map(c => c.style.backgroundColor);
+
+      toggleHeatmap(table, 0, 'table');
+      toggleHeatmap(table, 0, 'table'); // remove the table heatmap again
+
+      for (let i = 0; i < rowCells.length; i++) {
+        expect(rowCells[i].classList.contains('gs-heatmap-split')).toBe(false);
+        expect(rowCells[i].style.backgroundColor).toBe(rowColors[i]);
+      }
+    });
+  });
+
   describe('Edge Cases', () => {
     it('should handle empty tables', () => {
       const table = document.createElement('table');
