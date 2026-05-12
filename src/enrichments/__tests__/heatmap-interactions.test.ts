@@ -277,6 +277,36 @@ describe('Heatmap', () => {
     });
   });
 
+  describe('Table heatmap interaction with column/row heatmaps', () => {
+    it('regenerates the table heatmap when a column heatmap is removed', () => {
+      const table = createTestTable();
+      const columnIndex = 1;
+
+      // Apply column heatmap, then table-wide heatmap. The table-wide heatmap
+      // overwrites the column's cell colors.
+      toggleHeatmap(table, columnIndex, 'column');
+      toggleHeatmap(table, 0, 'table');
+
+      // All data cells in the target column should be colored by the table heatmap.
+      const columnCells = Array.from(
+        table.querySelectorAll<HTMLElement>(`tr:not(.gs-header-row) td:nth-child(${columnIndex + 1})`)
+      ).slice(1); // skip header row
+      for (const c of columnCells) {
+        expect(c.style.backgroundColor).toBeTruthy();
+      }
+
+      // Toggle off the column heatmap — the column must not go blank; the
+      // table-wide heatmap should reclaim those cells.
+      toggleHeatmap(table, columnIndex, 'column');
+
+      expect(isHeatmapActive(table, -1, 'table')).toBe(true);
+      for (const c of columnCells) {
+        expect(c.style.backgroundColor).toBeTruthy();
+        expect(c.dataset.heatmapType).toBe('table');
+      }
+    });
+  });
+
   describe('Edge Cases', () => {
     it('should handle empty tables', () => {
       const table = document.createElement('table');

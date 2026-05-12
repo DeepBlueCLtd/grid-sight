@@ -309,30 +309,41 @@ export function removeHeatmap(table: HTMLTableElement, index?: number, type?: He
     
     if (heatmapIndex !== -1) {
       const heatmap = table._heatmapInfos[heatmapIndex];
-      
+
       // Remove cell styles
       heatmap.cellElements.forEach(({ element, heatmapType }) => {
         cleanupCell(element, heatmapType);
       });
-      
+
       // Remove from active heatmaps
       setHeatmapActive(table, index, type, false);
-      
+
       // Remove from the table's heatmap infos
       table._heatmapInfos.splice(heatmapIndex, 1);
-      
+
       // If no more heatmaps, remove the heatmap class from the table
       if (table._heatmapInfos.length === 0) {
         table.classList.remove(HEATMAP_CLASS);
       }
-      
+
       // Dispatch event for this specific heatmap removal
       const event = new CustomEvent('gridsight:heatmapChanged', {
         bubbles: true,
         detail: { table, index, type, active: false }
       });
       table.dispatchEvent(event);
-      
+
+      // A row/column heatmap overwrites the table-wide heatmap's colors on
+      // its cells. When the row/column heatmap is removed, those cells are
+      // wiped — regenerate the table-wide heatmap so the affected scope
+      // gets its table-level colors back.
+      if ((type === 'row' || type === 'column') && isHeatmapActive(table, -1, 'table')) {
+        const tableInfoIdx = table._heatmapInfos.findIndex(h => h.type === 'table');
+        if (tableInfoIdx !== -1) table._heatmapInfos.splice(tableInfoIdx, 1);
+        setHeatmapActive(table, -1, 'table', false);
+        applyTableHeatmap(table);
+      }
+
       return;
     }
   } else {
