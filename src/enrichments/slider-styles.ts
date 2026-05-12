@@ -11,11 +11,20 @@ const SLIDER_CSS = `
 [data-gs-slider] { display:flex; align-items:center; gap:8px; padding:4px 6px; font:13px/1.2 system-ui,sans-serif; }
 [data-gs-slider][data-gs-slider-orientation="vertical"] { flex-direction:column; }
 
-/* Horizontal slider — custom-styled. */
+/* Horizontal slider — custom-styled. Fill the left portion up to the thumb
+   so it matches the native fill the vertical slider already shows. The
+   --gs-fill variable (0-100%) is updated by JS on input. */
 [data-gs-slider] input[type="range"],
 th[data-gs-col-slot] input[type="range"] {
   appearance: none; -webkit-appearance: none; outline: none; margin: 0;
-  cursor: pointer; background: #d0d0d0; border-radius: 2px;
+  cursor: pointer; border-radius: 2px;
+  background: linear-gradient(
+    to right,
+    var(--gs-slider-fill-color, #1976d2) 0%,
+    var(--gs-slider-fill-color, #1976d2) var(--gs-fill, 0%),
+    #d0d0d0 var(--gs-fill, 0%),
+    #d0d0d0 100%
+  );
 }
 th[data-gs-col-slot] input[type="range"] { width: 100%; height: 4px; }
 

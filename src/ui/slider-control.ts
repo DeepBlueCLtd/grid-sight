@@ -64,6 +64,13 @@ export function createSliderControl(opts: SliderControlOptions): SliderControlHa
   input.value = String(clamp(opts.initial, opts.min, opts.max));
   input.setAttribute('aria-label', opts.label);
 
+  const updateFill = (v: number) => {
+    if (opts.axis === 'row') return;
+    const pct = opts.max > opts.min ? ((v - opts.min) / (opts.max - opts.min)) * 100 : 0;
+    input.style.setProperty('--gs-fill', `${pct}%`);
+  };
+  updateFill(parseFloat(input.value));
+
   const readoutInterpolated = document.createElement('span');
   readoutInterpolated.setAttribute('data-gs-slider-readout', 'interpolated');
   readoutInterpolated.setAttribute('aria-live', 'polite');
@@ -127,6 +134,7 @@ export function createSliderControl(opts: SliderControlOptions): SliderControlHa
   const onInputEvent = () => {
     const v = parseFloat(input.value);
     if (!isFinite(v)) return;
+    updateFill(v);
     scheduleInput(v);
   };
 
@@ -166,6 +174,7 @@ export function createSliderControl(opts: SliderControlOptions): SliderControlHa
     ev.preventDefault();
     next = clamp(next, min, max);
     input.value = String(next);
+    updateFill(next);
     scheduleInput(next);
     if (opts.onChange) opts.onChange(next);
   };
@@ -215,6 +224,7 @@ export function createSliderControl(opts: SliderControlOptions): SliderControlHa
     setValue(value: number, options) {
       const v = clamp(value, parseFloat(input.min), parseFloat(input.max));
       input.value = String(v);
+      updateFill(v);
       if (!options?.silent) {
         scheduleInput(v);
       } else {
