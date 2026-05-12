@@ -287,6 +287,13 @@ export function addSlider(table: HTMLTableElement, axis: Axis): GridSightSlider 
   const input = createSliderInput({ id, min, max, initial, axis, ariaLabel });
   const valueSpan = axis === 'col' ? placeColSlider(ctx, input, initial) : placeRowSlider(ctx, input, initial);
 
+  const updateFill = (v: number) => {
+    if (axis !== 'col') return;
+    const pct = max > min ? ((v - min) / (max - min)) * 100 : 0;
+    input.style.setProperty('--gs-fill', `${pct}%`);
+  };
+  updateFill(initial);
+
   // RAF-throttled input handler.
   let pendingValue: number | null = null;
   let scheduled = false;
@@ -298,6 +305,7 @@ export function addSlider(table: HTMLTableElement, axis: Axis): GridSightSlider 
       slider.position = v;
       slider.position01 = (v - min) / (max - min);
       valueSpan.textContent = formatNumber(v);
+      updateFill(v);
       refreshTableReadouts(table);
       persistPosition(id, slider.position01);
       broadcastSync(slider);
@@ -344,6 +352,7 @@ export function addSlider(table: HTMLTableElement, axis: Axis): GridSightSlider 
       slider.position01 = (clamped - min) / (max - min);
       input.value = String(clamped);
       valueSpan.textContent = formatNumber(clamped);
+      updateFill(clamped);
       refreshTableReadouts(table);
       persistPosition(id, slider.position01);
       if (opts?.broadcast !== false) broadcastSync(slider);
