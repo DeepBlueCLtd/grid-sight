@@ -271,9 +271,10 @@ unchanged.
   not re-derived after a user-driven conversion.
 - Slider interpolation continues to operate on source values; this means a
   slider configured in metres and viewed in feet has its underlying min/max in
-  metres. [NEEDS CLARIFICATION: should the slider's persisted thumb position be
-  stored as a source-unit value or as a normalised 0..1 fraction? Either works
-  for FR-018; the spec leaves the choice to the implementation plan.]
+  metres. The slider's persisted thumb position MUST be stored as a normalised
+  0..1 fraction along the source-unit axis range, so that shared URLs survive
+  later unit toggles unchanged: the display layer translates the fraction back
+  into whichever unit is currently active on read.
 - No new runtime dependency is introduced; conversions and parsing are
   hand-rolled against the constitutional zero-runtime-deps principle.
 - The lozenge inherits the existing lozenge styling and keyboard handling from

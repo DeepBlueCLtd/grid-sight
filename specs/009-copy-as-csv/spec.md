@@ -166,10 +166,13 @@ Reload the page, open the popup again, and confirm Markdown is preselected.
 - **FR-017**: The most-recently chosen format MUST be encoded into the URL
   fragment using the same per-page scheme as `src/utils/slider-persistence.ts`.
 - **FR-018**: The three boolean options (include headers, include row headers,
-  include GS virtual columns) are NOT persisted in v1 and MUST default to "on"
-  on every open. [NEEDS CLARIFICATION: should checkbox state also persist?]
+  include GS virtual columns) MUST also persist alongside the format choice,
+  using the same per-page scheme, so that reopening the popup on the same page
+  (or sharing the URL) restores the user's last full configuration. Initial
+  defaults remain "on" for all three when no persisted value exists.
 - **FR-019**: A persisted format value that the current build no longer
-  supports MUST fall back to CSV silently.
+  supports MUST fall back to CSV silently. A persisted checkbox value that
+  cannot be parsed MUST fall back to its "on" default silently.
 
 **Accessibility**
 
@@ -197,7 +200,7 @@ Reload the page, open the popup again, and confirm Markdown is preselected.
   (including any GS-appended virtual columns when requested), captured at the
   moment "Copy" is pressed.
 - **Persisted Format State**: A serialisation of the user's last format choice
-  per page, written to the URL fragment.
+  *and* the three boolean option values per page, written to the URL fragment.
 - **Toast Notification**: A short-lived `aria-live` element communicating the
   outcome of a copy attempt.
 

@@ -71,11 +71,13 @@ click the header of column 4. Verify an appended virtual column titled
    **When** the user clicks a column header, **Then** that column is marked as
    A; the next click on a different column header marks B and the appended
    comparison column appears.
-2. **Given** the user has already selected row A and row B and then clicks a
-   column header, **Then** Grid-Sight switches to column-compare mode, clears
-   the row selection, and treats the clicked column as A. [NEEDS CLARIFICATION:
-   is mode switching mid-selection acceptable or should it require an explicit
-   clear?]
+2. **Given** the user has selected row A (or row A and row B) and then clicks
+   a column header, **Then** Grid-Sight auto-clears any current row selection,
+   switches to column-compare mode, and treats the clicked column as A. The
+   same rule applies symmetrically when the user is mid-selection on columns
+   and clicks a row header. No confirmation prompt is shown — clicking a
+   header on the opposite axis is taken as a clear intent signal to restart on
+   that axis.
 
 ---
 
@@ -129,7 +131,9 @@ click the header of column 4. Verify an appended virtual column titled
 - **FR-005**: Re-clicking the A target MUST clear A. Re-clicking the B target
   MUST clear B. Clicking a third target replaces B.
 - **FR-006**: Row-mode and column-mode are mutually exclusive within a single
-  active comparison. Switching axes MUST clear the current selection.
+  active comparison. While mid-selection on one axis, clicking a header on the
+  opposite axis MUST auto-clear the current selection and treat the clicked
+  header as A on the new axis; no confirmation prompt is shown.
 - **FR-007**: Each selection change MUST be announced via an `aria-live`
   region (e.g. "Row 3 selected as B").
 
@@ -147,11 +151,12 @@ click the header of column 4. Verify an appended virtual column titled
 
 **Display**
 
-- **FR-011**: The comparison overlay for row-compare MUST be rendered either
-  as an appended row immediately below row B or as inline annotations under
-  each numeric cell of row B; the chosen rendering MUST be consistent within a
-  single page session. [NEEDS CLARIFICATION: which of the two row-overlay
-  shapes ships in v1?]
+- **FR-011**: The comparison overlay for row-compare MUST be rendered as an
+  appended row at the bottom of the table body, echoing the layout pattern
+  used by the cumulative-column enrichment. The row's leading header cell
+  MUST label the row "Δ <rowB> − <rowA>" and each comparison cell sits in the
+  same column as its source operands. Inline-under-row-B annotations are
+  explicitly out of scope for v1.
 - **FR-012**: The comparison column for column-compare MUST be appended at the
   right edge of the table with a header "Δ <colB> − <colA>" and MUST coexist
   with cumulative and sparkline columns per their ordering rules.
