@@ -156,15 +156,18 @@ function pickColor(value: number, min: number, max: number, colorScale: string[]
 }
 
 function collectColumnCells(table: HTMLTableElement, index: number): { cell: HTMLTableCellElement; value: number }[] {
-  const hasTbody = !!table.querySelector('tbody');
-  const selector = hasTbody
-    ? `tbody tr:not(.gs-header-row) td:nth-child(${index + 1})`
-    : `tr:not(.gs-header-row) td:nth-child(${index + 1})`;
   const out: { cell: HTMLTableCellElement; value: number }[] = [];
-  table.querySelectorAll<HTMLTableCellElement>(selector).forEach(cell => {
+  const rows = Array.from(table.rows).filter(
+    r => !r.hasAttribute('data-gs-injected') && !r.classList.contains('gs-header-row')
+  );
+  // rows[0] is the header row; data rows start at rows[1].
+  for (let i = 1; i < rows.length; i++) {
+    const cells = Array.from(rows[i].cells).filter(c => !c.hasAttribute('data-gs-injected'));
+    const cell = cells[index];
+    if (!cell || cell.tagName.toLowerCase() !== 'td') continue;
     const v = cleanNumericCell(cell.textContent || '');
     if (v !== null) out.push({ cell, value: v });
-  });
+  }
   return out;
 }
 
