@@ -8,6 +8,7 @@
  */
 
 import { parseHeaderNumber } from '../utils/sync-key';
+import { SLIDER_HIGHLIGHT_CLASSES } from './slider-readout';
 
 export type Axis = 'row' | 'col';
 
@@ -282,13 +283,7 @@ export function tearDownInjection(
   if (hasAnyAxisSlider) return;
   for (const cell of ctx.table.querySelectorAll<HTMLElement>('[data-gs-rc]')) {
     cell.removeAttribute('data-gs-rc');
-    cell.classList.remove(
-      'gs-slider-highlight',
-      'gs-slider-highlight-t',
-      'gs-slider-highlight-r',
-      'gs-slider-highlight-b',
-      'gs-slider-highlight-l'
-    );
+    cell.classList.remove(...SLIDER_HIGHLIGHT_CLASSES);
   }
   ctx.topRow?.parentElement?.removeChild(ctx.topRow);
   ctx.rowSliderCell?.parentElement?.removeChild(ctx.rowSliderCell);

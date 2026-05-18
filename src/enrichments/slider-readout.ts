@@ -22,7 +22,7 @@ export function bracketIndices(headers: number[], x: number): [number, number] |
   return i < 0 ? null : [i, i + 1];
 }
 
-const EDGE_CLASSES = [
+export const SLIDER_HIGHLIGHT_CLASSES = [
   'gs-slider-highlight',
   'gs-slider-highlight-t',
   'gs-slider-highlight-r',
@@ -32,16 +32,18 @@ const EDGE_CLASSES = [
 
 function clearHighlights(table: HTMLTableElement): void {
   for (const cell of table.querySelectorAll<HTMLElement>('.gs-slider-highlight')) {
-    cell.classList.remove(...EDGE_CLASSES);
+    cell.classList.remove(...SLIDER_HIGHLIGHT_CLASSES);
   }
 }
 
-function markEdges(cell: HTMLElement, t: boolean, r: boolean, b: boolean, l: boolean): void {
+interface EdgeFlags { t: boolean; r: boolean; b: boolean; l: boolean }
+
+function markEdges(cell: HTMLElement, edges: EdgeFlags): void {
   cell.classList.add('gs-slider-highlight');
-  if (t) cell.classList.add('gs-slider-highlight-t');
-  if (r) cell.classList.add('gs-slider-highlight-r');
-  if (b) cell.classList.add('gs-slider-highlight-b');
-  if (l) cell.classList.add('gs-slider-highlight-l');
+  if (edges.t) cell.classList.add('gs-slider-highlight-t');
+  if (edges.r) cell.classList.add('gs-slider-highlight-r');
+  if (edges.b) cell.classList.add('gs-slider-highlight-b');
+  if (edges.l) cell.classList.add('gs-slider-highlight-l');
 }
 
 function highlightCellGroup(
@@ -52,7 +54,12 @@ function highlightCellGroup(
   for (let i = 0; i < rPair.length; i++) {
     for (let j = 0; j < cPair.length; j++) {
       const cell = table.querySelector<HTMLElement>(`[data-gs-rc="${rPair[i]}:${cPair[j]}"]`);
-      if (cell) markEdges(cell, i === 0, j === cPair.length - 1, i === rPair.length - 1, j === 0);
+      if (cell) markEdges(cell, {
+        t: i === 0,
+        r: j === cPair.length - 1,
+        b: i === rPair.length - 1,
+        l: j === 0,
+      });
     }
   }
 }
@@ -60,7 +67,12 @@ function highlightCellGroup(
 function highlightRowsOnly(table: HTMLTableElement, rPair: readonly number[]): void {
   for (let i = 0; i < rPair.length; i++) {
     const cells = Array.from(table.querySelectorAll<HTMLElement>(`[data-gs-rc^="${rPair[i]}:"]`));
-    cells.forEach((c, j) => markEdges(c, i === 0, j === cells.length - 1, i === rPair.length - 1, j === 0));
+    cells.forEach((c, j) => markEdges(c, {
+      t: i === 0,
+      r: j === cells.length - 1,
+      b: i === rPair.length - 1,
+      l: j === 0,
+    }));
   }
 }
 
@@ -69,7 +81,12 @@ function highlightColsOnly(table: HTMLTableElement, cPair: readonly number[]): v
   for (let j = 0; j < cPair.length; j++) {
     const suffix = ':' + cPair[j];
     const cells = all.filter(c => (c.getAttribute('data-gs-rc') ?? '').endsWith(suffix));
-    cells.forEach((c, i) => markEdges(c, i === 0, j === cPair.length - 1, i === cells.length - 1, j === 0));
+    cells.forEach((c, i) => markEdges(c, {
+      t: i === 0,
+      r: j === cPair.length - 1,
+      b: i === cells.length - 1,
+      l: j === 0,
+    }));
   }
 }
 
