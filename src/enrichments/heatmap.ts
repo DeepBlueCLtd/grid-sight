@@ -175,8 +175,9 @@ function collectRowCells(table: HTMLTableElement, index: number): { cell: HTMLTa
   const out: { cell: HTMLTableCellElement; value: number }[] = [];
   const row = table.querySelector<HTMLTableRowElement>(`tbody tr:nth-child(${index})`);
   if (!row) return out;
-  Array.from(row.cells).forEach((cell, cellIndex) => {
-    if (cellIndex === 0 && cell.closest('th')) return;
+  const cells = Array.from(row.cells).filter(c => !c.hasAttribute('data-gs-injected'));
+  cells.forEach((cell, cellIndex) => {
+    if (cellIndex === 0 && cell.tagName.toLowerCase() === 'th') return;
     const v = cleanNumericCell(cell.textContent || '');
     if (v !== null) out.push({ cell, value: v });
   });
