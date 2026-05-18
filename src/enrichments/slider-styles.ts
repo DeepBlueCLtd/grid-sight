@@ -64,9 +64,21 @@ th[data-gs-row-header] { background: #fafafa; }
 th[data-gs-row-slot] { background: #fafafa; }
 [data-gs-injected] { background: #fafafa; }
 td.gs-slider-highlight, th.gs-slider-highlight {
-  background-color: #ff9 !important;
-  transition: background-color 80ms linear;
+  --gs-hl-t: 0 0 0 0 transparent;
+  --gs-hl-r: 0 0 0 0 transparent;
+  --gs-hl-b: 0 0 0 0 transparent;
+  --gs-hl-l: 0 0 0 0 transparent;
+  box-shadow:
+    inset var(--gs-hl-t),
+    inset var(--gs-hl-r),
+    inset var(--gs-hl-b),
+    inset var(--gs-hl-l);
+  transition: box-shadow 80ms linear;
 }
+td.gs-slider-highlight-t, th.gs-slider-highlight-t { --gs-hl-t: 0 3px 0 0 #1976d2; }
+td.gs-slider-highlight-r, th.gs-slider-highlight-r { --gs-hl-r: -3px 0 0 0 #1976d2; }
+td.gs-slider-highlight-b, th.gs-slider-highlight-b { --gs-hl-b: 0 -3px 0 0 #1976d2; }
+td.gs-slider-highlight-l, th.gs-slider-highlight-l { --gs-hl-l: 3px 0 0 0 #1976d2; }
 [data-gs-marker] {
   position: absolute; width: 14px; height: 14px; border-radius: 50%;
   border: 2px solid #1976d2; background: rgb(255 255 255 / 40%);

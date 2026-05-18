@@ -282,7 +282,13 @@ export function tearDownInjection(
   if (hasAnyAxisSlider) return;
   for (const cell of ctx.table.querySelectorAll<HTMLElement>('[data-gs-rc]')) {
     cell.removeAttribute('data-gs-rc');
-    cell.classList.remove('gs-slider-highlight');
+    cell.classList.remove(
+      'gs-slider-highlight',
+      'gs-slider-highlight-t',
+      'gs-slider-highlight-r',
+      'gs-slider-highlight-b',
+      'gs-slider-highlight-l'
+    );
   }
   ctx.topRow?.parentElement?.removeChild(ctx.topRow);
   ctx.rowSliderCell?.parentElement?.removeChild(ctx.rowSliderCell);
