@@ -82,6 +82,7 @@ cells above receive a visible highlight while the focus / hover is held.
 ### User Story 3 - Switch between per-row and shared scaling (Priority: P2)
 
 The user wants to choose between two readings of the same sparkline column:
+
 - "Each row scales to its own min / max" (default). Shapes are comparable
   across rows; absolute magnitudes are not.
 - "Shared scale" (global min / max across every row). Absolute magnitudes are
