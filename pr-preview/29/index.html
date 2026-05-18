@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Grid-Sight — Dynamic Sliders Review</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      line-height: 1.5;
+      color: #222;
+      margin: 0;
+      padding: 24px 20px 64px;
+      box-sizing: border-box;
+    }
+    h1 { margin: 0 0 8px; }
+    h2 { margin: 32px 0 8px; }
+    .lede { color: #555; margin: 0 0 12px; max-width: 60ch; }
+    .meta { font-size: 13px; color: #666; max-width: 70ch; }
+
+    .control-bar {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin: 16px 0 24px;
+      padding: 12px 16px;
+      background: #f5f7fa;
+      border: 1px solid #e0e6ed;
+      border-radius: 6px;
+    }
+    .control-bar label { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+    .control-bar code { background: #fff; padding: 2px 6px; border-radius: 3px; font-size: 12px; }
+
+    nav { margin: 16px 0 32px; padding: 12px 0; border-top: 1px solid #ddd; border-bottom: 1px solid #ddd; font-size: 14px; }
+    nav strong { margin-right: 8px; }
+
+    .demo-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 12px;
+      margin: 16px 0 24px;
+    }
+    .demo-card {
+      display: block;
+      padding: 12px 14px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      text-decoration: none;
+      color: inherit;
+      transition: border-color 120ms, box-shadow 120ms;
+      background: #fff;
+    }
+    .demo-card:hover { border-color: #1976d2; box-shadow: 0 2px 8px rgba(25, 118, 210, 0.1); }
+    .demo-card h3 { margin: 0 0 4px; color: #1976d2; font-size: 15px; }
+    .demo-card p { margin: 0; font-size: 12px; color: #555; }
+
+    table { border-collapse: collapse; }
+    th, td { border: 1px solid #ccc; padding: 6px 10px; text-align: right; font-variant-numeric: tabular-nums; }
+    tr:first-child th { background: #f4f4f4; }
+
+    .table-row {
+      display: grid;
+      /* The middle table grows wider when sliders attach (extra column +
+         row), so allocate it ~50 % of the page width and 25 % each to the
+         outer reference / contact tables. */
+      grid-template-columns: minmax(0, 1fr) minmax(0, 2fr) minmax(0, 1fr);
+      gap: 16px;
+      margin: 24px 0;
+    }
+    @media (max-width: 900px) { .table-row { grid-template-columns: 1fr; } }
+    .table-section {
+      padding: 16px;
+      background: #fff;
+      border: 1px solid #e0e6ed;
+      border-radius: 6px;
+      overflow-x: auto;
+      min-width: 0;
+    }
+    .table-section h3 { margin: 0 0 4px; font-size: 15px; }
+    .table-section p { margin: 0 0 12px; color: #555; font-size: 12px; }
+    .table-section table { font-size: 12px; }
+    .table-section th, .table-section td { padding: 4px 6px; }
+    .pill {
+      display: inline-block;
+      padding: 1px 8px;
+      border-radius: 9px;
+      font-size: 11px;
+      font-weight: 600;
+      margin-left: 8px;
+      vertical-align: middle;
+      letter-spacing: 0.02em;
+    }
+    .pill-plain { background: #eee; color: #555; }
+    .pill-active { background: #1976d2; color: #fff; }
+    .pill-skipped { background: #fbe9e7; color: #c63b00; }
+
+    table.contacts th, table.contacts td { text-align: left; }
+
+    footer { margin-top: 64px; padding-top: 16px; border-top: 1px solid #eee; color: #888; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <h1>Grid-Sight — Dynamic Sliders</h1>
+  <p class="lede">
+    Continuous, pixel-precise sliders attached to numeric table axes. Live linear / bilinear
+    interpolation, four-cell highlight, optional formula readout, cross-table sync, URL
+    persistence, heatmap marker, and threshold fade — no runtime dependencies, full
+    offline support.
+  </p>
+
+  <div class="control-bar">
+    <label>
+      <input type="checkbox" id="gs-page-toggle" checked />
+      <strong>Grid-Sight enabled on this page</strong>
+    </label>
+    <span class="meta">Toggle off to see raw HTML tables — no GS toggle, no lozenges, no enrichment.</span>
+  </div>
+
+  <div class="demo-grid">
+    <a class="demo-card" href="demo/sliders/interpolation.html">
+      <h3>1. Interpolation</h3>
+      <p>Single table — bilinear interpolation with four-cell highlight.</p>
+    </a>
+    <a class="demo-card" href="demo/sliders/alternate-calc-models.html">
+      <h3>2. Alternate calc models</h3>
+      <p>Interpolated and formula readouts side by side.</p>
+    </a>
+    <a class="demo-card" href="demo/sliders/synced-tables.html">
+      <h3>3. Synced + persistent</h3>
+      <p>Cross-table sync via matching axis headers; bookmarkable URL fragment.</p>
+    </a>
+    <a class="demo-card" href="demo/sliders/heatmap.html">
+      <h3>4. Dynamic heatmap</h3>
+      <p>Position marker tracking the slider; threshold slider fading low-value cells.</p>
+    </a>
+  </div>
+
+  <h2>Tables on this page</h2>
+  <p class="meta">
+    Three sample tables to compare side-by-side. The toggle above turns Grid-Sight on or off
+    across all three at once.
+  </p>
+
+  <div class="table-row">
+    <!-- A. Plain reference table — explicitly opted out via data-gs-ignore. -->
+    <section class="table-section">
+      <h3>A. Plain reference <span class="pill pill-plain">opted out</span></h3>
+      <p>Marked <code>data-gs-ignore</code> — GS will not attach. "Before" rendering.</p>
+      <table id="plain-table" data-gs-ignore>
+        <tr><th></th>  <th>10</th><th>20</th><th>30</th><th>40</th><th>50</th></tr>
+        <tr><th>1000</th> <td>4.2</td><td>5.1</td><td>5.9</td><td>6.4</td><td>6.7</td></tr>
+        <tr><th>6000</th> <td>3.6</td><td>4.4</td><td>5.0</td><td>5.5</td><td>5.8</td></tr>
+        <tr><th>11000</th><td>3.0</td><td>3.7</td><td>4.2</td><td>4.6</td><td>4.9</td></tr>
+        <tr><th>16000</th><td>2.5</td><td>3.0</td><td>3.5</td><td>3.9</td><td>4.2</td></tr>
+        <tr><th>21000</th><td>2.0</td><td>2.5</td><td>2.9</td><td>3.3</td><td>3.6</td></tr>
+      </table>
+    </section>
+
+    <!-- B. Numeric lookup table that DOES qualify — full feature set. -->
+    <section class="table-section">
+      <h3>B. Numeric lookup <span class="pill pill-active">auto-detected</span></h3>
+      <p>Identical data, no opt-out. Click <strong>GS</strong> → corner <strong>S</strong> for sliders.
+         Formula pre-registered: <code>√(R/100) − sl/250</code>.</p>
+      <table id="featured-table">
+        <tr><th></th>  <th>10</th><th>20</th><th>30</th><th>40</th><th>50</th></tr>
+        <tr><th>1000</th> <td>4.2</td><td>5.1</td><td>5.9</td><td>6.4</td><td>6.7</td></tr>
+        <tr><th>6000</th> <td>3.6</td><td>4.4</td><td>5.0</td><td>5.5</td><td>5.8</td></tr>
+        <tr><th>11000</th><td>3.0</td><td>3.7</td><td>4.2</td><td>4.6</td><td>4.9</td></tr>
+        <tr><th>16000</th><td>2.5</td><td>3.0</td><td>3.5</td><td>3.9</td><td>4.2</td></tr>
+        <tr><th>21000</th><td>2.0</td><td>2.5</td><td>2.9</td><td>3.3</td><td>3.6</td></tr>
+      </table>
+    </section>
+
+    <!-- C. Unsuitable / categorical-only table. -->
+    <section class="table-section">
+      <h3>C. Contact list <span class="pill pill-skipped">no slider axes</span></h3>
+      <p>No numeric monotonic axis — GS gets a corner toggle but the <strong>S</strong> lozenge
+         never appears.</p>
+      <table id="contact-table" class="contacts">
+        <tr><th>Name</th><th>Department</th><th>Email</th></tr>
+        <tr><td>Alex Morgan</td><td>Engineering</td><td>alex@example.com</td></tr>
+        <tr><td>Priya Shah</td><td>Engineering</td><td>priya@example.com</td></tr>
+        <tr><td>Jordan Lee</td><td>Operations</td><td>jordan@example.com</td></tr>
+        <tr><td>Sam Carter</td><td>Sales</td><td>sam@example.com</td></tr>
+      </table>
+    </section>
+  </div>
+
+  <footer>
+    Spec: <code>specs/001-dynamic-sliders/</code> · No runtime dependencies · Works offline (file://).
+  </footer>
+
+  <script src="grid-sight.iife.js"></script>
+  <script>
+    // Register the formula on the featured table once the IIFE has loaded.
+    function registerFeaturedFormula() {
+      if (!window.gridSight) return;
+      const t = document.getElementById('featured-table');
+      if (t) window.gridSight.registerFormula(t, (range, sl) => Math.sqrt(range / 100) - sl / 250);
+    }
+    window.addEventListener('DOMContentLoaded', registerFeaturedFormula);
+
+    // Page-level enable/disable toggle.
+    const toggle = document.getElementById('gs-page-toggle');
+    toggle.addEventListener('change', () => {
+      if (!window.gridSight) return;
+      if (toggle.checked) {
+        window.gridSight.enable();
+        registerFeaturedFormula();
+      } else {
+        window.gridSight.disable();
+      }
+    });
+  </script>
+</body>
+</html>
