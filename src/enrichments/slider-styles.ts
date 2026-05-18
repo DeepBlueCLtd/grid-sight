@@ -73,7 +73,7 @@ td.gs-slider-highlight::after, th.gs-slider-highlight::after {
   pointer-events: none;
   box-sizing: border-box;
   z-index: 10;
-  border: 0 solid #000;
+  border: 0 solid #1976d2;
 }
 td.gs-slider-highlight-t::after, th.gs-slider-highlight-t::after { border-top-width: 5px; }
 td.gs-slider-highlight-r::after, th.gs-slider-highlight-r::after { border-right-width: 5px; }
