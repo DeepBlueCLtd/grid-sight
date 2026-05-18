@@ -64,41 +64,21 @@ th[data-gs-row-header] { background: #fafafa; }
 th[data-gs-row-slot] { background: #fafafa; }
 [data-gs-injected] { background: #fafafa; }
 td.gs-slider-highlight, th.gs-slider-highlight {
-  --gs-hl-t: 0 0 0 0 transparent;
-  --gs-hl-r: 0 0 0 0 transparent;
-  --gs-hl-b: 0 0 0 0 transparent;
-  --gs-hl-l: 0 0 0 0 transparent;
-  --gs-hl-t-halo: 0 0 0 0 transparent;
-  --gs-hl-r-halo: 0 0 0 0 transparent;
-  --gs-hl-b-halo: 0 0 0 0 transparent;
-  --gs-hl-l-halo: 0 0 0 0 transparent;
-  box-shadow:
-    inset var(--gs-hl-t-halo),
-    inset var(--gs-hl-r-halo),
-    inset var(--gs-hl-b-halo),
-    inset var(--gs-hl-l-halo),
-    inset var(--gs-hl-t),
-    inset var(--gs-hl-r),
-    inset var(--gs-hl-b),
-    inset var(--gs-hl-l);
-  transition: box-shadow 80ms linear;
+  position: relative;
 }
-td.gs-slider-highlight-t, th.gs-slider-highlight-t {
-  --gs-hl-t: 0 6px 0 0 #000;
-  --gs-hl-t-halo: 0 8px 0 0 #fff;
+td.gs-slider-highlight::after, th.gs-slider-highlight::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  box-sizing: border-box;
+  z-index: 10;
+  border: 0 solid #000;
 }
-td.gs-slider-highlight-r, th.gs-slider-highlight-r {
-  --gs-hl-r: -6px 0 0 0 #000;
-  --gs-hl-r-halo: -8px 0 0 0 #fff;
-}
-td.gs-slider-highlight-b, th.gs-slider-highlight-b {
-  --gs-hl-b: 0 -6px 0 0 #000;
-  --gs-hl-b-halo: 0 -8px 0 0 #fff;
-}
-td.gs-slider-highlight-l, th.gs-slider-highlight-l {
-  --gs-hl-l: 6px 0 0 0 #000;
-  --gs-hl-l-halo: 8px 0 0 0 #fff;
-}
+td.gs-slider-highlight-t::after, th.gs-slider-highlight-t::after { border-top-width: 5px; }
+td.gs-slider-highlight-r::after, th.gs-slider-highlight-r::after { border-right-width: 5px; }
+td.gs-slider-highlight-b::after, th.gs-slider-highlight-b::after { border-bottom-width: 5px; }
+td.gs-slider-highlight-l::after, th.gs-slider-highlight-l::after { border-left-width: 5px; }
 [data-gs-marker] {
   position: absolute; width: 14px; height: 14px; border-radius: 50%;
   border: 2px solid #1976d2; background: rgb(255 255 255 / 40%);
