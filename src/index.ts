@@ -64,12 +64,16 @@ import type {
   VirtualColumnKind,
 } from './types/virtual-column';
 
-// Note: registerVirtualColumn and the type names are re-exported from
-// ./enrichments/virtual-column and ./types/virtual-column for ESM consumers.
-// Keeping this file's top-level exports limited to `default` preserves the
-// IIFE bundle wrapper format that hosts rely on (rollup switches to a
-// `this.gridSight = this.gridSight || {}` extend wrapper as soon as a named
-// export is added, which interacts badly with the vite intro/outro config).
+// Note: registerVirtualColumn and the virtual-column type names are reachable
+// for ESM consumers via direct imports from ./enrichments/virtual-column and
+// ./types/virtual-column. They are intentionally NOT re-exported here.
+//
+// ⚠ Do not add named top-level exports to this file. The IIFE bundle wrapper
+// in vite.config.ts (intro/outro + extend:true) silently corrupts
+// `window.gridSight` to `undefined` the moment a named export forces rollup
+// into the `this.gridSight = this.gridSight || {}` wrapper. See the comment
+// at vite.config.ts:rollupOptions.output and
+// specs/012-virtual-columns/research.md §R-13.
 void registerVirtualColumn;
 
 // Activate the heatmap-marker listener once at module load. It is a no-op if no
