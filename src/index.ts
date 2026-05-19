@@ -41,6 +41,23 @@ import type { GridSightSlider, Axis as SliderAxis } from './enrichments/slider';
 import { addThresholdSlider as sliderAddThresholdSlider } from './enrichments/slider-threshold';
 import { ensureHeatmapMarkerListener } from './ui/heatmap-marker';
 
+// Spec 012 — capability filtering
+import { ENRICHMENT_IDS } from './core/enrichment-registry';
+import { parsePageConfig } from './core/page-config';
+import {
+  setPageConfig,
+  setVisitorOverride,
+  isEnrichmentEnabled,
+} from './core/enabled-set-state';
+import { resolveVisitorEnrichments } from './utils/slider-persistence';
+import { clearColumnTypes } from './core/column-types-cache';
+import { mountTogglePanel } from './ui/toggle-panel';
+
+export interface InitOptions extends TableProcessorOptions {
+  enrichments?: readonly string[];
+  showToggleUi?: boolean;
+}
+
 // Activate the heatmap-marker listener once at module load. It is a no-op if no
 // dual-axis sliders are ever added.
 ensureHeatmapMarkerListener();
@@ -69,7 +86,29 @@ const GridSight = {
   /**
    * Initialize Grid-Sight on all valid tables in the document
    */
-  init(options: TableProcessorOptions = {}) {
+  init(options: InitOptions = {}) {
+    // Spec 012: read page-level enrichment config (window.gridSight.pageConfig)
+    // and merge any per-field overrides from `options`. Per-field precedence —
+    // `options` wins, then `pageConfig`, then library defaults.
+    const w = typeof window !== 'undefined'
+      ? (window as Window & { gridSight?: { pageConfig?: unknown } })
+      : undefined;
+    const rawPageConfig = w?.gridSight?.pageConfig;
+    const parsedPage = parsePageConfig(rawPageConfig);
+    const merged = {
+      enrichments: options.enrichments !== undefined
+        ? parsePageConfig({ enrichments: options.enrichments }).enrichments
+        : parsedPage.enrichments,
+      showToggleUi: options.showToggleUi !== undefined
+        ? !!options.showToggleUi
+        : parsedPage.showToggleUi,
+    };
+    setPageConfig(merged);
+
+    // Visitor override (URL > localStorage). Resets to undefined when neither
+    // is present so the resolver falls back to the page config.
+    setVisitorOverride(resolveVisitorEnrichments());
+
     // Find all tables that have at least two rows.
     // Honour `data-gs-ignore`: tables marked with this attribute are left
     // untouched (no GS toggle, no lozenges) — useful for "before" reference
@@ -83,12 +122,26 @@ const GridSight = {
       try {
         this.processTable(table, {
           id: `table-${index}`,
-          ...options
+          ...options,
         });
       } catch (error) {
         console.error(`Failed to process table ${index}:`, error);
       }
     });
+
+    // Mount the runtime toggle panel if the page opted in via either the
+    // `showToggleUi` flag or a `[data-gs-toggle-panel]` element on the page.
+    if (typeof document !== 'undefined') {
+      const explicitContainer = document.querySelector<HTMLElement>('[data-gs-toggle-panel]');
+      if (merged.showToggleUi || explicitContainer) {
+        try {
+          mountTogglePanel(explicitContainer ?? undefined, { tables: tableRegistry });
+        } catch (e) {
+          console.warn('[gridsight] mountTogglePanel failed:', e);
+        }
+      }
+    }
+
     return this;
   },
 
@@ -106,6 +159,7 @@ const GridSight = {
       removePlusIcons(table);
       table.classList.remove('grid-sight-enabled');
       table.removeAttribute('data-grid-sight-processed');
+      clearColumnTypes(table);
     }
     tableRegistry.clear();
     return this;
@@ -339,6 +393,16 @@ const GridSight = {
     const t = typeof table === 'string' ? this.getTableById(table) : table;
     if (!t) return;
     sliderClearFormula(t);
+  },
+
+  // ===== Capability filtering (spec 012) =====
+
+  /** Read-only list of every registered enrichment id, in display order. */
+  enrichmentIds: ENRICHMENT_IDS,
+
+  /** Whether the given enrichment id is in the current effective enabled set. */
+  isEnrichmentEnabled(id: string): boolean {
+    return isEnrichmentEnabled(id);
   },
 
   /**

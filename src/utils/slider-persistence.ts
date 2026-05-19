@@ -1,15 +1,30 @@
 /**
- * URL fragment + localStorage round-trip for slider positions.
- * See specs/001-dynamic-sliders/research.md §R-5 and data-model.md.
+ * URL fragment + localStorage round-trip — originally for slider positions,
+ * now generalised so the enrichment-toggle persistence (`gs.e`) can share the
+ * same encoding, versioning, and stem-derivation rules. See research R-4.
+ *
+ * Public surface:
+ *  - Existing slider-shaped exports (`readFromUrl`, `writeUrlHash`,
+ *    `readFromStorage`, `writeToStorage`, `resolveInitialPosition`,
+ *    `persistPosition`, `pruneEntry`) keep their signatures byte-identical so
+ *    every existing slider call site and test continues to work unchanged.
+ *  - New enrichments-shaped exports
+ *    (`readEnrichmentsFromUrl`, `writeEnrichmentsToUrl`,
+ *    `readEnrichmentsFromStorage`, `writeEnrichmentsToStorage`) layer over the
+ *    same generic helpers with `key='gs.e'` / `suffix='enrichments'` and
+ *    `entries: string[]`.
  */
 
-const URL_FRAGMENT_PARAM = 'gs.s';
+const SLIDER_URL_KEY = 'gs.s';
+const SLIDER_STORAGE_SUFFIX = 'sliders';
+const ENRICHMENTS_URL_KEY = 'gs.e';
+const ENRICHMENTS_STORAGE_SUFFIX = 'enrichments';
 const STORAGE_VERSION = 1;
 const POS_DECIMALS = 5;
 
 export interface PersistedState {
   version: number;
-  entries: Record<string, number>;
+  entries: Record<string, number> | string[];
 }
 
 function clampPos01(v: number): number {
@@ -52,30 +67,48 @@ export function decodeFragment(raw: string): Record<string, number> {
   return result;
 }
 
-/** Read all slider entries from `location.hash`. */
-export function readFromUrl(hash: string = (typeof location !== 'undefined' ? location.hash : '')): Record<string, number> {
-  if (!hash) return {};
+/* ────────────────────────────────────────────────────────────────────────── */
+/* Generic URL-fragment helpers                                               */
+/* ────────────────────────────────────────────────────────────────────────── */
+
+function readUrlValueForKey(key: string, hash: string): string | undefined {
+  if (!hash) return undefined;
   const stripped = hash.startsWith('#') ? hash.slice(1) : hash;
-  const params = stripped.split('&');
-  for (const p of params) {
+  for (const p of stripped.split('&')) {
     const eq = p.indexOf('=');
     if (eq < 0) continue;
-    const k = p.slice(0, eq);
-    const v = p.slice(eq + 1);
-    if (k === URL_FRAGMENT_PARAM) return decodeFragment(decodeURIComponent(v));
+    if (p.slice(0, eq) === key) return decodeURIComponent(p.slice(eq + 1));
   }
-  return {};
+  return undefined;
+}
+
+function writeUrlValueForKey(key: string, encoded: string, currentHash: string): string {
+  const stripped = currentHash.startsWith('#') ? currentHash.slice(1) : currentHash;
+  const params = stripped ? stripped.split('&') : [];
+  const kept = params.filter(p => !p.startsWith(`${key}=`));
+  if (encoded) kept.push(`${key}=${encoded}`);
+  return kept.length === 0 ? '' : '#' + kept.join('&');
+}
+
+/* ────────────────────────────────────────────────────────────────────────── */
+/* Slider-shaped public surface (backwards-compatible)                        */
+/* ────────────────────────────────────────────────────────────────────────── */
+
+/** Read slider entries from `location.hash` (or supplied hash). */
+export function readFromUrl(
+  hash: string = (typeof location !== 'undefined' ? location.hash : '')
+): Record<string, number> {
+  const raw = readUrlValueForKey(SLIDER_URL_KEY, hash);
+  return raw === undefined ? {} : decodeFragment(raw);
 }
 
 /** Build a new hash string with the slider entries written to `gs.s=`,
  * preserving any other `&`-separated fragment parameters. */
-export function writeUrlHash(entries: Record<string, number>, currentHash: string = (typeof location !== 'undefined' ? location.hash : '')): string {
-  const stripped = currentHash.startsWith('#') ? currentHash.slice(1) : currentHash;
-  const params = stripped ? stripped.split('&') : [];
-  const kept = params.filter(p => !p.startsWith(`${URL_FRAGMENT_PARAM}=`));
-  const encoded = encodeFragment(entries);
-  if (encoded) kept.push(`${URL_FRAGMENT_PARAM}=${encoded}`);
-  return kept.length === 0 ? '' : '#' + kept.join('&');
+export function writeUrlHash(
+  entries: Record<string, number>,
+  currentHash: string = (typeof location !== 'undefined' ? location.hash : '')
+): string {
+  return writeUrlValueForKey(SLIDER_URL_KEY, encodeFragment(entries), currentHash);
 }
 
 function urlStem(): string {
@@ -83,50 +116,55 @@ function urlStem(): string {
   return location.origin + location.pathname;
 }
 
-function storageKey(stem: string = urlStem()): string {
-  return `gs:${stem}:sliders`;
+function storageKeyFor(suffix: string, stem: string = urlStem()): string {
+  return `gs:${stem}:${suffix}`;
 }
 
 function isValidPersistedState(parsed: unknown): parsed is PersistedState {
   if (!parsed || typeof parsed !== 'object') return false;
   const p = parsed as Partial<PersistedState>;
-  return p.version === STORAGE_VERSION && typeof p.entries === 'object' && p.entries !== null;
+  if (p.version !== STORAGE_VERSION) return false;
+  if (Array.isArray(p.entries)) return true;
+  if (p.entries && typeof p.entries === 'object') return true;
+  return false;
 }
 
-function sanitiseStoredEntries(entries: Record<string, unknown>): Record<string, number> {
+function sanitiseSliderEntries(entries: unknown): Record<string, number> {
+  if (!entries || typeof entries !== 'object' || Array.isArray(entries)) return {};
   const out: Record<string, number> = {};
-  for (const [k, v] of Object.entries(entries)) {
+  for (const [k, v] of Object.entries(entries as Record<string, unknown>)) {
     if (typeof v === 'number' && isFinite(v)) out[k] = clampPos01(v);
   }
   return out;
 }
 
-/** Read entries from localStorage; returns {} on parse failure or missing key. */
+/** Read slider entries from localStorage; returns {} on parse failure or missing key. */
 export function readFromStorage(stem?: string): Record<string, number> {
   if (typeof localStorage === 'undefined') return {};
   try {
-    const raw = localStorage.getItem(storageKey(stem));
+    const raw = localStorage.getItem(storageKeyFor(SLIDER_STORAGE_SUFFIX, stem));
     if (!raw) return {};
     const parsed: unknown = JSON.parse(raw);
     if (!isValidPersistedState(parsed)) return {};
-    return sanitiseStoredEntries(parsed.entries);
+    return sanitiseSliderEntries(parsed.entries);
   } catch {
     return {};
   }
 }
 
-/** Write entries to localStorage. Pruning empty state removes the key. */
+/** Write slider entries to localStorage. Pruning empty state removes the key. */
 export function writeToStorage(entries: Record<string, number>, stem?: string): void {
   if (typeof localStorage === 'undefined') return;
-  const key = storageKey(stem);
+  const key = storageKeyFor(SLIDER_STORAGE_SUFFIX, stem);
   if (Object.keys(entries).length === 0) {
     try { localStorage.removeItem(key); } catch { /* ignore */ }
     return;
   }
-  const payload: PersistedState = { version: STORAGE_VERSION, entries: {} };
+  const rounded: Record<string, number> = {};
   for (const [k, v] of Object.entries(entries)) {
-    payload.entries[k] = roundPos(v);
+    rounded[k] = roundPos(v);
   }
+  const payload: PersistedState = { version: STORAGE_VERSION, entries: rounded };
   try { localStorage.setItem(key, JSON.stringify(payload)); } catch { /* ignore quota */ }
 }
 
@@ -142,7 +180,6 @@ export function resolveInitialPosition(id: string): number {
 
 /** Persist a single slider's position to BOTH the URL fragment and localStorage. */
 export function persistPosition(id: string, pos01: number): void {
-  // URL
   const urlEntries = readFromUrl();
   urlEntries[id] = pos01;
   if (typeof history !== 'undefined' && typeof location !== 'undefined') {
@@ -151,7 +188,6 @@ export function persistPosition(id: string, pos01: number): void {
       history.replaceState(null, '', location.pathname + location.search + newHash);
     } catch { /* ignore */ }
   }
-  // localStorage
   const ls = readFromStorage();
   ls[id] = pos01;
   writeToStorage(ls);
@@ -176,4 +212,108 @@ export function pruneEntry(id: string): void {
     if (k !== id) filteredLs[k] = v;
   }
   writeToStorage(filteredLs);
+}
+
+/* ────────────────────────────────────────────────────────────────────────── */
+/* Enrichments-shaped public surface (new in spec 012)                        */
+/* ────────────────────────────────────────────────────────────────────────── */
+
+const ID_PATTERN = /^[a-z][a-z0-9-]*$/;
+
+function sanitiseEnrichmentList(raw: unknown): string[] | undefined {
+  if (!Array.isArray(raw)) return undefined;
+  const out: string[] = [];
+  for (const v of raw) {
+    if (typeof v !== 'string') continue;
+    const trimmed = v.trim().toLowerCase();
+    if (ID_PATTERN.test(trimmed)) out.push(trimmed);
+  }
+  return out;
+}
+
+/** Read enrichments from `location.hash` (or supplied hash). Returns
+ *  `undefined` when no `gs.e` segment is present (distinct from an empty
+ *  segment, which the caller may treat differently). */
+export function readEnrichmentsFromUrl(
+  hash: string = (typeof location !== 'undefined' ? location.hash : '')
+): string[] | undefined {
+  const raw = readUrlValueForKey(ENRICHMENTS_URL_KEY, hash);
+  if (raw === undefined) return undefined;
+  if (raw === '') return [];
+  const out: string[] = [];
+  const seen = new Set<string>();
+  for (const part of raw.split(',')) {
+    const id = part.trim().toLowerCase();
+    if (!ID_PATTERN.test(id)) continue;
+    if (seen.has(id)) continue;
+    seen.add(id);
+    out.push(id);
+  }
+  return out;
+}
+
+/** Write the enrichments id list to `gs.e=` in a new hash string,
+ *  preserving any other `&`-separated fragment parameters. Pass an empty
+ *  array to remove the segment. Ids are written in alphabetical order. */
+export function writeEnrichmentsToUrl(
+  ids: readonly string[],
+  currentHash: string = (typeof location !== 'undefined' ? location.hash : '')
+): string {
+  const sanitised = sanitiseEnrichmentList(ids) ?? [];
+  const sorted = sanitised.slice().sort();
+  return writeUrlValueForKey(ENRICHMENTS_URL_KEY, sorted.join(','), currentHash);
+}
+
+/** Read the enrichments list from localStorage; returns `undefined` when no
+ *  key is present (caller falls back to defaults). Returns an empty array
+ *  when the key is present with an empty list. */
+export function readEnrichmentsFromStorage(stem?: string): string[] | undefined {
+  if (typeof localStorage === 'undefined') return undefined;
+  try {
+    const raw = localStorage.getItem(storageKeyFor(ENRICHMENTS_STORAGE_SUFFIX, stem));
+    if (!raw) return undefined;
+    const parsed: unknown = JSON.parse(raw);
+    if (!isValidPersistedState(parsed)) return undefined;
+    return sanitiseEnrichmentList(parsed.entries) ?? undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+/** Write the enrichments id list to localStorage with the versioned wrapper.
+ *  Passing an empty array removes the key. */
+export function writeEnrichmentsToStorage(ids: readonly string[], stem?: string): void {
+  if (typeof localStorage === 'undefined') return;
+  const key = storageKeyFor(ENRICHMENTS_STORAGE_SUFFIX, stem);
+  const sanitised = sanitiseEnrichmentList(ids) ?? [];
+  if (sanitised.length === 0) {
+    try { localStorage.removeItem(key); } catch { /* ignore */ }
+    return;
+  }
+  const payload: PersistedState = {
+    version: STORAGE_VERSION,
+    entries: sanitised.slice().sort(),
+  };
+  try { localStorage.setItem(key, JSON.stringify(payload)); } catch { /* ignore quota */ }
+}
+
+/** Resolve the visitor-persisted enrichments set on init.
+ *  Priority: URL > localStorage > `undefined` (resolver falls back to page config). */
+export function resolveVisitorEnrichments(): Set<string> | undefined {
+  const url = readEnrichmentsFromUrl();
+  if (url !== undefined) return new Set(url);
+  const ls = readEnrichmentsFromStorage();
+  if (ls !== undefined) return new Set(ls);
+  return undefined;
+}
+
+/** Persist the enrichments set to BOTH the URL fragment and localStorage. */
+export function persistVisitorEnrichments(ids: readonly string[]): void {
+  if (typeof history !== 'undefined' && typeof location !== 'undefined') {
+    try {
+      const newHash = writeEnrichmentsToUrl(ids);
+      history.replaceState(null, '', location.pathname + location.search + newHash);
+    } catch { /* ignore */ }
+  }
+  writeEnrichmentsToStorage(ids);
 }

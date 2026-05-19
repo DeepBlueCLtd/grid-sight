@@ -119,7 +119,7 @@ function handleEnrichmentSelected(event: Event) {
   }
 
   // Handle menu item selection
-  if (enrichmentType === 'threshold-slider') {
+  if (enrichmentType === 'slider-threshold') {
     try { addThresholdSlider(table); }
     catch (e) { console.warn('[gridSight] addThresholdSlider failed:', e); }
     return;
