@@ -1,10 +1,11 @@
 import type { ColumnType } from '../core/type-detection';
+import { getEffectiveEnabledSet } from '../core/enabled-set-state';
 
 export const ENRICHMENT_MENU_CLASS = 'gs-enrichment-menu';
 const MENU_ITEM_CLASS = 'gs-enrichment-menu-item';
 const MENU_ITEM_LABEL_CLASS = 'gs-enrichment-menu-item-label';
 
-export type EnrichmentType = 'heatmap' | 'zscore' | 'sort' | 'filter' | 'aggregate' | 'statistics' | 'frequency' | 'frequency-chart' | 'slider' | 'threshold-slider' | 'toggle-sliders';
+export type EnrichmentType = 'heatmap' | 'sort' | 'filter' | 'statistics' | 'frequency' | 'frequency-chart' | 'sliders' | 'slider-threshold';
 
 export interface EnrichmentMenuItem {
   id: EnrichmentType;
@@ -56,35 +57,36 @@ export const ENRICHMENT_ITEMS: EnrichmentMenuItem[] = [
     availableFor: ['categorical'],
   },
   {
-    // Per-axis slider toggle. Shown on row/column plus-icons; checkbox mirrors
-    // current state. Click toggles add ↔ remove for this single axis.
-    id: 'slider',
-    label: 'Slider',
+    // Per-axis or table-wide slider toggle. One id, two shapes:
+    //  - on row/column headers, toggles that single axis;
+    //  - on the table header, toggles all eligible axes at once.
+    // Registry id matches the lozenge `data-gs-lozenge-id="sliders"`.
+    id: 'sliders',
+    label: 'Sliders',
     availableFor: ['numeric'],
-    predicate: (ctx) =>
-      (ctx.headerType === 'row' || ctx.headerType === 'column') &&
-      (ctx.axisIsSliderEligible || ctx.sliderExists),
-    isActive: (ctx) => ctx.sliderExists,
+    predicate: (ctx) => {
+      if (ctx.headerType === 'row' || ctx.headerType === 'column') {
+        return ctx.axisIsSliderEligible || ctx.sliderExists;
+      }
+      if (ctx.headerType === 'table') {
+        return ctx.bothAxesEligible || ctx.anySliderExists;
+      }
+      return false;
+    },
+    isActive: (ctx) => {
+      if (ctx.headerType === 'row' || ctx.headerType === 'column') return ctx.sliderExists;
+      return ctx.anySliderExists;
+    },
   },
   {
     // Threshold slider toggle (table-wide, requires heatmap).
-    id: 'threshold-slider',
+    id: 'slider-threshold',
     label: 'Threshold slider',
     availableFor: ['numeric'],
     predicate: (ctx) =>
       ctx.headerType === 'table' && (ctx.hasHeatmap || ctx.thresholdSliderExists),
     isActive: (ctx) => ctx.thresholdSliderExists,
   },
-  {
-    // Table-wide "all axis sliders at once" toggle.
-    id: 'toggle-sliders',
-    label: 'Sliders',
-    availableFor: ['numeric'],
-    predicate: (ctx) =>
-      ctx.headerType === 'table' &&
-      (ctx.bothAxesEligible || ctx.anySliderExists),
-    isActive: (ctx) => ctx.anySliderExists,
-  }
 ];
 
 export function createEnrichmentMenu(
@@ -107,9 +109,12 @@ export function createEnrichmentMenu(
     font-size: 13px;
   `;
 
-  // Filter items based on column type and (optional) predicate context
+  // Filter items based on column type, the optional predicate context, and
+  // the effective enabled set (spec 012, FR-010).
+  const enabled = getEffectiveEnabledSet();
   const availableItems = ENRICHMENT_ITEMS.filter(item => {
     if (!item.availableFor.includes(columnType)) return false;
+    if (!enabled.has(item.id)) return false;
     if (item.predicate && ctx) return item.predicate(ctx);
     if (item.predicate && !ctx) return false; // predicate items require context
     return true;
@@ -119,6 +124,7 @@ export function createEnrichmentMenu(
   availableItems.forEach(item => {
     const menuItem = document.createElement('div');
     menuItem.className = MENU_ITEM_CLASS;
+    menuItem.setAttribute('data-gs-enrichment-id', item.id);
     menuItem.style.cssText = `
       display: flex;
       align-items: center;

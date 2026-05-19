@@ -76,6 +76,26 @@ import type {
 // specs/012-virtual-columns/research.md §R-13.
 void registerVirtualColumn;
 
+// Spec 012 — capability filtering
+import { ENRICHMENT_IDS } from './core/enrichment-registry';
+import { parsePageConfig } from './core/page-config';
+import {
+  setPageConfig,
+  setVisitorOverride,
+  isEnrichmentEnabled,
+} from './core/enabled-set-state';
+import { resolveVisitorEnrichments } from './utils/slider-persistence';
+import { clearColumnTypes } from './core/column-types-cache';
+import { mountTogglePanel } from './ui/toggle-panel';
+
+// Internal InitOptions type. Not exported — see ⚠ note above and
+// specs/012-virtual-columns/research.md §R-13.
+interface InitOptions extends TableProcessorOptions {
+  enrichments?: readonly string[];
+  showToggleUi?: boolean;
+  virtualColumns?: { enabled?: boolean; persistInUrl?: boolean; urlParam?: string };
+}
+
 // Activate the heatmap-marker listener once at module load. It is a no-op if no
 // dual-axis sliders are ever added.
 ensureHeatmapMarkerListener();
@@ -104,7 +124,31 @@ const GridSight = {
   /**
    * Initialize Grid-Sight on all valid tables in the document
    */
-  init(options: TableProcessorOptions & { virtualColumns?: { enabled?: boolean; persistInUrl?: boolean; urlParam?: string } } = {}) {
+  init(options: InitOptions = {}) {
+    // Spec 012-capability-filtering: read page-level enrichment config
+    // (window.gridSight.pageConfig) and merge any per-field overrides from
+    // `options`. Per-field precedence — `options` wins, then `pageConfig`,
+    // then library defaults.
+    const w = typeof window !== 'undefined'
+      ? (window as Window & { gridSight?: { pageConfig?: unknown } })
+      : undefined;
+    const rawPageConfig = w?.gridSight?.pageConfig;
+    const parsedPage = parsePageConfig(rawPageConfig);
+    const merged = {
+      enrichments: options.enrichments !== undefined
+        ? parsePageConfig({ enrichments: options.enrichments }).enrichments
+        : parsedPage.enrichments,
+      showToggleUi: options.showToggleUi !== undefined
+        ? !!options.showToggleUi
+        : parsedPage.showToggleUi,
+    };
+    setPageConfig(merged);
+
+    // Visitor override (URL > localStorage). Resets to undefined when neither
+    // is present so the resolver falls back to the page config.
+    setVisitorOverride(resolveVisitorEnrichments());
+
+
     // Find all tables that have at least two rows.
     // Honour `data-gs-ignore`: tables marked with this attribute are left
     // untouched (no GS toggle, no lozenges) — useful for "before" reference
@@ -126,7 +170,7 @@ const GridSight = {
       try {
         this.processTable(table, {
           id: `table-${index}`,
-          ...options
+          ...options,
         });
         if (vcEnabled) {
           try { injectAllVirtualColumnLozenges(table); } catch (e) { console.warn('virtual-column lozenge init failed', e); }
@@ -140,6 +184,21 @@ const GridSight = {
     if (vcEnabled) {
       try { vcRestoreFromUrl(processed); } catch (e) { console.warn('virtual-column URL restore failed', e); }
     }
+
+    // Mount the runtime toggle panel if the page opted in via either the
+    // `showToggleUi` flag or a `[data-gs-toggle-panel]` element on the page.
+    if (typeof document !== 'undefined') {
+      const explicitContainer = document.querySelector<HTMLElement>('[data-gs-toggle-panel]');
+      if (merged.showToggleUi || explicitContainer) {
+        try {
+          mountTogglePanel(explicitContainer ?? undefined, { tables: tableRegistry });
+        } catch (e) {
+          console.warn('[gridsight] mountTogglePanel failed:', e);
+        }
+      }
+    }
+
+
     return this;
   },
 
@@ -160,6 +219,7 @@ const GridSight = {
       table.querySelectorAll('.gs-vc-lozenge').forEach((el) => el.remove());
       table.classList.remove('grid-sight-enabled');
       table.removeAttribute('data-grid-sight-processed');
+      clearColumnTypes(table);
     }
     tableRegistry.clear();
     return this;
@@ -450,6 +510,16 @@ const GridSight = {
     },
   },
 
+  // ===== Capability filtering (spec 012-capability-filtering) =====
+
+  /** Read-only list of every registered enrichment id, in display order. */
+  enrichmentIds: ENRICHMENT_IDS,
+
+  /** Whether the given enrichment id is in the current effective enabled set. */
+  isEnrichmentEnabled(id: string): boolean {
+    return isEnrichmentEnabled(id);
+  },
+
   /**
    * Detects if a table has a header row by analyzing its structure
    * @param table The table element to check
@@ -494,15 +564,19 @@ if (document.readyState === 'loading') {
 // Export the GridSight API
 export default GridSight;
 
-// Expose to window for direct script include
-// Use a more direct approach to ensure it's available globally
+// Expose to window for direct script include.
+// Preserve any pre-bundle `window.gridSight.pageConfig` the host page set so
+// the spec-012 capability filter sees it at init time. Without this merge,
+// the assignment below would clobber the author's pageConfig declaration.
 if (typeof window !== 'undefined') {
-  (window as any).gridSight = GridSight;
+  const existing = (window as Window & { gridSight?: { pageConfig?: unknown } }).gridSight;
+  const merged = Object.assign(GridSight, existing ? { pageConfig: existing.pageConfig } : {});
+  (window as any).gridSight = merged;
 }
 
 // Also assign to globalThis for better compatibility
 if (typeof globalThis !== 'undefined') {
-  (globalThis as any).gridSight = GridSight;
+  (globalThis as any).gridSight = (window as any).gridSight ?? GridSight;
 }
 
 // For CommonJS environments
