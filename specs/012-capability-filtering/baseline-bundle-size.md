@@ -39,3 +39,44 @@ inline resolver into page-config, etc.) are not yet applied; budget-cut work
 is left as a separate follow-up under the 25 KB working ceiling. This
 overrun is recorded here for the PR description per T041's instruction.
 
+## 012-virtual-columns post-feature measurement (2026-05-19)
+
+| Stage                              | Raw KB | Gzipped KB | Δ from previous stage |
+|------------------------------------|--------|------------|-----------------------|
+| Baseline                           | 71.73  | 19.01      | —                     |
+| After 012-capability-filtering     | 79.89  | 21.36      | **+2.35 KB**          |
+| After 012-virtual-columns          | 102.53 | 27.84      | **+6.48 KB**          |
+
+Result: 012-virtual-columns added **+6.48 KB gzipped** on top of the
+capability-filtering baseline, against an R-7 estimate of ~1.8 KB — i.e.
+the projection was ~3.6× off. Drivers (per `dist/grid-sight.iife.js.map`):
+
+- scaffold core (`virtual-column.ts` + `virtual-column-registry.ts` +
+  `virtual-column-persistence.ts`) — ~2.0 KB, mostly the URL codec and the
+  per-table registry / canonical-ordering bookkeeping.
+- the three renderers + SVG builder — ~2.5 KB combined.
+- the lozenge UI factory + compare picker — ~1.0 KB.
+- local stubs (`utils/visible-rows.ts`, `utils/copy-as-csv-registry.ts`) and
+  the new types module — ~0.5 KB.
+- aria-label strings, dev-only `__flushVirtualColumnFrame` exposure, and
+  glue inside `src/index.ts` — ~0.5 KB.
+
+**Decision (2026-05-19 — user override during implementation)**: raise the
+enforced ceiling from 25 KB to **30 KB gzipped** to land this PR, leaving the
+constitution §I ceiling at 10 KB unchanged. Same posture as the previous
+overage: an **explicit, recorded constitution violation** pending the same
+constitution-amendment / bundle-cut PR that the capability-filtering overage
+already owes. The amendment now has to absorb ~18 KB of gap, not ~9 KB — the
+longer it sits, the more bloat it has to retroactively cover.
+
+Cheapest follow-up bundle cuts (~3–4 KB potentially available, not done
+in-PR to keep the diff small):
+
+- inline the URL-codec mode lookup tables into encode/decode (saves ~0.3 KB).
+- collapse the three `registerRenderer` calls into a shared builder.
+- replace the `import.meta.env.MODE !== 'production'` guards around the
+  dev-only `globalThis.__gridSight*` test hooks with a build-time
+  `define`-based flag terser can fully strip.
+- drop the spacer-`<th>` insertion in `appendCellsForDirective` for multi-row
+  theads — current code creates empty `<th>`s on non-first header rows that
+  no test exercises.
