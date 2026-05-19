@@ -2,6 +2,7 @@ import type { ColumnType } from '../core/type-detection';
 import { cleanNumericCell } from '../core/type-detection';
 import { addSlider, getSliders, inspectAxisBinding } from '../enrichments/slider';
 import { isHeatmapActive, toggleHeatmap } from '../enrichments/heatmap';
+import { getEffectiveEnabledSet } from '../core/enabled-set-state';
 
 export type HeaderType = 'row' | 'column' | 'table';
 
@@ -131,13 +132,16 @@ function addLozengesToHeader(
     });
   }
 
-  if (specs.length === 0) return;
+  // Spec 012 (FR-009): drop specs whose id is not in the effective enabled set.
+  const enabled = getEffectiveEnabledSet();
+  const filteredSpecs = specs.filter(s => enabled.has(s.id));
+  if (filteredSpecs.length === 0) return;
 
   const cluster = document.createElement('span');
   cluster.className = 'gs-lozenge-cluster';
   cluster.style.cssText = 'display:inline-flex; gap:2px; margin-left:6px; vertical-align:middle;';
 
-  for (const spec of specs) {
+  for (const spec of filteredSpecs) {
     cluster.appendChild(buildLozenge(spec));
   }
 

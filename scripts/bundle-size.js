@@ -1,10 +1,20 @@
 #!/usr/bin/env node
 /**
- * Measure the gzipped size of dist/grid-sight.iife.js and log it.
+ * Measure the gzipped size of dist/grid-sight.iife.js and enforce a ceiling.
  *
- * Bundle size is informational only — Grid-Sight typically runs on a LAN or
- * locally on a PC, so the bundle ceiling has been relaxed. The script reports
- * raw + gzipped size on every build for visibility but does not warn or fail.
+ * Constitution §I (Performance & Distribution Constraints, v1.1.0) mandates a
+ * 10 KB gzipped ceiling for the IIFE bundle. As of 2026-05-19, the bundle
+ * measures ~19 KB gzipped — already over the constitution ceiling before this
+ * feature (012-capability-filtering) lands. Rather than silently weaken the
+ * threshold, this script enforces a temporary 25 KB ceiling (a recorded
+ * constitution VIOLATION — see specs/012-capability-filtering/baseline-bundle-size.md)
+ * pending a separate constitution-amendment PR or a bundle-cut PR that brings
+ * the size back under 10 KB. The enforced ceiling prevents further regression
+ * while the formal resolution is pending.
+ *
+ * Flags:
+ *   --soft   warn-only (does not exit non-zero on overage); use for local
+ *            pre-PR builds where the author wants the number but not the fail.
  */
 
 import fs from 'node:fs';
@@ -17,6 +27,13 @@ const __dirname = path.dirname(__filename);
 
 const BUNDLE = path.resolve(__dirname, '..', 'dist', 'grid-sight.iife.js');
 
+// Constitution §I target: 10 KB. Enforced ceiling raised to 25 KB pending a
+// recorded constitution amendment — see baseline-bundle-size.md.
+const MAX_GZ_KB = 25;
+const CONSTITUTION_TARGET_KB = 10;
+
+const soft = process.argv.includes('--soft');
+
 if (!fs.existsSync(BUNDLE)) {
   console.error(`bundle-size: ${BUNDLE} not found — run \`yarn build\` first.`);
   process.exit(2);
@@ -25,6 +42,24 @@ if (!fs.existsSync(BUNDLE)) {
 const raw = fs.readFileSync(BUNDLE);
 const gz = gzipSync(raw);
 const rawKB = (raw.length / 1024).toFixed(2);
-const gzKB = (gz.length / 1024).toFixed(2);
+const gzKBNum = gz.length / 1024;
+const gzKB = gzKBNum.toFixed(2);
 
 console.log(`bundle-size: dist/grid-sight.iife.js  ${rawKB} kB raw  /  ${gzKB} kB gzipped`);
+
+if (gzKBNum > CONSTITUTION_TARGET_KB) {
+  console.warn(
+    `bundle-size: WARNING — gzipped size ${gzKB} kB exceeds constitution §I target of ${CONSTITUTION_TARGET_KB} kB. ` +
+    `See specs/012-capability-filtering/baseline-bundle-size.md.`
+  );
+}
+
+if (gzKBNum > MAX_GZ_KB) {
+  const msg = `bundle-size: FAIL — gzipped size ${gzKB} kB exceeds enforced ceiling ${MAX_GZ_KB} kB.`;
+  if (soft) {
+    console.warn(msg + ' (--soft: not failing the build)');
+  } else {
+    console.error(msg);
+    process.exit(1);
+  }
+}

@@ -141,3 +141,4 @@ storybook-static
 
 # Claude Code per-user permissions
 .claude/settings.local.json
+test-results/

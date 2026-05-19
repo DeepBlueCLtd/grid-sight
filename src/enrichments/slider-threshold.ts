@@ -7,6 +7,7 @@
 import { createSliderControl, formatNumber } from '../ui/slider-control';
 import { parseHeaderNumber } from '../utils/sync-key';
 import { resolveInitialPosition, persistPosition, pruneEntry } from '../utils/slider-persistence';
+import { isEnrichmentEnabled } from '../core/enabled-set-state';
 import type { GridSightSlider } from './slider';
 import { registerExternalSlider, unregisterExternalSlider } from './slider';
 
@@ -66,7 +67,8 @@ export function addThresholdSlider(table: HTMLTableElement): GridSightSlider {
   }
 
   const id = `${table.id}#threshold`;
-  const initialPos01 = resolveInitialPosition(id);
+  // Spec 012 (FR-011): skip URL-state activation when slider-threshold is disabled.
+  const initialPos01 = isEnrichmentEnabled('slider-threshold') ? resolveInitialPosition(id) : 0.5;
   const initial = min + initialPos01 * (max - min);
 
   const applyThreshold = (threshold: number) => {
