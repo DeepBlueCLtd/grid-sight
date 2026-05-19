@@ -118,6 +118,14 @@ const GridSight = {
       removePlusIcons(table);
       table.classList.remove('grid-sight-enabled');
       table.removeAttribute('data-grid-sight-processed');
+      // Strip the per-cell index marker that processTableData added.
+      // Required for SC-005 (byte-identical DOM after disable()).
+      table.querySelectorAll('[data-gs-cell-index]').forEach((cell) =>
+        cell.removeAttribute('data-gs-cell-index')
+      );
+      // Drop empty class attributes that other enrichments may leave behind.
+      table.querySelectorAll('[class=""]').forEach((el) => el.removeAttribute('class'));
+      if (table.getAttribute('class') === '') table.removeAttribute('class');
     }
     tableRegistry.clear();
     return this;

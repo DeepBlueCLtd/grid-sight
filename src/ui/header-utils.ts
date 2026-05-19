@@ -50,6 +50,11 @@ export function injectPlusIcons(table: HTMLTableElement, columnTypes: ColumnType
 export function removePlusIcons(table: HTMLTableElement): void {
   const icons = table.querySelectorAll(`.${PLUS_ICON_CLASS}, .${LOZENGE_CLASS}`);
   icons.forEach(icon => icon.remove());
+  // Also remove the empty cluster span that wraps lozenge buttons; otherwise
+  // disable() leaves orphan <span class="gs-lozenge-cluster"> elements behind
+  // and SC-005 (byte-identical DOM on toggle-off) cannot hold.
+  const clusters = table.querySelectorAll('.gs-lozenge-cluster');
+  clusters.forEach((c) => c.remove());
   const cells = table.querySelectorAll(`.${HEADER_WITH_ICON_CLASS}`);
   cells.forEach(cell => cell.classList.remove(HEADER_WITH_ICON_CLASS));
 }

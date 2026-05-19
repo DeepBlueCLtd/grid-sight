@@ -14,6 +14,9 @@ air-gapped servers).
 - Dynamic sliders with linear / bilinear interpolation, cross-table sync, and
   URL-fragment persistence (see `specs/001-dynamic-sliders/`)
 - Heatmap position marker + threshold slider
+- Row sort (three-state asc / desc / off) and row filter (numeric range +
+  categorical inclusion), with multi-column AND composition, a clear-all
+  chip, and shareable URL state (see `specs/002-003-row-visibility/`)
 - No runtime dependencies (the published IIFE bundle ships standalone)
 - Accessibility-focused design
 - Works with or without a build system
