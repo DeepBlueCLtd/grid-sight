@@ -126,12 +126,8 @@
       <p>Interpolated and formula readouts side by side.</p>
     </a>
     <a class="demo-card" href="demo/sliders/synced-tables.html">
-      <h3>3. Synced + persistent</h3>
-      <p>Cross-table sync via matching axis headers; bookmarkable URL fragment.</p>
-    </a>
-    <a class="demo-card" href="demo/sliders/heatmap.html">
-      <h3>4. Dynamic heatmap</h3>
-      <p>Position marker tracking the slider; threshold slider fading low-value cells.</p>
+      <h3>3. Persistent URL</h3>
+      <p>Slider positions encoded in the URL fragment — bookmark, share, or reload at a chosen value.</p>
     </a>
   </div>
 
@@ -159,7 +155,10 @@
     <!-- B. Numeric lookup table that DOES qualify — full feature set. -->
     <section class="table-section">
       <h3>B. Numeric lookup <span class="pill pill-active">auto-detected</span></h3>
-      <p>Identical data, no opt-out. Click <strong>GS</strong> → corner <strong>S</strong> for sliders.
+      <p>Identical data, no opt-out. Click <strong>GS</strong> to reveal header lozenges:
+         <strong>S</strong> (corner) toggles sliders for bilinear interpolation,
+         <strong>H</strong> on a row / column / table header toggles a heatmap shading,
+         and <strong>#</strong> opens a statistics popup (min, max, mean, etc.) for that axis.
          Formula pre-registered: <code>√(R/100) − sl/250</code>.</p>
       <table id="featured-table">
         <tr><th></th>  <th>10</th><th>20</th><th>30</th><th>40</th><th>50</th></tr>
