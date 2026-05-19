@@ -37,7 +37,22 @@ export default defineConfig({
         name: 'gridSight',
         // Ensure the global variable is properly set
         extend: true,
-        // Use a self-executing function to ensure proper scoping
+        // ⚠ FRAGILE: the intro/outro pair below only behaves correctly while
+        // `src/index.ts` exports `default` and NOTHING ELSE. As soon as a
+        // named top-level export is added there, rollup switches the IIFE
+        // wrapper to `this.gridSight = this.gridSight || {}` and runs this
+        // outro AFTER `src/index.ts`'s own `window.gridSight = GridSight`
+        // assignment — clobbering the global with `undefined` (because the
+        // local `var gridSight` from the intro is never assigned).
+        //
+        // If you add a named export to src/index.ts, you MUST either:
+        //   (a) drop the named export (current strategy — see src/index.ts),
+        //   (b) rework intro/outro so the outro reads the actual export
+        //       (e.g. `window.gridSight = this.gridSight.default`), or
+        //   (c) replace this whole intro/outro/extend block with a single
+        //       `format: 'iife', name: 'gridSight'` and let the IIFE return
+        //       value bind the global itself.
+        // See specs/012-virtual-columns/research.md §R-13.
         intro: 'var gridSight;',
         outro: 'window.gridSight = gridSight;',
       },

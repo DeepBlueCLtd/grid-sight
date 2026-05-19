@@ -141,4 +141,7 @@ storybook-static
 
 # Claude Code per-user permissions
 .claude/settings.local.json
+
+# Playwright test artifacts
 test-results/
+playwright-report/

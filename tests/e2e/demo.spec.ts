@@ -37,13 +37,15 @@ test.describe('Grid-Sight landing page', () => {
     // Featured table is auto-detected — has the GS toggle.
     await expect(page.locator('#featured-table .grid-sight-toggle')).toHaveCount(1);
 
-    // Demo cards link to all four spec-001 demos.
+    // Demo cards link to the four published demos. As of commit a36737a
+    // the heatmap card was dropped and card 3 reframed around URL persistence;
+    // commit 04cf720 added the live-enrichments (capability-filtering) card.
     const cardTitles = await page.locator('.demo-card h3').allTextContents();
     expect(cardTitles).toEqual(expect.arrayContaining([
       expect.stringContaining('Interpolation'),
       expect.stringContaining('Alternate calc models'),
-      expect.stringContaining('Synced'),
-      expect.stringContaining('Dynamic heatmap'),
+      expect.stringContaining('Persistent URL'),
+      expect.stringContaining('Live enrichment toggles'),
     ]));
   });
 
@@ -68,12 +70,13 @@ test.describe('Grid-Sight landing page', () => {
     await expect(page.locator('#featured-table .grid-sight-toggle')).toHaveCount(1);
   });
 
-  test('all four demo pages are reachable', async ({ page }) => {
+  test('all four demo pages linked from the landing page are reachable', async ({ page }) => {
+    // Mirrors the four `.demo-card` links in public/index.html.
     const paths = [
       '/grid-sight/demo/sliders/interpolation.html',
       '/grid-sight/demo/sliders/alternate-calc-models.html',
       '/grid-sight/demo/sliders/synced-tables.html',
-      '/grid-sight/demo/sliders/heatmap.html',
+      '/grid-sight/demo/toggle/live-enrichments.html',
     ];
     for (const p of paths) {
       const resp = await page.goto('http://localhost:3014' + p);
