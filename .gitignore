@@ -141,3 +141,8 @@ storybook-static
 
 # Claude Code per-user permissions
 .claude/settings.local.json
+
+# Playwright per-failure artefact directories. `.last-run.json` is the
+# only file in test-results/ that's tracked.
+test-results/tests-*
+test-results/.playwright-artifacts-*
