@@ -15,7 +15,7 @@ externally-observable shape is the page-config (see `contracts/public-api.md`).
 The single in-library record of every enrichment the build ships, keyed by
 stable identifier.
 
-### Fields
+### Registry fields
 
 | Field | Type | Required | Notes |
 |---|---|---|---|
@@ -24,7 +24,7 @@ stable identifier.
 | `defaultOn` | `boolean` | yes | Whether this enrichment is in the default enabled set when no page config or visitor override is present. Today every entry is `true` (FR-001 preserves pre-feature behaviour). |
 | `tearDown` | `(table: HTMLTableElement) => void` | optional | Cleanup hook called when the enrichment transitions enabled → disabled while at least one of its instances is live on the page. Optional because some enrichments (e.g. `statistics` popup) clean up via a dismiss on `window._gs*Popup` rather than needing a hook. |
 
-### Validation rules
+### Registry validation rules
 
 - `id` MUST match `/^[a-z][a-z0-9-]*$/`. Validated at registry-construction time
   (compile-time error in TS; runtime assertion at boot).
@@ -34,7 +34,7 @@ stable identifier.
   clean up; it MUST handle the case where no instance of the enrichment is
   currently active on `table` (i.e. it must be idempotent).
 
-### Lifecycle
+### Registry lifecycle
 
 - Constructed once at module load (`src/core/enrichment-registry.ts`).
 - Frozen (`Object.freeze`) after construction; treated as read-only by everything
@@ -76,14 +76,14 @@ instances to clean up yet; each enrichment's implementation PR adds its own
 The author-supplied, page-scoped declaration of which enrichments are enabled
 for one HTML page.
 
-### Fields
+### Config fields
 
 | Field | Type | Required | Notes |
 |---|---|---|---|
 | `enrichments` | `string[]` | optional | The page-level enabled set. When present, replaces the library defaults entirely (FR-005). When absent, defaults apply. Empty array is a valid value (FR edge case: "no enrichments"). |
 | `showToggleUi` | `boolean` | optional | When `true`, opt in to the runtime visitor toggle panel (FR-013). Default `false`. |
 
-### Validation rules
+### Config validation rules
 
 - The whole config is optional. Absent → use defaults.
 - `enrichments` MUST be an array if present. Non-array values trigger a single
@@ -176,7 +176,7 @@ visitor flip each on or off.
 | `refresh()` | Set each checkbox `checked` to match the current effective set. Called after any external mutation (today: never, but kept for future symmetry). |
 | `onCheckboxChange(id, checked)` | Mutate the visitor-persisted set: add or remove `id`. Re-derive the effective set. Run tearDowns for any id that just went off. Call the global lozenge rebuild for every registered table. |
 
-### Lifecycle
+### Panel lifecycle
 
 - Created only when `pageConfig.showToggleUi === true` **or** the page contains
   a `<* data-gs-toggle-panel>` element (FR-013 + R-5).

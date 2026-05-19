@@ -37,33 +37,35 @@ detached from the document; re-enable the 10 KB gzipped ceiling in
 ## Technical Context
 
 **Language/Version**: TypeScript ~5.8 (existing project compiler version; output ES2020+)
+
 **Primary Dependencies**:
-  - Runtime: none new. Existing `simple-statistics`, `shepherd.js` unrelated to this feature.
-  - Build/test: existing Vite 6, Vitest 3, Playwright 1.53, Storybook 9 (unchanged).
-**Storage**: `window.localStorage` (existing per-URL-stem persistence) plus URL fragment
-  params for visitor-set enabled set.
-**Testing**: Vitest unit tests in `src/**/__tests__/`, Storybook 9 interaction tests
-  via `@storybook/addon-vitest`, Playwright e2e under `tests/e2e/`.
-**Target Platform**: Evergreen browsers ≤ 2 years old (Chrome, Firefox, Safari, Edge,
-  Chromium derivatives). Must function from `file://` (offline).
-**Project Type**: Browser library, single project. IIFE bundle (`grid-sight.iife.js`)
-  + npm/ESM via `src/index.ts` entry.
+
+- Runtime: none new. Existing `simple-statistics`, `shepherd.js` unrelated to this feature.
+- Build/test: existing Vite 6, Vitest 3, Playwright 1.53, Storybook 9 (unchanged).
+
+**Storage**: `window.localStorage` (existing per-URL-stem persistence) plus URL fragment params for visitor-set enabled set.
+
+**Testing**: Vitest unit tests in `src/**/__tests__/`, Storybook 9 interaction tests via `@storybook/addon-vitest`, Playwright e2e under `tests/e2e/`.
+
+**Target Platform**: Evergreen browsers ≤ 2 years old (Chrome, Firefox, Safari, Edge, Chromium derivatives). Must function from `file://` (offline).
+
+**Project Type**: Browser library, single project. IIFE bundle (`grid-sight.iife.js`) plus npm/ESM via `src/index.ts` entry.
+
 **Performance Goals**:
-  - Filter check at lozenge-spec build time: O(1) `Set` lookup per candidate spec.
-  - Runtime toggle: lozenge add / remove + cleanup completes within one animation
-    frame (≤ 16 ms) on a mid-range laptop (SC-004).
-  - No re-layout cost beyond the lozenge mutation itself; no full re-process of
-    table data.
+
+- Filter check at lozenge-spec build time: O(1) `Set` lookup per candidate spec.
+- Runtime toggle: lozenge add / remove + cleanup completes within one animation frame (≤ 16 ms) on a mid-range laptop (SC-004).
+- No re-layout cost beyond the lozenge mutation itself; no full re-process of table data.
+
 **Constraints**:
-  - Net bundle delta ≤ 1 KB gzipped for the whole feature (SC-007 + constitution §I).
-  - Runtime toggle panel is opt-in per page but its **code** is part of the bundle;
-    it must be tight enough to fit within the 1 KB total.
-  - No runtime network access (constitution §VI). No new deps.
-  - Keyboard + AT operability for the panel (FR-021 + constitution §III).
-  - Per-URL-stem persistence model unchanged.
-**Scale/Scope**: Same as host-page scope — up to ~10 tables per page, up to ~14
-  registered enrichment ids today (room to grow). Toggle panel lists every
-  registered id; expected list length 10–20 over the next year.
+
+- Net bundle delta ≤ 1 KB gzipped for the whole feature (SC-007 + constitution §I).
+- Runtime toggle panel is opt-in per page but its **code** is part of the bundle; it must be tight enough to fit within the 1 KB total.
+- No runtime network access (constitution §VI). No new deps.
+- Keyboard + AT operability for the panel (FR-021 + constitution §III).
+- Per-URL-stem persistence model unchanged.
+
+**Scale/Scope**: Same as host-page scope — up to ~10 tables per page, up to ~14 registered enrichment ids today (room to grow). Toggle panel lists every registered id; expected list length 10–20 over the next year.
 
 ## Constitution Check
 

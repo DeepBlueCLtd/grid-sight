@@ -39,16 +39,16 @@ If running low on context or the user asks to compress: Step 0 > Test coverage d
 
 ## Engineering Preferences (guide your recommendations)
 
-* **Constitution is law** — the principles in `.specify/memory/constitution.md` override all other considerations. Flag violations as CRITICAL.
-* **Bundle budget is a hard ceiling** — Principle I caps the IIFE at 10 KB gzipped. Any growth must justify its bytes; a feature targeting ≤ 1 KB should not slip to 5 KB unchallenged.
-* **DRY is important** — flag repetition aggressively across both the plan and existing code it touches.
-* **Well-tested code is non-negotiable** — Principle II mandates Vitest unit tests and Playwright e2e tests green at merge; new behaviour without tests is a blocker.
-* **Engineered enough** — not under-engineered (fragile, hacky) and not over-engineered (premature abstraction, unnecessary complexity). The Development-Phase Posture lets us move fast, but not recklessly — backwards-compat is waived, bundle and a11y are not.
-* **Bias toward explicit over clever** — TypeScript is configured strictly; flag any `any`, `as unknown as`, or non-null `!` that hides a real type problem.
-* **Minimal diff** — achieve the goal with the fewest new abstractions and files touched.
-* **Offline-first always** — every design decision must work without network and from `file://` (Principle VI). Any fetch, font CDN, or analytics call is a CRITICAL violation.
-* **Accessibility by default** — every UI affordance must be keyboard-operable and convey state to AT; colour MUST NOT be the sole channel (Principle III).
-* **Progressive enhancement** — the library MUST work as a `<script>` drop-in with no build step AND as ESM (Principle IV). A design that only works for one consumer mode is a violation.
+- **Constitution is law** — the principles in `.specify/memory/constitution.md` override all other considerations. Flag violations as CRITICAL.
+- **Bundle budget is a hard ceiling** — Principle I caps the IIFE at 10 KB gzipped. Any growth must justify its bytes; a feature targeting ≤ 1 KB should not slip to 5 KB unchallenged.
+- **DRY is important** — flag repetition aggressively across both the plan and existing code it touches.
+- **Well-tested code is non-negotiable** — Principle II mandates Vitest unit tests and Playwright e2e tests green at merge; new behaviour without tests is a blocker.
+- **Engineered enough** — not under-engineered (fragile, hacky) and not over-engineered (premature abstraction, unnecessary complexity). The Development-Phase Posture lets us move fast, but not recklessly — backwards-compat is waived, bundle and a11y are not.
+- **Bias toward explicit over clever** — TypeScript is configured strictly; flag any `any`, `as unknown as`, or non-null `!` that hides a real type problem.
+- **Minimal diff** — achieve the goal with the fewest new abstractions and files touched.
+- **Offline-first always** — every design decision must work without network and from `file://` (Principle VI). Any fetch, font CDN, or analytics call is a CRITICAL violation.
+- **Accessibility by default** — every UI affordance must be keyboard-operable and convey state to AT; colour MUST NOT be the sole channel (Principle III).
+- **Progressive enhancement** — the library MUST work as a `<script>` drop-in with no build step AND as ESM (Principle IV). A design that only works for one consumer mode is a violation.
 
 ## Execution Steps
 
@@ -94,10 +94,12 @@ Read all available design artifacts:
 3. **Check the bundle baseline**: If `dist/grid-sight.iife.js` exists, note its current gzipped size so you can sanity-check the plan's projected delta against the 10 KB ceiling.
 
 4. **Check git history** for the feature branch:
-   ```
+
+   ```bash
    git log --oneline -20
    git log --oneline main..HEAD  # if not on main
    ```
+
    If prior commits suggest a previous review cycle (review-driven refactors, reverted changes), note what changed and be more aggressive reviewing those areas.
 
 5. **Record findings** for use in Step 0 and the "What Already Exists" output.
@@ -132,7 +134,7 @@ Then use AskUserQuestion to present your findings and ask the user to choose one
 
 Evaluate the plan against the codebase and constitution:
 
-* **Constitution alignment**: Check every architectural decision against the relevant principle. Pay special attention to:
+- **Constitution alignment**: Check every architectural decision against the relevant principle. Pay special attention to:
   - **Principle I (Lightweight & Minimal Dependencies)**: Any new runtime dependency? Does the projected bundle delta keep the IIFE under 10 KB gzipped?
   - **Principle II (Test Discipline)**: Are Vitest unit, Storybook interaction, and Playwright e2e tests planned for every new code path?
   - **Principle III (Accessibility by Default)**: Are all new UI affordances keyboard-operable? Do they expose state to AT? Is colour ever the sole channel for information?
@@ -141,18 +143,18 @@ Evaluate the plan against the codebase and constitution:
   - **Principle VI (Offline-First / Air-Gapped)**: Any fetch, font CDN, analytics, or telemetry call? Anything that would break from `file://`?
   - **Development-Phase Posture**: Backwards-compat is waived pre-production — flag any energy spent on compat shims that the posture explicitly excuses.
 
-* **Component boundaries and coupling**: Review the dependency graph between proposed and existing modules. Grid-Sight's layout is `core/` (detection, processors) → `enrichments/` (registration / orchestration) → `ui/` (DOM + a11y) → `utils/` (pure logic). Flag layering violations (e.g. `utils/` importing from `ui/`) or circular dependencies.
+- **Component boundaries and coupling**: Review the dependency graph between proposed and existing modules. Grid-Sight's layout is `core/` (detection, processors) → `enrichments/` (registration / orchestration) → `ui/` (DOM + a11y) → `utils/` (pure logic). Flag layering violations (e.g. `utils/` importing from `ui/`) or circular dependencies.
 
-* **Data flow patterns**: Trace data from input (host page DOM, page config, URL fragment, localStorage) to runtime state to output (lozenges, popups, persistence writes). Identify potential bottlenecks and races (e.g. config read after init).
+- **Data flow patterns**: Trace data from input (host page DOM, page config, URL fragment, localStorage) to runtime state to output (lozenges, popups, persistence writes). Identify potential bottlenecks and races (e.g. config read after init).
 
-* **Integration with existing code**: For each touchpoint with existing code (found in Step 3), assess whether the integration approach is clean or introduces coupling. Watch for:
+- **Integration with existing code**: For each touchpoint with existing code (found in Step 3), assess whether the integration approach is clean or introduces coupling. Watch for:
   - New code reaching into `src/ui/header-utils.ts` lozenge-spec assembly in more than one place.
   - Duplication of the slider persistence model rather than reuse.
   - Bypassing `data-gs-ignore` honouring.
 
-* **Failure scenarios**: For each new codepath or integration point, describe one realistic production failure scenario (malformed config object, corrupted localStorage value, missing DOM container, host CSS clobbering a panel) and whether the plan accounts for it.
+- **Failure scenarios**: For each new codepath or integration point, describe one realistic production failure scenario (malformed config object, corrupted localStorage value, missing DOM container, host CSS clobbering a panel) and whether the plan accounts for it.
 
-* **Diagrams**: Note whether key flows deserve ASCII diagrams in the plan or in code comments.
+- **Diagrams**: Note whether key flows deserve ASCII diagrams in the plan or in code comments.
 
 **STOP.** You MUST call AskUserQuestion NOW with your findings from this section. Do NOT proceed to the next section until the user responds.
 
@@ -160,25 +162,25 @@ Evaluate the plan against the codebase and constitution:
 
 Evaluate the proposed design in data-model.md, contracts/, and plan.md:
 
-* **DRY violations**: Check proposed types and interfaces against existing ones. Flag duplication aggressively — especially:
+- **DRY violations**: Check proposed types and interfaces against existing ones. Flag duplication aggressively — especially:
   - Re-declarations of existing types (e.g. another `EnrichmentType` enum next to the one in `src/ui/enrichment-menu.ts`).
   - Parallel implementations of persistence that the slider already solved.
   - Repeated id-normalisation logic that should be one helper.
 
-* **Naming consistency with existing code**: Grid-Sight already has in-code identifiers for shipped enrichments (`heatmap`, `sliders`, `slider`, `threshold-slider`, `frequency`, `frequency-chart`, …). Flag any spec/plan that introduces a parallel vocabulary (e.g. spec says `slider` while code says `sliders`) without reconciling explicitly in research.
+- **Naming consistency with existing code**: Grid-Sight already has in-code identifiers for shipped enrichments (`heatmap`, `sliders`, `slider`, `threshold-slider`, `frequency`, `frequency-chart`, …). Flag any spec/plan that introduces a parallel vocabulary (e.g. spec says `slider` while code says `sliders`) without reconciling explicitly in research.
 
-* **Error handling patterns**: Are failure modes explicit? Does the design fall back rather than throw at init? Are the console warnings used to surface misuse (rather than silent fall-through) where appropriate?
+- **Error handling patterns**: Are failure modes explicit? Does the design fall back rather than throw at init? Are the console warnings used to surface misuse (rather than silent fall-through) where appropriate?
 
-* **Over/under-engineering**: Is the design proportional to the problem? Flag premature abstractions (unnecessary base classes, overly generic interfaces, "future-proofing" beyond what specs 002–010 actually need) and missing structure (god objects, mixed concerns, DOM logic in `core/`).
+- **Over/under-engineering**: Is the design proportional to the problem? Flag premature abstractions (unnecessary base classes, overly generic interfaces, "future-proofing" beyond what specs 002–010 actually need) and missing structure (god objects, mixed concerns, DOM logic in `core/`).
 
-* **Type safety**: TypeScript is configured strictly (zero errors required by Principle II / Workflow gates). Flag:
+- **Type safety**: TypeScript is configured strictly (zero errors required by Principle II / Workflow gates). Flag:
   - Any `any` in proposed type signatures.
   - `as unknown as T` casts that paper over a real shape mismatch.
   - Optional fields that should be required (or vice-versa) given the data flow.
 
-* **Existing code impact**: For files the plan modifies (found in Step 3), review whether the proposed changes conflict with existing patterns, break existing tests, or introduce inconsistencies. Pay attention to the lozenge cluster code in `src/ui/header-utils.ts` — modifications there ripple to every demo.
+- **Existing code impact**: For files the plan modifies (found in Step 3), review whether the proposed changes conflict with existing patterns, break existing tests, or introduce inconsistencies. Pay attention to the lozenge cluster code in `src/ui/header-utils.ts` — modifications there ripple to every demo.
 
-* **Stale documentation**: If the plan modifies code that has inline comments, README references, or `CLAUDE.md` content, note that these will need updating. Likewise quickstart.md if the contract changes.
+- **Stale documentation**: If the plan modifies code that has inline comments, README references, or `CLAUDE.md` content, note that these will need updating. Likewise quickstart.md if the contract changes.
 
 **STOP.** You MUST call AskUserQuestion NOW with your findings from this section. Do NOT proceed to the next section until the user responds.
 
@@ -207,12 +209,12 @@ Flag any new codepath that has no planned test coverage.
 
 Evaluate with Grid-Sight's domain constraints in mind:
 
-* **Bundle size**: Does the plan's projected gzipped delta hold up under scrutiny? Are the heaviest contributors (UI panels, large data literals, inlined SVG) accounted for? Is there a credible mitigation plan if the delta blows the budget?
-* **Runtime budget**: Constitution caps processing of a 1,000-cell table at 100 ms on a mid-range laptop, and forbids main-thread blocking beyond one animation frame. Does the design hit those numbers under realistic data (large heatmaps, many tables on one page, many lozenges)?
-* **Interaction latency**: Slider drag, lozenge toggle, panel checkbox flip — each must complete within one animation frame (≤ 16 ms). Flag any design that walks the entire DOM on each interaction.
-* **Memory & DOM growth**: Are large collections held in memory unnecessarily? Are detached DOM nodes (closed popups, removed lozenges) reachable through retained references? Are event listeners cleaned up on tearDown?
-* **localStorage / URL footprint**: URL fragments are visible everywhere they're shared. Are they kept short? Is the localStorage payload bounded (no unbounded history)?
-* **Startup impact**: Time from `<script>` parse to first lozenge rendered. Does the feature add measurable cost on a page with no qualifying tables? It should not.
+- **Bundle size**: Does the plan's projected gzipped delta hold up under scrutiny? Are the heaviest contributors (UI panels, large data literals, inlined SVG) accounted for? Is there a credible mitigation plan if the delta blows the budget?
+- **Runtime budget**: Constitution caps processing of a 1,000-cell table at 100 ms on a mid-range laptop, and forbids main-thread blocking beyond one animation frame. Does the design hit those numbers under realistic data (large heatmaps, many tables on one page, many lozenges)?
+- **Interaction latency**: Slider drag, lozenge toggle, panel checkbox flip — each must complete within one animation frame (≤ 16 ms). Flag any design that walks the entire DOM on each interaction.
+- **Memory & DOM growth**: Are large collections held in memory unnecessarily? Are detached DOM nodes (closed popups, removed lozenges) reachable through retained references? Are event listeners cleaned up on tearDown?
+- **localStorage / URL footprint**: URL fragments are visible everywhere they're shared. Are they kept short? Is the localStorage payload bounded (no unbounded history)?
+- **Startup impact**: Time from `<script>` parse to first lozenge rendered. Does the feature add measurable cost on a page with no qualifying tables? It should not.
 
 **STOP.** You MUST call AskUserQuestion NOW with your findings from this section. Do NOT proceed to the next section until the user responds.
 
@@ -247,10 +249,10 @@ List existing code, modules, and flows (found in Step 3) that already partially 
 
 Any deferred work that is genuinely valuable MUST be written up as potential backlog entries (in BACKLOG.md if it exists, otherwise propose creating one). Each entry needs:
 
-* **What**: One-line description of the work
-* **Why**: The concrete problem it solves or value it unlocks
-* **Context**: Enough detail that someone picking this up in 3 months understands the motivation
-* **Depends on / blocked by**: Any prerequisites
+- **What**: One-line description of the work
+- **Why**: The concrete problem it solves or value it unlocks
+- **Context**: Enough detail that someone picking this up in 3 months understands the motivation
+- **Depends on / blocked by**: Any prerequisites
 
 Do NOT write vague bullet points. Ask the user which deferred items they want captured before proposing backlog entries.
 
@@ -298,11 +300,11 @@ These may cause problems during implementation if not addressed.
 
 ## Formatting Rules
 
-* NUMBER issues (1, 2, 3...) and give LETTERS for options (A, B, C...).
-* When using AskUserQuestion, label each option with issue NUMBER and option LETTER.
-* Recommended option is always listed first.
-* Keep each option to one sentence max.
-* After each review section, pause and ask for feedback before moving on.
+- NUMBER issues (1, 2, 3...) and give LETTERS for options (A, B, C...).
+- When using AskUserQuestion, label each option with issue NUMBER and option LETTER.
+- Recommended option is always listed first.
+- Keep each option to one sentence max.
+- After each review section, pause and ask for feedback before moving on.
 
 ## Unresolved Decisions
 

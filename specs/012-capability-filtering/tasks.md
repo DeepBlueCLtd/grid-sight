@@ -206,10 +206,10 @@ Task: "Add pageConfig to public/demo/sliders/heatmap.html"
 ### Incremental Delivery
 
 1. Setup + Foundational → bundle gate restored, registry + resolver landed. **(merge-able)**
-2. + User Story 1 → static config works. **(MVP — merge-able)**
-3. + User Story 3 → existing demos visibly cleaner. **(merge-able)**
-4. + User Story 2 → live toggle demo. **(complete feature)**
-5. + Polish.
+2. Add User Story 1 → static config works. **(MVP — merge-able)**
+3. Add User Story 3 → existing demos visibly cleaner. **(merge-able)**
+4. Add User Story 2 → live toggle demo. **(complete feature)**
+5. Add Polish.
 
 Note: US3 can ship after US1 alone; US2 is independent of US3 and may ship in either order after US1.
 

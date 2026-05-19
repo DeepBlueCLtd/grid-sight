@@ -125,6 +125,7 @@ The two paths share a single normalisation routine in `src/core/page-config.ts`.
 **Rationale**: The IIFE path needs to work with **no** JS knowledge beyond
 copy-pasting a snippet (the project's whole pitch — drop in one script tag, edit
 one HTML file). A `<meta>` tag was tempting for being even more declarative, but:
+
 - it forces a string-encoding for the list, which authors get wrong (commas vs
   spaces vs trailing commas);
 - it can't carry the boolean `showToggleUi` flag without inventing a syntax;
@@ -209,9 +210,11 @@ them from the enrichment-persistence path. Concretely:
    key by the same `readFromUrl(key)` helper; values are URL-decoded by the
    existing path.
 4. **Payload shape on disk**:
+
    ```json
    { "version": 1, "entries": ["heatmap","sliders","statistics"] }
    ```
+
    `version: 1` initially; bumped if the shape ever needs to change. Unrecognised
    versions cause a fall-back to defaults rather than a throw (mirrors slider
    precedent).
@@ -256,6 +259,7 @@ provided, docked top-right of the viewport. Each registered enrichment is one ro
 ```
 
 Construction rules:
+
 - Single `<fieldset>` with a `<legend>` ("Grid-Sight enrichments").
 - One `<label><input type="checkbox"> Label <span class="id">(id)</span></label>`
   per registered id.
@@ -267,6 +271,7 @@ Construction rules:
   fieldset focus order).
 
 Host opt-in:
+
 - `window.gridSight.pageConfig.showToggleUi = true` — auto-create panel and
   append to a `<div data-gs-toggle-panel>` if present, else `<body>`.
 - Alternatively: an empty `<div data-gs-toggle-panel></div>` on the page is
