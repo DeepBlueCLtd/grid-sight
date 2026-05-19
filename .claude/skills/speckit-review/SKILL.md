@@ -10,6 +10,8 @@ user-invocable: true
 disable-model-invocation: false
 ---
 
+# Speckit Review
+
 ## User Input
 
 ```text
@@ -278,7 +280,7 @@ If any failure mode has no test AND no error handling AND would be silent (the p
 
 At the end of the review, display this summary:
 
-```
+```text
 ## Review Summary
 
 - Step 0: Scope Challenge (user chose: ___)
