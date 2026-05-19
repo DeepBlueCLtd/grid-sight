@@ -16,6 +16,7 @@ import {
   persistPosition,
   pruneEntry,
 } from '../utils/slider-persistence';
+import { isEnrichmentEnabled } from '../core/enabled-set-state';
 import { formatNumber } from '../ui/slider-control';
 import { injectSliderStyles } from './slider-styles';
 import {
@@ -287,7 +288,9 @@ export function addSlider(table: HTMLTableElement, axis: Axis): GridSightSlider 
   const min = Math.min(...binding.headerValues);
   const max = Math.max(...binding.headerValues);
   const id = `${table.id}#${axis}`;
-  const initialPos01 = resolveInitialPosition(id);
+  // Spec 012 (FR-011): when the 'sliders' enrichment is disabled, ignore any
+  // bookmarked gs.s state so a stale URL cannot activate a disabled slider.
+  const initialPos01 = isEnrichmentEnabled('sliders') ? resolveInitialPosition(id) : 0.5;
   const initial = min + initialPos01 * (max - min);
   const syncKey = deriveSyncKey([...binding.headerValues].map(String));
 

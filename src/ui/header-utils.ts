@@ -13,6 +13,7 @@ import { colKeyAt } from '../utils/view-state-url';
 import { createSortLozenge } from './sort-lozenge';
 import { createFilterLozenge } from './filter-lozenge';
 import { detectSortColumnType } from '../enrichments/sort';
+import { getEffectiveEnabledSet } from '../core/enabled-set-state';
 
 export type HeaderType = 'row' | 'column' | 'table';
 
@@ -173,13 +174,16 @@ function addLozengesToHeader(
     }
   }
 
-  if (specs.length === 0) return;
+  // Spec 012 (FR-009): drop specs whose id is not in the effective enabled set.
+  const enabled = getEffectiveEnabledSet();
+  const filteredSpecs = specs.filter(s => enabled.has(s.id));
+  if (filteredSpecs.length === 0) return;
 
   const cluster = document.createElement('span');
   cluster.className = 'gs-lozenge-cluster';
   cluster.style.cssText = 'display:inline-flex; gap:2px; margin-left:6px; vertical-align:middle;';
 
-  for (const spec of specs) {
+  for (const spec of filteredSpecs) {
     if (spec.id === 'sort' || spec.id === 'filter') {
       // These specs already carry their own concrete button via `onClick`.
       cluster.appendChild(buildPrebuiltLozenge(spec, table, header, colIndex));

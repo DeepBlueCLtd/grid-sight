@@ -2,6 +2,7 @@ import { injectPlusIcons, removePlusIcons, plusIconStyles } from './header-utils
 import type { HeaderType } from './header-utils';
 import { removeAllMenus } from './enrichment-menu';
 import { analyzeTable } from '../core/table-detection';
+import { setColumnTypes } from '../core/column-types-cache';
 import { toggleHeatmap } from '../enrichments/heatmap';
 import { addThresholdSlider } from '../enrichments/slider-threshold';
 import { calculateStatistics } from '../enrichments/statistics';
@@ -119,7 +120,7 @@ function handleEnrichmentSelected(event: Event) {
   }
 
   // Handle menu item selection
-  if (enrichmentType === 'threshold-slider') {
+  if (enrichmentType === 'slider-threshold') {
     try { addThresholdSlider(table); }
     catch (e) { console.warn('[gridSight] addThresholdSlider failed:', e); }
     return;
@@ -414,6 +415,8 @@ export function injectToggle(table: HTMLTableElement): boolean {
             Array.from(row.cells).map(cell => cell.textContent || '')
           );
           const { columnTypes } = analyzeTable(rows);
+          // Cache column types for the toggle-panel refresh path (spec 012 R-10).
+          setColumnTypes(table, columnTypes);
           // Inject plus icons
           injectPlusIcons(table, columnTypes);
           

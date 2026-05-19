@@ -129,6 +129,10 @@
       <h3>3. Persistent URL</h3>
       <p>Slider positions encoded in the URL fragment — bookmark, share, or reload at a chosen value.</p>
     </a>
+    <a class="demo-card" href="demo/toggle/live-enrichments.html">
+      <h3>4. Live enrichment toggles</h3>
+      <p>Spec 012 — opt-in panel to flip enrichments on and off live; choices persist per URL.</p>
+    </a>
   </div>
 
   <h2>Tables on this page</h2>
@@ -189,6 +193,10 @@
     Spec: <code>specs/001-dynamic-sliders/</code> · No runtime dependencies · Works offline (file://).
   </footer>
 
+  <script>
+    // spec 012 — narrow to the shipped enrichments today.
+    window.gridSight = { pageConfig: { enrichments: ['heatmap','sliders','slider-threshold','statistics','frequency','frequency-chart'] } };
+  </script>
   <script src="grid-sight.iife.js"></script>
   <script>
     // Register the formula on the featured table once the IIFE has loaded.
