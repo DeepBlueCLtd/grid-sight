@@ -22,3 +22,20 @@ the gap to 10 KB is the outstanding work the amendment PR must cover.
 The feature's own budget (≤ 1 KB gzipped delta — SC-007) is still verified by
 T041 measuring the post-feature gzipped size against the 19.01 KB baseline
 above.
+
+## T041: Post-feature measurement (2026-05-19)
+
+| Stage     | Raw KB | Gzipped KB | Δ from baseline |
+|-----------|--------|------------|-----------------|
+| Baseline  | 71.73  | 19.01      | —               |
+| Post-feat | 79.89  | 21.36      | **+2.35 KB**    |
+
+Result: spec-012's gzipped delta is **+2.35 KB**, which exceeds the SC-007
+target of ≤ 1 KB. The R-7 estimate (~0.89 KB) under-projected the real cost
+by ~1.5 KB — main drivers are the toggle-panel module (DOM construction +
+listener wiring + CSS string + persistence diff loop) plus the new registry
+and resolver modules. Mitigations enumerated in R-7 (compress registry,
+inline resolver into page-config, etc.) are not yet applied; budget-cut work
+is left as a separate follow-up under the 25 KB working ceiling. This
+overrun is recorded here for the PR description per T041's instruction.
+

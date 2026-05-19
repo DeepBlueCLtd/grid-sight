@@ -449,15 +449,19 @@ if (document.readyState === 'loading') {
 // Export the GridSight API
 export default GridSight;
 
-// Expose to window for direct script include
-// Use a more direct approach to ensure it's available globally
+// Expose to window for direct script include.
+// Preserve any pre-bundle `window.gridSight.pageConfig` the host page set so
+// the spec-012 capability filter sees it at init time. Without this merge,
+// the assignment below would clobber the author's pageConfig declaration.
 if (typeof window !== 'undefined') {
-  (window as any).gridSight = GridSight;
+  const existing = (window as Window & { gridSight?: { pageConfig?: unknown } }).gridSight;
+  const merged = Object.assign(GridSight, existing ? { pageConfig: existing.pageConfig } : {});
+  (window as any).gridSight = merged;
 }
 
 // Also assign to globalThis for better compatibility
 if (typeof globalThis !== 'undefined') {
-  (globalThis as any).gridSight = GridSight;
+  (globalThis as any).gridSight = (window as any).gridSight ?? GridSight;
 }
 
 // For CommonJS environments

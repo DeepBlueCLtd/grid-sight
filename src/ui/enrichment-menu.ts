@@ -1,4 +1,5 @@
 import type { ColumnType } from '../core/type-detection';
+import { getEffectiveEnabledSet } from '../core/enabled-set-state';
 
 export const ENRICHMENT_MENU_CLASS = 'gs-enrichment-menu';
 const MENU_ITEM_CLASS = 'gs-enrichment-menu-item';
@@ -108,9 +109,12 @@ export function createEnrichmentMenu(
     font-size: 13px;
   `;
 
-  // Filter items based on column type and (optional) predicate context
+  // Filter items based on column type, the optional predicate context, and
+  // the effective enabled set (spec 012, FR-010).
+  const enabled = getEffectiveEnabledSet();
   const availableItems = ENRICHMENT_ITEMS.filter(item => {
     if (!item.availableFor.includes(columnType)) return false;
+    if (!enabled.has(item.id)) return false;
     if (item.predicate && ctx) return item.predicate(ctx);
     if (item.predicate && !ctx) return false; // predicate items require context
     return true;
@@ -120,6 +124,7 @@ export function createEnrichmentMenu(
   availableItems.forEach(item => {
     const menuItem = document.createElement('div');
     menuItem.className = MENU_ITEM_CLASS;
+    menuItem.setAttribute('data-gs-enrichment-id', item.id);
     menuItem.style.cssText = `
       display: flex;
       align-items: center;

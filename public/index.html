@@ -189,6 +189,10 @@
     Spec: <code>specs/001-dynamic-sliders/</code> · No runtime dependencies · Works offline (file://).
   </footer>
 
+  <script>
+    // spec 012 — narrow to the shipped enrichments today.
+    window.gridSight = { pageConfig: { enrichments: ['heatmap','sliders','slider-threshold','statistics','frequency','frequency-chart'] } };
+  </script>
   <script src="grid-sight.iife.js"></script>
   <script>
     // Register the formula on the featured table once the IIFE has loaded.
