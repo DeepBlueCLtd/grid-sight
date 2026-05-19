@@ -2,6 +2,17 @@ import type { ColumnType } from '../core/type-detection';
 import { cleanNumericCell } from '../core/type-detection';
 import { addSlider, getSliders, inspectAxisBinding } from '../enrichments/slider';
 import { isHeatmapActive, toggleHeatmap } from '../enrichments/heatmap';
+import {
+  getVisibleRows,
+  setSort,
+  setFilter,
+  type FilterPredicate,
+  type SortDirective,
+} from '../utils/visible-rows';
+import { colKeyAt } from '../utils/view-state-url';
+import { createSortLozenge } from './sort-lozenge';
+import { createFilterLozenge } from './filter-lozenge';
+import { detectSortColumnType } from '../enrichments/sort';
 
 export type HeaderType = 'row' | 'column' | 'table';
 
@@ -48,7 +59,7 @@ export function removePlusIcons(table: HTMLTableElement): void {
 /* ────────────────────────────────────────────────────────────────────────── */
 
 interface LozengeSpec {
-  id: 'heatmap' | 'sliders' | 'statistics' | 'frequency' | 'frequency-chart';
+  id: 'heatmap' | 'sliders' | 'statistics' | 'frequency' | 'frequency-chart' | 'sort' | 'filter';
   label: string;
   title: string;
   /** Toggle (true) or one-shot command (false). Commands have no active state. */
@@ -57,6 +68,18 @@ interface LozengeSpec {
   isActive: () => boolean;
   /** Apply the action. */
   onClick: () => void;
+}
+
+/** Detect whether a body cell in this column spans more than one row — if so,
+ *  sort and filter are suppressed (per spec edge cases). */
+function columnHasRowspanBodyCells(table: HTMLTableElement, columnIndex: number): boolean {
+  const tbody = table.tBodies[0];
+  if (!tbody) return false;
+  for (const row of Array.from(tbody.rows)) {
+    const cell = row.cells[columnIndex];
+    if (cell && cell.rowSpan > 1) return true;
+  }
+  return false;
 }
 
 function addLozengesToHeader(
@@ -131,6 +154,20 @@ function addLozengesToHeader(
     });
   }
 
+  // Sort + filter lozenges live only on column headers (top row, non-table cell).
+  // They are suppressed when:
+  //  - `data-gs-no-sort` / `data-gs-no-filter` is set on the header
+  //  - any body cell in this column has rowspan > 1
+  if (type === 'column' && !columnHasRowspanBodyCells(table, colIndex)) {
+    const columnKey = colKeyAt(table, colIndex);
+    if (!header.hasAttribute('data-gs-no-sort')) {
+      specs.push(buildSortSpec(table, header, colIndex, columnKey));
+    }
+    if (!header.hasAttribute('data-gs-no-filter')) {
+      specs.push(buildFilterSpec(table, header, colIndex, columnKey, columnType));
+    }
+  }
+
   if (specs.length === 0) return;
 
   const cluster = document.createElement('span');
@@ -138,11 +175,82 @@ function addLozengesToHeader(
   cluster.style.cssText = 'display:inline-flex; gap:2px; margin-left:6px; vertical-align:middle;';
 
   for (const spec of specs) {
-    cluster.appendChild(buildLozenge(spec));
+    if (spec.id === 'sort' || spec.id === 'filter') {
+      // These specs already carry their own concrete button via `onClick`.
+      cluster.appendChild(buildPrebuiltLozenge(spec, table, header, colIndex));
+    } else {
+      cluster.appendChild(buildLozenge(spec));
+    }
   }
 
   header.appendChild(cluster);
   header.classList.add(HEADER_WITH_ICON_CLASS);
+}
+
+function buildSortSpec(
+  table: HTMLTableElement,
+  _header: HTMLTableCellElement,
+  colIndex: number,
+  _columnKey: string
+): LozengeSpec {
+  return {
+    id: 'sort',
+    label: '↕',
+    title: 'Sort column',
+    isToggle: true,
+    isActive: () => {
+      const cur = getVisibleRows(table).sort;
+      return !!(cur && cur.columnIndex === colIndex);
+    },
+    onClick: () => {/* handled in buildPrebuiltLozenge */},
+  };
+}
+
+function buildFilterSpec(
+  table: HTMLTableElement,
+  _header: HTMLTableCellElement,
+  colIndex: number,
+  _columnKey: string,
+  _columnType: ColumnType
+): LozengeSpec {
+  return {
+    id: 'filter',
+    label: '▽',
+    title: 'Filter column',
+    isToggle: true,
+    isActive: () => getVisibleRows(table).filters.has(colIndex),
+    onClick: () => {/* handled in buildPrebuiltLozenge */},
+  };
+}
+
+function buildPrebuiltLozenge(
+  spec: LozengeSpec,
+  table: HTMLTableElement,
+  _header: HTMLTableCellElement,
+  colIndex: number
+): HTMLButtonElement {
+  const columnKey = colKeyAt(table, colIndex);
+  if (spec.id === 'sort') {
+    const type = detectSortColumnType(table, colIndex);
+    return createSortLozenge({
+      columnIndex: colIndex,
+      columnKey,
+      columnType: type,
+      getCurrentSort: () => getVisibleRows(table).sort as SortDirective | null,
+      onChange: (next) => setSort(table, next),
+    });
+  }
+  // filter
+  const colType: 'numeric' | 'categorical' =
+    detectSortColumnType(table, colIndex) === 'numeric' ? 'numeric' : 'categorical';
+  return createFilterLozenge({
+    table,
+    columnIndex: colIndex,
+    columnKey,
+    columnType: colType,
+    getCurrentFilter: () => (getVisibleRows(table).filters.get(colIndex) as FilterPredicate | undefined) ?? null,
+    onChange: (next) => setFilter(table, colIndex, next),
+  });
 }
 
 function buildLozenge(spec: LozengeSpec): HTMLButtonElement {
