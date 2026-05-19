@@ -7,7 +7,9 @@
 import { getRecord } from './original-order';
 import type {
   FilterPredicate,
+  SortDirective,
   VisibleRowEntry,
+  VisibleRowSequence,
 } from './visible-rows';
 
 export function getBaseRows(table: HTMLTableElement): readonly HTMLTableRowElement[] {
@@ -60,4 +62,24 @@ export function buildEntries(
     dimmed: dimmedMap.get(row) ?? false,
     sourceIndex: sourceIndexMap.get(row) ?? 0,
   }));
+}
+
+export function makeVisibleRowSequence(
+  table: HTMLTableElement,
+  sort: SortDirective | null,
+  comparator: ((a: HTMLTableRowElement, b: HTMLTableRowElement) => number) | null,
+  filters: ReadonlyMap<number, FilterPredicate>,
+  revision: number
+): VisibleRowSequence {
+  const baseRows = getBaseRows(table);
+  const pass = computePassFlags(baseRows, filters);
+  const renderOrder = sort && comparator
+    ? mergeByOriginalIndex(baseRows, pass, comparator)
+    : baseRows.slice();
+  return {
+    entries: buildEntries(baseRows, renderOrder, pass),
+    sort,
+    filters: new Map(filters),
+    revision,
+  };
 }

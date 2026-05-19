@@ -12,12 +12,7 @@ import {
   getRecord,
   restoreOriginalOrder,
 } from './original-order';
-import {
-  getBaseRows,
-  computePassFlags,
-  mergeByOriginalIndex,
-  buildEntries,
-} from './visible-rows-pipeline';
+import { makeVisibleRowSequence } from './visible-rows-pipeline';
 
 /* ── Public types ────────────────────────────────────────────────────── */
 
@@ -228,17 +223,13 @@ function reevaluate(state: PipelineState): void {
 }
 
 function computeSequence(state: PipelineState): VisibleRowSequence {
-  const baseRows = getBaseRows(state.table);
-  const pass = computePassFlags(baseRows, state.filters);
-  const renderOrder = state.sort && state.comparator
-    ? mergeByOriginalIndex(baseRows, pass, state.comparator)
-    : baseRows.slice();
-  return {
-    entries: buildEntries(baseRows, renderOrder, pass),
-    sort: state.sort,
-    filters: new Map(state.filters),
-    revision: state.revision,
-  };
+  return makeVisibleRowSequence(
+    state.table,
+    state.sort,
+    state.comparator ?? null,
+    state.filters,
+    state.revision
+  );
 }
 
 function applyToDom(state: PipelineState, seq: VisibleRowSequence): void {
