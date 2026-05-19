@@ -25,47 +25,57 @@ on top in user-story order.
 
 **Language/Version**: TypeScript ~5.8 (project compiler; emits ES2020+).
 **Primary Dependencies**:
-  - Runtime: **none new**. Comparison uses `Array.prototype.sort` +
-    `Intl.Collator`; filtering uses `Number`, `String.prototype.trim`, and
-    `Intl.Collator` where needed. Existing `simple-statistics` and
-    `shepherd.js` are unrelated and remain untouched.
-  - Build/test: existing Vite 6, Vitest 3, Playwright 1.53, Storybook 9.
+
+- Runtime: **none new**. Comparison uses `Array.prototype.sort` +
+  `Intl.Collator`; filtering uses `Number`, `String.prototype.trim`, and
+  `Intl.Collator` where needed. Existing `simple-statistics` and
+  `shepherd.js` are unrelated and remain untouched.
+- Build/test: existing Vite 6, Vitest 3, Playwright 1.53, Storybook 9.
+
 **Storage**: URL fragment only (no `localStorage`). One namespace per page,
-  one directive object per table, sort and filter under a single object —
-  no separate keys. Mirrors the per-URL-stem scheme of
-  `src/utils/slider-persistence.ts` (origin + pathname stem) but does not
-  share its `gs.s` key.
+one directive object per table, sort and filter under a single object —
+no separate keys. Mirrors the per-URL-stem scheme of
+`src/utils/slider-persistence.ts` (origin + pathname stem) but does not
+share its `gs.s` key.
+
 **Testing**: Vitest unit tests (per-folder `__tests__/`) for the pipeline,
-  comparator, filter predicates, URL codec, and Original Order Record;
-  Storybook 9 interaction tests (`@storybook/addon-vitest`) for lozenge
-  popups, chip, keyboard contract; Playwright e2e for the four golden
-  flows (sort-only, filter-only, sort-over-filter, URL round-trip on a
-  fresh browser).
+comparator, filter predicates, URL codec, and Original Order Record;
+Storybook 9 interaction tests (`@storybook/addon-vitest`) for lozenge
+popups, chip, keyboard contract; Playwright e2e for the four golden
+flows (sort-only, filter-only, sort-over-filter, URL round-trip on a
+fresh browser).
+
 **Target Platform**: Evergreen browsers released within the last two years
-  (constitution §V). Must work from `file://` (constitution §VI).
+(constitution §V). Must work from `file://` (constitution §VI).
+
 **Project Type**: Browser library, single project. IIFE bundle
-  (`dist/grid-sight.iife.js`) + npm/ESM via `src/index.ts`.
+(`dist/grid-sight.iife.js`) + npm/ESM via `src/index.ts`.
+
 **Performance Goals**:
-  - 1 000-row table: sort, filter, or combined re-evaluation completes in
-    **< 100 ms** on a mid-range laptop (SC-002 = constitution §runtime
-    budget).
-  - URL restore visible **within one animation frame** of first paint
-    (SC-003).
-  - Pipeline `onChange` emits **synchronously** so downstream
-    re-renders settle in the same frame (FR-VP-003).
+
+- 1 000-row table: sort, filter, or combined re-evaluation completes in
+  **< 100 ms** on a mid-range laptop (SC-002 = constitution §runtime
+  budget).
+- URL restore visible **within one animation frame** of first paint
+  (SC-003).
+- Pipeline `onChange` emits **synchronously** so downstream
+  re-renders settle in the same frame (FR-VP-003).
+
 **Constraints**:
-  - Bundle delta for this feature must keep the IIFE ≤ 10 KB gzipped
-    (constitution §I). Target: ≤ 2.0 KB gzipped net delta for the
-    combined sort + filter + pipeline + URL codec.
-  - No runtime network access. No new runtime deps (constitution §VI, §I).
-  - **Byte-identical DOM on toggle-off** (SC-005): no leftover classes,
-    attributes, or injected nodes from the projection. The Original Order
-    Record is the means by which we guarantee this.
-  - Keyboard + AT operability mandatory (constitution §III). Filter
-    popups need a focus trap; sort lozenge announces next action.
+
+- Bundle delta for this feature must keep the IIFE ≤ 10 KB gzipped
+  (constitution §I). Target: ≤ 2.0 KB gzipped net delta for the
+  combined sort + filter + pipeline + URL codec.
+- No runtime network access. No new runtime deps (constitution §VI, §I).
+- **Byte-identical DOM on toggle-off** (SC-005): no leftover classes,
+  attributes, or injected nodes from the projection. The Original Order
+  Record is the means by which we guarantee this.
+- Keyboard + AT operability mandatory (constitution §III). Filter
+  popups need a focus trap; sort lozenge announces next action.
+
 **Scale/Scope**: Up to ~10 tables per page, each up to ~1 000 rows × ~50
-  columns. One sort directive per table; up to one filter predicate per
-  column.
+columns. One sort directive per table; up to one filter predicate per
+column.
 
 ## Constitution Check
 

@@ -27,6 +27,7 @@ assumed no sort. Without this rule, every downstream consumer
 (`005`, `008`, `009`, `010`) would have to invent its own answer.
 
 **Alternatives considered**:
+
 - *Sort-then-filter*: equivalent for predicate-only filters (filter is
   position-independent), but the rendered DOM differs because dimmed
   rows would have to move. Rejected — violates SC-005 (byte-identical
@@ -50,6 +51,7 @@ a single attribute + class removal pass. Also makes the FR-VP-004 rule
 ("sort only un-dimmed rows") trivially expressible.
 
 **Alternatives considered**:
+
 - *`display: none`*: shorter CSS but breaks SC-005 (the row's box is
   gone) and screen-reader announcement (`003` FR-022 forbids it).
   Rejected.
@@ -74,6 +76,7 @@ first sort, `003-filter` captured on first filter. The combined spec
 first, because either projection can be the user's first action.
 
 **Alternatives considered**:
+
 - *Capture at table-process time*: simpler, but mutates the OOR scope
   (every table on the page pays the snapshot cost, even those never
   enriched). Rejected — violates progressive enhancement.
@@ -108,6 +111,7 @@ means slider persistence and view-state persistence evolve independently
 per-table.
 
 **Alternatives considered**:
+
 - *Reuse `gs.s`*: would tangle two unrelated state shapes in one codec.
   Rejected.
 - *Per-table fragment key (`gs.v.<id>=...`)*: blows up the parameter
@@ -129,6 +133,7 @@ spec (US6 acceptance + FR-VP-007 prose).
 ## R-5 — Sort: stable, locale-aware, type-routed
 
 **Decision**:
+
 - Use `Array.prototype.sort` (stable since ES2019 across every evergreen
   engine within the constitution's 2-year floor).
 - For numeric columns (typed via the existing `core/type-detection.ts`):
@@ -148,6 +153,7 @@ collapses naturally because the column-type detector already picks one
 type per column.
 
 **Alternatives considered**:
+
 - *Hand-rolled comparators per column*: more code, more bugs, no win
   over `Intl.Collator`. Rejected.
 - *Adding a tiny dep like `natural-orderby`*: violates constitution §I
@@ -163,6 +169,7 @@ type per column.
 **passes** the filter, i.e. is NOT dimmed). The Active Filter Set is an
 array of predicates composed with logical AND. Two built-in predicate
 factories:
+
 - `numericRange({ min?, max?, hideEmpty? })` — open bounds allowed;
   empty cells dimmed only if `hideEmpty` is `true` (per `003` US1 +
   per-popup toggle).
@@ -179,6 +186,7 @@ predicate as a function means custom filters (none planned for v1, but
 called out as an extension point) plug in without changing the pipeline.
 
 **Alternatives considered**:
+
 - *Object-based DSL (`{ op: 'between', min, max }`)*: more verbose for
   no gain — the pipeline never introspects the predicate, only the URL
   codec does, and it reads from `toDirective()`. Rejected.
@@ -234,6 +242,7 @@ user-initiated event (`click`, `input`, popstate). Microtasks /
 hazards if the listener mutates a sibling enrichment's state.
 
 **Alternatives considered**:
+
 - *`requestAnimationFrame` batching inside the pipeline*: would
   guarantee one frame of latency. Rejected — listeners that need to
   batch can wrap their handler themselves.
@@ -257,6 +266,7 @@ pipeline computes synchronously from in-memory state, there is no
 async barrier between parse and render.
 
 **Alternatives considered**:
+
 - *Apply via `DOMContentLoaded` listener after first paint*: produces
   a visible flicker on slow devices. Rejected.
 - *Pre-render server-side*: not applicable — Grid-Sight is a
@@ -276,6 +286,7 @@ Centralising prevents the situation where every downstream consumer
 reads `tbody.rows` directly and rediscovers the sort-over-filter rule.
 
 **Alternatives considered**:
+
 - *Document the rules and let each consumer reimplement*: would have
   made this combined spec unnecessary. Rejected by the spec's own
   framing.
@@ -285,6 +296,7 @@ reads `tbody.rows` directly and rediscovers the sort-over-filter rule.
 ## R-11 — Accessibility wiring
 
 **Decision**: Unchanged from the source specs.
+
 - Sort lozenge:
   - `aria-sort` on the column header reflects `"ascending"`,
     `"descending"`, or `"none"`.
@@ -311,6 +323,7 @@ to survive the combination.
 
 **Decision**: Disabling Grid-Sight (`gridSight.disable()` or removing
 the toggle) runs the pipeline's `teardown(table)` which:
+
 1. Restores `tbody` row order to the OOR if any change was applied.
 2. Removes `data-gs-dimmed` and `gs-row--dimmed` from every row.
 3. Removes `aria-sort` from every header cell touched.

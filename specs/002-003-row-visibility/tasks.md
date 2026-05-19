@@ -278,6 +278,7 @@ Task: "Playwright e2e in tests/e2e/sort.spec.ts"
 ### Parallel-team strategy
 
 Once Phase 2 lands:
+
 - Worker A: US1 (sort) end-to-end.
 - Worker B: US2 (numeric filter) end-to-end.
 - Worker C: US3 (categorical filter) — starts after Worker B lands T023, otherwise rebases.

@@ -21,6 +21,7 @@ order.
 | `sourceIndex` | `number` | Zero-based index into the Original Order Record. Stable for the lifetime of the table; survives sort. |
 
 **Invariants**:
+
 - `entries.length === tbody.rows.length` at all times.
 - `entries.filter(e => !e.dimmed)` is in sort order (or original order
   if no sort is active).
@@ -66,6 +67,7 @@ interface SortDirective {
 ```
 
 **Lifecycle**:
+
 - `null` → `{ asc }` → `{ desc }` → `null` on successive lozenge clicks
   (`002` US1 contract).
 - At most one `SortDirective` per table at any time.
@@ -107,6 +109,7 @@ Captured exactly once per table, at first activation of either the sort
 lozenge or any filter lozenge. Cleared on `teardown(table)`.
 
 **Capture rule (FR-VP-005)**:
+
 ```ts
 if (!oor.has(table)) oor.set(table, Array.from(table.tBodies[0].rows));
 ```
@@ -163,6 +166,7 @@ applyChange(state, patch)
 **`mergeByOriginalIndex` semantics** (FR-VP-004): the un-dimmed rows are
 placed in sort order; the dimmed rows occupy their original positions
 relative to one another. Concretely:
+
 - Walk `oor` in original order. Each slot either belongs to a dimmed
   row (in which case the dimmed row stays there) or to a visible row
   (in which case the next visible row from the sorted list fills the
