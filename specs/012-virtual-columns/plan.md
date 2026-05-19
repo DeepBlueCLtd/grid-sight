@@ -15,29 +15,29 @@ The scaffold turns three independent column-appending features into one reusable
 
 ## Technical Context
 
-**Language/Version**: TypeScript ~5.8 (existing project compiler version; output ES2020+).
-**Primary Dependencies**:
+- **Language/Version**: TypeScript ~5.8 (existing project compiler version; output ES2020+).
+- **Primary Dependencies**:
   - Runtime: **none new**. `simple-statistics` (already in `dependencies`) is unrelated and not used; `shepherd.js` is unrelated and not used. Inline SVG is built with `document.createElementNS` — no charting library.
   - Build/test: existing Vite 6, Vitest 3, Playwright 1.53, Storybook 9 (unchanged).
-**Storage**: URL fragment under a single per-page namespace `gs.vc` (one block per table, listing every active virtual-column directive). No `localStorage` dependency (SC-004). The existing `gs.s` slider namespace is untouched.
-**Testing**:
+- **Storage**: URL fragment under a single per-page namespace `gs.vc` (one block per table, listing every active virtual-column directive). No `localStorage` dependency (SC-004). The existing `gs.s` slider namespace is untouched.
+- **Testing**:
   - Vitest unit tests (`src/enrichments/__tests__/`, `src/utils/__tests__/`) for scaffold ordering, persistence encode/decode, per-renderer math (cumulative sum/percent, sparkline scaling, delta computation).
   - Storybook interaction tests (`@storybook/addon-vitest`) for lozenge → DOM → tooltip flows on canned fixture tables.
   - Playwright e2e (`tests/e2e/`) for the cross-feature stories US6 (ordering), US7 (URL share), US8 (visible-row pipeline cooperation).
-**Target Platform**: Evergreen browsers ≤ 2 years old (Chrome, Firefox, Safari, Edge, Chromium derivatives). Must function from `file://` (offline).
-**Project Type**: Browser library, single project. IIFE bundle (`dist/grid-sight.iife.js`) + npm/ESM via `src/index.ts` entry.
-**Performance Goals** (from spec SC-002):
+- **Target Platform**: Evergreen browsers ≤ 2 years old (Chrome, Firefox, Safari, Edge, Chromium derivatives). Must function from `file://` (offline).
+- **Project Type**: Browser library, single project. IIFE bundle (`dist/grid-sight.iife.js`) + npm/ESM via `src/index.ts` entry.
+- **Performance Goals** (from spec SC-002):
   - Sparkline initial render: < 200 ms on a 1 000 row × 10 numeric column table on a mid-range laptop.
   - Cumulative / compare initial render and any mode-flip / re-compute: < 100 ms on the same fixture.
   - URL restoration: visible within one animation frame after first paint (SC-003).
   - Scaffold notification fan-out on a visible-row pipeline event MUST complete within one animation frame across all registered renderers.
-**Constraints**:
+- **Constraints**:
   - Bundle ceiling: published IIFE stays **≤ 10 KB gzipped** (constitution §I). The combined feature MUST fit; the scaffold is the headline efficiency win. Estimated cost analysed in `research.md` §R-7.
   - No runtime network access (constitution §VI). Inline SVG, no external fonts/icons.
   - Keyboard + AT operability mandatory (constitution §III). Every appended cell carries an `aria-label`; sparkline cells are focusable with arrow-key navigation; tooltip exposed via `aria-describedby` (SC-006).
   - Append-only DOM. Detach MUST leave the host table byte-identical (FR-VC-006, SC-005).
   - Visible-row pipeline is the only authority on row order / dim state (FR-VC-011). Renderers MUST NOT read raw `tbody.rows`.
-**Scale/Scope**: Up to 10 tables per page, each up to 1 000 rows × 10 numeric body columns. Up to ~10 cumulative columns + 1 sparkline + 1 compare per table. URL fragment size capped at ~2 kB per page across all tables.
+- **Scale/Scope**: Up to 10 tables per page, each up to 1 000 rows × 10 numeric body columns. Up to ~10 cumulative columns + 1 sparkline + 1 compare per table. URL fragment size capped at ~2 kB per page across all tables.
 
 ## Constitution Check
 

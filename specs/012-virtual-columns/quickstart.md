@@ -108,13 +108,13 @@ You can have all three active on the same table. The appended-column order is fi
 
 Example: with `Σ Weight`, `Σ Cost` (in that order), `Δ Q4 − Q1`, and `Trend` all active, the table's right edge reads:
 
-```
+```text
 | ...source columns... | Σ Weight | Σ Cost | Δ Q4 − Q1 | Trend |
 ```
 
 Removing `Σ Weight` leaves:
 
-```
+```text
 | ...source columns... | Σ Cost | Δ Q4 − Q1 | Trend |
 ```
 
@@ -128,7 +128,7 @@ Every activation updates the URL fragment under the `gs.vc` parameter. Bookmark 
 
 Example URL after the four activations above:
 
-```
+```text
 https://example.com/dashboard#gs.vc=sales:c.weight.s,c.cost.s,d.q1.q4.a,t.r
 ```
 

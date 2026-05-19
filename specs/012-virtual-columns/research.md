@@ -11,11 +11,13 @@ This document records the design decisions taken to resolve every NEEDS-CLARIFIC
 **Decision**: A single module `src/enrichments/virtual-column.ts` owns every append/detach DOM operation. Renderers never call `appendChild` on `<thead>`, `<tbody>`, or `<tfoot>` themselves; they hand the scaffold a per-cell DOM node and metadata, and the scaffold places it.
 
 **Rationale**:
+
 - FR-VC-001..FR-VC-007 + FR-VC-012 + SC-005 require a single owner of the append-only DOM contract.
 - The three source specs (`005`, `008`, `010`) each independently specify the same append shape — centralising it removes three subtly-different implementations.
 - Byte-identical detach (SC-005) is testable as a snapshot diff only when the scaffold is the sole writer.
 
 **Alternatives considered**:
+
 - *Each renderer appends its own cells*: rejected. Creates three implementations of cell placement, three implementations of order resolution, and three independent detach paths to keep byte-equal.
 - *Scaffold owns `<th>` / `<tfoot>` but renderers own per-row `<td>`s*: rejected as a half-measure. Per-row append still needs to know about the canonical column order to place the cell correctly; better to centralise.
 
@@ -32,11 +34,13 @@ This document records the design decisions taken to resolve every NEEDS-CLARIFIC
 URL directives describing a different order are silently re-canonicalised on restore (FR-VC-010).
 
 **Rationale**:
+
 - Spec FR-VC-003 + US6 + SC-007 mandate this exact ordering.
 - "Cumulative first, sparkline last" was already mandated by `008` Edge Cases.
 - Compare-column placement between the two (rather than at either end) lets `Trend` always sit at the right edge regardless of compare-column presence, which is the user expectation tested in `005`.
 
 **Alternatives considered**:
+
 - *Order by activation only*: rejected — breaks US6 and the canonical layout consumers depend on.
 - *User-configurable order*: deferred to a hypothetical future spec. Not needed for any current user story and would balloon the persisted state.
 
@@ -59,11 +63,13 @@ function getVisibleRows(tableEl: HTMLTableElement): VisibleRowSubscription;
 While `002-003-row-visibility` is unimplemented, `visible-rows.ts` ships a **passthrough stub**: `current()` returns every body row in DOM order with `state: 'visible'`, and `subscribe()` returns a no-op unsubscribe. Once `002-003` lands, that file is rewritten to drive the real sort/filter pipeline; renderers don't change.
 
 **Rationale**:
+
 - FR-VC-011 requires the scaffold to be the sole reader of the Visible Row Sequence — no `tbody.rows` access from renderers.
 - Decoupling via a local module means this feature is not blocked by the upstream feature's implementation timing.
 - The passthrough behaviour matches "no sort/filter active" perfectly, so all single-feature stories (US1–US5) pass on the stub.
 
 **Alternatives considered**:
+
 - *Wait for `002-003-row-visibility` to land first*: rejected — would block US1–US5 unnecessarily, and the stub is trivial.
 - *Inline `tbody.rows` reads with a TODO*: rejected — would require touching three renderers when `002-003` lands.
 
@@ -86,10 +92,12 @@ function listVirtualColumnsForCopy(tableEl: HTMLTableElement): Array<{ id: strin
 While `009-copy-as-csv` is unimplemented, this module holds an in-memory `WeakMap<HTMLTableElement, Map<string, VirtualColumnExport>>` that the future copy module will consume via `listVirtualColumnsForCopy`.
 
 **Rationale**:
+
 - FR-VC-005 + spec edge case "Copy-as-CSV registry" require a single registry. Defining it here as a `WeakMap` is sufficient.
 - Future copy module imports `listVirtualColumnsForCopy` — no further coordination needed.
 
 **Alternatives considered**:
+
 - *Event-based registration (custom DOM events)*: rejected — heavier on the wire, harder to introspect for tests.
 - *Renderer-owned registration*: rejected — defeats the single-registry requirement.
 
@@ -99,7 +107,7 @@ While `009-copy-as-csv` is unimplemented, this module holds an in-memory `WeakMa
 
 **Decision**: Use a single per-page URL fragment parameter `gs.vc` holding a compact list of per-table blocks. Encoding:
 
-```
+```text
 gs.vc=<table-key>:<directives>;<table-key>:<directives>;...
 ```
 
@@ -114,12 +122,14 @@ Each `<directives>` is a comma-separated list of directive tokens:
 Example: `gs.vc=table-sales:c.weight.s,c.cost.p,d.q1.q4.a,t.s;`
 
 **Rationale**:
+
 - Compactness keeps the URL well under the ~2 kB practical fragment cap even with many tables (SC-004, FR-VC-008).
 - Single parameter avoids collisions across virtual columns; the slider namespace `gs.s` remains untouched.
 - Per-token kind prefix (`c.` / `d.` / `t.`) makes parsing single-pass.
 - Re-canonicalisation on restore (FR-VC-010) is trivial: sort tokens by `[kind-priority, activation-order]` after parse.
 
 **Alternatives considered**:
+
 - *Three separate URL params* (`gs.cum`, `gs.spark`, `gs.diff`): rejected — three places to keep consistent and harder to share atomically.
 - *JSON-in-fragment*: rejected — ~3× larger after URL-encoding and harder to read in shared links.
 - *`localStorage` persistence*: rejected by SC-004 (URL must reproduce on another machine 100% of the time).
@@ -133,10 +143,12 @@ Example: `gs.vc=table-sales:c.weight.s,c.cost.p,d.q1.q4.a,t.s;`
 Sparkline qualifier (`≥ 3 predominantly-numeric body columns`, `005` FR-002) and cumulative qualifier (single numeric column) are both expressible against this detector with no extension.
 
 **Rationale**:
+
 - Spec Assumptions name this detector as the single source of truth.
 - Caching at activation time avoids three independent passes over the same `tbody`.
 
 **Alternatives considered**:
+
 - *Per-renderer detection*: rejected — three implementations of "what counts as numeric", with edge-case drift.
 
 ---
@@ -162,10 +174,12 @@ Projected total bundle after this feature: ~7.4 KB gzipped, against the 10 KB ce
 If a module breaches its sub-budget during implementation, the fix is to simplify behaviour (e.g. drop the sparkline tooltip's animation, drop the compare-mode percentage formatter's locale awareness) rather than to raise the ceiling.
 
 **Rationale**:
+
 - Constitution §I + Performance & Distribution Constraints explicitly require the budget to be measured per PR. Sub-budgets surface a breach to a specific renderer rather than to "the whole feature".
 - Estimates are derived from comparable existing modules: `slider.ts` (~1.0 KB), `heatmap.ts` (~0.5 KB).
 
 **Alternatives considered**:
+
 - *No sub-budgets, single 2.7 KB ceiling*: rejected — defers the trade-off conversation until the bundle is already over.
 
 ---
@@ -179,11 +193,13 @@ For 1 000 rows × 10 columns, this is 10 000 `<rect>` creations. Benchmarks of c
 On subsequent re-renders triggered by visible-row pipeline events, the scaffold reuses the existing `<svg>` elements and only updates `y` / `height` attributes on the `<rect>` children (no node creation), bringing re-render to ~30–40 ms in benchmarks — well inside the 100 ms re-compute budget.
 
 **Rationale**:
+
 - Inline SVG is the only zero-dep, zero-network, evergreen-compatible chart medium (constitution §V + §VI).
 - Avoiding `innerHTML` removes a parse step that dominates large-DOM construction in some engines.
 - Mutating `<rect>` attributes is cheaper than reconstructing on every visible-row pipeline event.
 
 **Alternatives considered**:
+
 - *Canvas per row*: rejected — adds focus/keyboard/AT plumbing the inline SVG gets for free, and pushes accessibility (SC-006) into a custom-accessibility-tree implementation.
 - *Single shared `<canvas>` for the whole column*: rejected — breaks per-row tooltip/focus (US4) and per-row DOM identity needed by `002-003-row-visibility`.
 - *External SVG sprite*: rejected — violates §VI (no external refs) and adds a build step.
@@ -201,10 +217,12 @@ On subsequent re-renders triggered by visible-row pipeline events, the scaffold 
 Fan-out is wrapped in a single `requestAnimationFrame` callback so all updates flush in the same paint (FR-VC-004).
 
 **Rationale**:
+
 - Spec FR-VC-004 + US8 mandate this order and the one-frame deadline.
 - Single-rAF batching also prevents intermediate layout thrash if two pipeline events fire in the same tick (e.g. sort then filter).
 
 **Alternatives considered**:
+
 - *Per-renderer pipeline subscription*: rejected — three subscriptions firing independently break the single-rAF guarantee.
 - *Synchronous fan-out on the pipeline thread*: rejected — pipeline events can fire from input handlers; a sync fan-out costs perceived latency on the user gesture.
 
@@ -213,16 +231,19 @@ Fan-out is wrapped in a single `requestAnimationFrame` callback so all updates f
 ## R-10: Accessibility shape for appended cells
 
 **Decision**:
+
 - Every appended `<th>` carries `scope="col"` and the renderer's header text as visible content (no `aria-label` needed — the visible text is the accessible name).
 - Every appended cumulative / compare `<td>` carries its rendered numeric text as visible content; in modes that display only a symbol (e.g. percent of total), the `<td>` also carries `aria-label` with the spelt-out value.
 - Every appended sparkline `<td>` wraps an `<svg role="img" aria-label="...">` whose label is generated from the row's min/max/last values (matching the tooltip content). The `<td>` is `tabindex="0"` so keyboard users can focus it; arrow keys move to the previous/next sparkline cell in the column.
 - Compare deltas convey direction via colour **and** a glyph (`▲` / `▼` / `=`), per FR-014.
 
 **Rationale**:
+
 - SC-006 mandates non-empty accessible names on every appended cell — covered above with no exceptions.
 - Constitution §III mandates keyboard operability and colour-independence — both covered.
 
 **Alternatives considered**:
+
 - *`aria-label` on every cell unconditionally*: rejected — when the visible text already names the cell, an `aria-label` produces double-announcement on some screen readers.
 
 ---
@@ -232,10 +253,12 @@ Fan-out is wrapped in a single `requestAnimationFrame` callback so all updates f
 **Decision**: The scaffold uses a `WeakMap<HTMLTableElement, VirtualColumnRegistry>` to keep per-table state. Lozenge handlers resolve their owning table by walking up the DOM tree from the click target. URL persistence groups directives by `<table-key>` (R-5) so a multi-table page round-trips without cross-talk.
 
 **Rationale**:
+
 - The codebase already uses this pattern in `slider-injection.ts` (`tableContexts` map). Consistency aids reviewers and lets us reuse the per-table identity resolution from `sync-key.ts`.
 - `WeakMap` keying on the DOM node lets state be garbage-collected if the host page removes the table.
 
 **Alternatives considered**:
+
 - *Global singleton registry*: rejected — breaks multi-table independence.
 
 ---
@@ -251,10 +274,12 @@ Fan-out is wrapped in a single `requestAnimationFrame` callback so all updates f
 5. URL state is **left intact** — toggling Grid-Sight back on must restore every active directive (FR-VC-012, SC-005).
 
 **Rationale**:
+
 - Spec FR-VC-006, FR-VC-012, SC-005 mandate byte-identical DOM and intact URL.
 - Reverse-order removal avoids transient inconsistent layouts that some browsers cache as their relayout baseline.
 
 **Alternatives considered**:
+
 - *Clear URL on detach*: rejected by FR-VC-012.
 
 ---

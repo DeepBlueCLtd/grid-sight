@@ -30,6 +30,7 @@ interface GridSightInitOptions {
 ```
 
 **Semantics**:
+
 - `enabled: false` removes lozenges from every table and refuses URL restoration; URL state is preserved (so re-enabling restores the view).
 - `persistInUrl: false` is documented but not user-toggleable in v1; it's reserved so a future host integration can route persistence elsewhere without an API break.
 - `urlParam` is provided for hosts whose URL fragment namespace conflicts with `gs.vc`.
@@ -75,6 +76,7 @@ interface GridSight {
 ```
 
 **Semantics**:
+
 - Every `addX` method respects the cardinality constraints (multiple `cumulative`, single `compare`, single `sparkline`) and the qualifier rules (numeric column / ≥ 3 numeric body columns / no `data-gs-no-*` opt-out). Disqualified calls return `null` and emit no error.
 - Mutating via the API immediately updates the URL fragment, just as if the user had clicked a lozenge.
 - `list()` returns a frozen view; callers MUST NOT mutate it.
