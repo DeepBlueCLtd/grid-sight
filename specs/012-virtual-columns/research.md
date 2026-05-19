@@ -284,6 +284,20 @@ Fan-out is wrapped in a single `requestAnimationFrame` callback so all updates f
 
 ---
 
+## R-13: IIFE bundle wrapper — public-API surface stays on `window.gridSight`
+
+**Decision**: `src/index.ts` exposes the virtual-column public API exclusively through `window.gridSight.virtualColumns` (and the existing `init` options). It does NOT add named top-level ESM exports for `registerVirtualColumn` or the directive type names. ESM consumers import those directly from `src/enrichments/virtual-column.ts` and `src/types/virtual-column.ts`.
+
+**Rationale**:
+
+- The existing build wrapper in `vite.config.ts` uses `rollupOptions.output.extend = true` together with an `intro: 'var gridSight;'` / `outro: 'window.gridSight = gridSight;'` pair. As long as `src/index.ts` exports only `default`, rollup emits a plain IIFE that runs the in-source `window.gridSight = GridSight` assignment last and the outro is effectively a no-op.
+- The moment a named top-level export is added to `src/index.ts` (e.g. `export { registerVirtualColumn }`), rollup switches to a `this.gridSight = this.gridSight || {}` extend wrapper. The outro then fires AFTER the in-source assignment and writes the still-undefined local `gridSight` back onto `window.gridSight`, silently breaking every host page.
+- This was discovered the hard way during the initial Phase-2 wiring of this feature. The mitigation is documented inline at both call sites (`vite.config.ts` and `src/index.ts`) so it can't be re-introduced without an explicit decision.
+
+**Follow-up**: a cleaner long-term fix would be to drop the intro/outro/extend block entirely in favour of `format: 'iife', name: 'gridSight'` and let the IIFE return value bind the global — but that's a build-config refactor that should land independently of this feature.
+
+---
+
 ## Open items deferred to implementation
 
 None blocking. Two soft items tracked for the task list:

@@ -36,8 +36,8 @@ describe('visible-rows pipeline — identity projection', () => {
   it('returns rows in document order with no dim flags', () => {
     table = makeTable([['10', 'EU'], ['20', 'US'], ['30', 'EU']]);
     const seq = getVisibleRows(table);
-    expect(seq.entries.map((e) => e.row.cells[0].textContent)).toEqual(['10', '20', '30']);
-    expect(seq.entries.every((e) => !e.dimmed)).toBe(true);
+    expect(seq.entries.map((e) => e.rowEl.cells[0].textContent)).toEqual(['10', '20', '30']);
+    expect(seq.entries.every((e) => e.state === "visible")).toBe(true);
     expect(seq.sort).toBeNull();
     expect(seq.filters.size).toBe(0);
   });
@@ -105,20 +105,20 @@ describe('filter — numeric range', () => {
     setFilter(table, 0, pred);
     const seq = getVisibleRows(table);
     expect(seq.entries.length).toBe(4);
-    expect(seq.entries[0].dimmed).toBe(true);   // 10
-    expect(seq.entries[1].dimmed).toBe(false);  // 100
-    expect(seq.entries[2].dimmed).toBe(false);  // 500
-    expect(seq.entries[3].dimmed).toBe(true);   // 1000
+    expect(seq.entries[0].state).toBe("dimmed");   // 10
+    expect(seq.entries[1].state).toBe("visible");  // 100
+    expect(seq.entries[2].state).toBe("visible");  // 500
+    expect(seq.entries[3].state).toBe("dimmed");   // 1000
   });
 
   it('hideEmpty=true dims blank cells; false leaves them visible', () => {
     table = makeTable([['', 'EU'], ['100', 'US']]);
     const includeBlank = numericRange({ columnIndex: 0, columnKey: 'amount', min: null, max: null, hideEmpty: false });
     setFilter(table, 0, includeBlank);
-    expect(getVisibleRows(table).entries[0].dimmed).toBe(false);
+    expect(getVisibleRows(table).entries[0].state).toBe("visible");
     const hideBlank = numericRange({ columnIndex: 0, columnKey: 'amount', min: null, max: null, hideEmpty: true });
     setFilter(table, 0, hideBlank);
-    expect(getVisibleRows(table).entries[0].dimmed).toBe(true);
+    expect(getVisibleRows(table).entries[0].state).toBe("dimmed");
   });
 });
 
@@ -128,9 +128,9 @@ describe('filter — categorical', () => {
     const pred = categoricalInclusion({ columnIndex: 1, columnKey: 'region', allowed: ['EU', 'US'], hideEmpty: false });
     setFilter(table, 1, pred);
     const seq = getVisibleRows(table);
-    expect(seq.entries[0].dimmed).toBe(false);
-    expect(seq.entries[1].dimmed).toBe(false);
-    expect(seq.entries[2].dimmed).toBe(true);
+    expect(seq.entries[0].state).toBe("visible");
+    expect(seq.entries[1].state).toBe("visible");
+    expect(seq.entries[2].state).toBe("dimmed");
   });
 });
 
@@ -142,17 +142,17 @@ describe('filter — AND composition', () => {
     setFilter(table, 1, byRegion);
     setFilter(table, 0, byAmount);
     const seq = getVisibleRows(table);
-    expect(seq.entries[0].dimmed).toBe(false); // 100,EU
-    expect(seq.entries[1].dimmed).toBe(true);  // 200,US
-    expect(seq.entries[2].dimmed).toBe(true);  // 100,JP
+    expect(seq.entries[0].state).toBe("visible"); // 100,EU
+    expect(seq.entries[1].state).toBe("dimmed");  // 200,US
+    expect(seq.entries[2].state).toBe("dimmed");  // 100,JP
   });
 
   it('clearFilters removes every filter and un-dims all rows', () => {
     table = makeTable([['100', 'EU'], ['200', 'US']]);
     setFilter(table, 0, numericRange({ columnIndex: 0, columnKey: 'amount', min: 200, max: null, hideEmpty: false }));
-    expect(getVisibleRows(table).entries[0].dimmed).toBe(true);
+    expect(getVisibleRows(table).entries[0].state).toBe("dimmed");
     clearFilters(table);
-    expect(getVisibleRows(table).entries[0].dimmed).toBe(false);
+    expect(getVisibleRows(table).entries[0].state).toBe("visible");
     expect(getVisibleRows(table).filters.size).toBe(0);
   });
 });
@@ -176,7 +176,7 @@ describe('sort over filter (US5)', () => {
     expect(out).toEqual(['40', '50', '30', '10', '20']);
     // Sanity: dimmed flags reflect filter, not sort.
     const seq = getVisibleRows(table);
-    expect(seq.entries.map((e) => e.dimmed)).toEqual([false, true, false, false, true]);
+    expect(seq.entries.map((e) => e.state)).toEqual(['visible', 'dimmed', 'visible', 'visible', 'dimmed']);
   });
 
   it('clearing the filter shows every row in sort order with no extra click', () => {
@@ -207,9 +207,9 @@ describe('parity (SC-006)', () => {
     const probe = (): void => {
       const seq = getVisibleRows(table);
       const live = Array.from(table.tBodies[0].rows);
-      expect(seq.entries.map((e) => e.row)).toEqual(live);
+      expect(seq.entries.map((e) => e.rowEl)).toEqual(live);
       for (const entry of seq.entries) {
-        expect(entry.row.hasAttribute('data-gs-dimmed')).toBe(entry.dimmed);
+        expect(entry.rowEl.hasAttribute('data-gs-dimmed')).toBe(entry.state === 'dimmed');
       }
     };
     probe();

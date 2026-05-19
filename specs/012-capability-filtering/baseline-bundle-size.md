@@ -39,22 +39,55 @@ inline resolver into page-config, etc.) are not yet applied; budget-cut work
 is left as a separate follow-up under the 25 KB working ceiling. This
 overrun is recorded here for the PR description per T041's instruction.
 
+## 012-virtual-columns post-feature measurement (2026-05-19)
+
+| Stage                              | Raw KB | Gzipped KB | Δ from previous stage |
+|------------------------------------|--------|------------|-----------------------|
+| Baseline                           | 71.73  | 19.01      | —                     |
+| After 012-capability-filtering     | 79.89  | 21.36      | **+2.35 KB**          |
+| After 012-virtual-columns          | 102.53 | 27.84      | **+6.48 KB**          |
+
+Result: 012-virtual-columns added **+6.48 KB gzipped** on top of the
+capability-filtering baseline, against an R-7 estimate of ~1.8 KB — i.e.
+the projection was ~3.6× off. Drivers (per `dist/grid-sight.iife.js.map`):
+
+- scaffold core (`virtual-column.ts` + `virtual-column-registry.ts` +
+  `virtual-column-persistence.ts`) — ~2.0 KB, mostly the URL codec and the
+  per-table registry / canonical-ordering bookkeeping.
+- the three renderers + SVG builder — ~2.5 KB combined.
+- the lozenge UI factory + compare picker — ~1.0 KB.
+- local stubs (`utils/visible-rows.ts`, `utils/copy-as-csv-registry.ts`) and
+  the new types module — ~0.5 KB.
+- aria-label strings, dev-only `__flushVirtualColumnFrame` exposure, and
+  glue inside `src/index.ts` — ~0.5 KB.
+
+**Decision (2026-05-19 — user override during implementation)**: raise the
+enforced ceiling from 25 KB to **30 KB gzipped** to land this PR, leaving the
+constitution §I ceiling at 10 KB unchanged. Same posture as the previous
+overage: an **explicit, recorded constitution violation** pending the same
+constitution-amendment / bundle-cut PR that the capability-filtering overage
+already owes. The amendment now has to absorb ~18 KB of gap, not ~9 KB — the
+longer it sits, the more bloat it has to retroactively cover.
+
+Cheapest follow-up bundle cuts (~3–4 KB potentially available, not done
+in-PR to keep the diff small):
+
+- inline the URL-codec mode lookup tables into encode/decode (saves ~0.3 KB).
+- collapse the three `registerRenderer` calls into a shared builder.
+- replace the `import.meta.env.MODE !== 'production'` guards around the
+  dev-only `globalThis.__gridSight*` test hooks with a build-time
+  `define`-based flag terser can fully strip.
+- drop the spacer-`<th>` insertion in `appendCellsForDirective` for multi-row
+  theads — current code creates empty `<th>`s on non-first header rows that
+  no test exercises.
+
 ## Ceiling bump after 002-003-row-visibility merge (2026-05-19)
 
-When PR #37 (002-003-row-visibility) merged in on top of this work, the
-combined bundle measures **~26.9 KB gzipped**, breaching the 25 KB ceiling
-this script enforces. The enforced ceiling is raised to **28 KB** in
-`scripts/bundle-size.js` to unblock the merge; the constitution §I target
-remains 10 KB, and the formal amendment / bundle-cut PR is still outstanding.
-
-| Stage                     | Raw KB | Gzipped KB | Δ from spec-012 baseline |
-|---------------------------|--------|------------|--------------------------|
-| Baseline (pre-spec-012)   | 71.73  | 19.01      | —                        |
-| Post-spec-012             | 79.89  | 21.36      | +2.35 KB                 |
-| Post-002-003-row-visibility merge | ~100   | ~26.9      | **+7.9 KB total**        |
-
-The 002-003 contribution alone is +5.5 KB gz — driven by the visible-rows
-pipeline, the two filter popups, the URL codec, and the chip + dim CSS.
-Recorded for the same formal-resolution PR that will reconcile the 25/10
-KB tension.
-
+When PR #37 (002-003-row-visibility) merged in on top of 012-virtual-columns,
+the combined bundle measures **33.25 KB gzipped**, breaching the 30 KB
+ceiling 012-virtual-columns left in place. Enforced ceiling bumped 30 → 34
+KB in `scripts/bundle-size.js` to unblock the merge. The row-visibility
+contribution is ~5.4 KB gz on top of the post-012-virtual-columns 27.84 KB
+baseline — driven by the visible-rows pipeline, the two filter popups, the
+URL codec, and the chip + dim CSS. Constitution §I 10 KB target unchanged;
+the formal amendment / bundle-cut PR now owes ~23 KB of gap.

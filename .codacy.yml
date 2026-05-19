@@ -1,0 +1,32 @@
+# Codacy repo-level configuration.
+#
+# Per-engine exclusions. Other engines (ESLint, security scanners, etc.) run
+# normally on every file; only the listed engines are restricted.
+
+---
+engines:
+  # Lizard is Codacy's language-agnostic cyclomatic-complexity tool. Its
+  # TypeScript parser doesn't handle several common TS-specific constructs
+  # (type predicates `(x): x is T`, optional chaining `?.`, generic arrow
+  # functions, the `as` cast, object-literal `{ kind: 'foo', method() {...} }`
+  # renderer shapes) and falls off the function-boundary heuristic at those
+  # points. The result is false-positive complexity findings: Lizard merges
+  # adjacent functions into one and reports the merged span's metrics.
+  #
+  # Observed pre-fix examples on the 012-virtual-columns code (commit cb4de9e):
+  #   - `encodeFragment` reported as cc=19 / 59 LOC / 3 params; actual
+  #     function is 10 lines / cc=4 / 1 param. Lizard merged it with the
+  #     ~5 helper functions defined immediately below it.
+  #   - `__flushVirtualColumnFrame` reported as cc=24 / 127 LOC / 12 params;
+  #     actual function is 6 lines / cc=4 / 0 params.
+  #   - `directionGlyph` reported as cc=10 / 26 LOC / 3 params; actual is
+  #     5 lines / cc=3 / 1 param.
+  #
+  # ESLint's `complexity` rule and TypeScript's own type-aware tooling
+  # (already active in Codacy via the ESLint engine) catch the same class of
+  # real issues without the parser drift. Reinstate Lizard on TS files if a
+  # future Codacy update reports it handles modern TypeScript.
+  lizard:
+    exclude_paths:
+      - '**/*.ts'
+      - '**/*.tsx'

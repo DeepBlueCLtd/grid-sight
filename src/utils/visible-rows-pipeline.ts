@@ -9,7 +9,6 @@ import type {
   FilterPredicate,
   SortDirective,
   VisibleRowEntry,
-  VisibleRowSequence,
 } from './visible-rows';
 
 export function getBaseRows(table: HTMLTableElement): readonly HTMLTableRowElement[] {
@@ -52,25 +51,32 @@ export function buildEntries(
   pass: readonly boolean[]
 ): VisibleRowEntry[] {
   const dimmedMap = new Map<HTMLTableRowElement, boolean>();
-  const sourceIndexMap = new Map<HTMLTableRowElement, number>();
   for (let i = 0; i < baseRows.length; i++) {
     dimmedMap.set(baseRows[i], !pass[i]);
-    sourceIndexMap.set(baseRows[i], i);
   }
-  return renderOrder.map((row) => ({
-    row,
-    dimmed: dimmedMap.get(row) ?? false,
-    sourceIndex: sourceIndexMap.get(row) ?? 0,
+  return renderOrder.map((rowEl) => ({
+    rowEl,
+    state: dimmedMap.get(rowEl) ? 'dimmed' as const : 'visible' as const,
   }));
 }
 
-export function makeVisibleRowSequence(
+/** Snapshot of the pipeline projection without the live subscription methods.
+ *  `visible-rows.ts` wraps this with `current()` + `subscribe()` to satisfy
+ *  the `VisibleRowSubscription` part of `VisibleRowSequence`. */
+export interface VisibleRowSnapshot {
+  entries: VisibleRowEntry[];
+  sort: SortDirective | null;
+  filters: ReadonlyMap<number, FilterPredicate>;
+  revision: number;
+}
+
+export function makeVisibleRowSnapshot(
   table: HTMLTableElement,
   sort: SortDirective | null,
   comparator: ((a: HTMLTableRowElement, b: HTMLTableRowElement) => number) | null,
   filters: ReadonlyMap<number, FilterPredicate>,
   revision: number
-): VisibleRowSequence {
+): VisibleRowSnapshot {
   const baseRows = getBaseRows(table);
   const pass = computePassFlags(baseRows, filters);
   const renderOrder = sort && comparator

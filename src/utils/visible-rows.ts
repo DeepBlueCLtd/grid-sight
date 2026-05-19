@@ -2,6 +2,10 @@
  * Visible Row Sequence pipeline — the single sanctioned read-channel
  * for row order and row visibility on Grid-Sight-enabled tables.
  *
+ * Implements the `VisibleRowSubscription` contract that spec 012-virtual-
+ * columns introduced as a stub; this replaces it in-place per the comment
+ * on the previous stub.
+ *
  * See specs/002-003-row-visibility/contracts/visible-rows-api.md for
  * the frozen public surface and behaviour guarantees.
  */
@@ -12,14 +16,19 @@ import {
   getRecord,
   restoreOriginalOrder,
 } from './original-order';
-import { makeVisibleRowSequence } from './visible-rows-pipeline';
+import { makeVisibleRowSnapshot } from './visible-rows-pipeline';
 
 /* ── Public types ────────────────────────────────────────────────────── */
 
-export interface VisibleRowEntry {
-  readonly row: HTMLTableRowElement;
-  readonly dimmed: boolean;
-  readonly sourceIndex: number;
+// VisibleRowEntry + RowState are the contract that spec 012-virtual-columns
+// stubbed and that this implementation now fulfils. Re-exported here so
+// existing consumers that import from `./visible-rows` keep working.
+export type { RowState, VisibleRowEntry } from '../types/virtual-column';
+import type { VisibleRowEntry } from '../types/virtual-column';
+
+export interface VisibleRowSubscription {
+  current(): VisibleRowEntry[];
+  subscribe(cb: (entries: VisibleRowEntry[]) => void): () => void;
 }
 
 export interface SortDirective {
@@ -50,7 +59,7 @@ export interface FilterPredicate {
   toDirective(): FilterDirective;
 }
 
-export interface VisibleRowSequence {
+export interface VisibleRowSequence extends VisibleRowSubscription {
   readonly entries: readonly VisibleRowEntry[];
   readonly sort: SortDirective | null;
   readonly filters: ReadonlyMap<number, FilterPredicate>;
@@ -73,12 +82,18 @@ interface PipelineState {
 
 const states = new WeakMap<HTMLTableElement, PipelineState>();
 
-function emptySequence(): VisibleRowSequence {
+function emptySequence(table: HTMLTableElement): VisibleRowSequence {
   return {
     entries: [],
     sort: null,
     filters: new Map(),
     revision: 0,
+    current(): VisibleRowEntry[] {
+      return [];
+    },
+    subscribe(cb): () => void {
+      return onVisibleRowsChange(table, (s) => cb([...s.entries]));
+    },
   };
 }
 
@@ -91,7 +106,7 @@ function ensureState(table: HTMLTableElement): PipelineState {
       filters: new Map(),
       revision: 0,
       listeners: new Set(),
-      lastSequence: emptySequence(),
+      lastSequence: emptySequence(table),
       comparator: null,
     };
     states.set(table, state);
@@ -223,13 +238,23 @@ function reevaluate(state: PipelineState): void {
 }
 
 function computeSequence(state: PipelineState): VisibleRowSequence {
-  return makeVisibleRowSequence(
+  const snapshot = makeVisibleRowSnapshot(
     state.table,
     state.sort,
     state.comparator ?? null,
     state.filters,
     state.revision
   );
+  const table = state.table;
+  return {
+    ...snapshot,
+    current(): VisibleRowEntry[] {
+      return [...snapshot.entries];
+    },
+    subscribe(cb): () => void {
+      return onVisibleRowsChange(table, (s) => cb([...s.entries]));
+    },
+  };
 }
 
 function applyToDom(state: PipelineState, seq: VisibleRowSequence): void {
@@ -237,18 +262,18 @@ function applyToDom(state: PipelineState, seq: VisibleRowSequence): void {
   if (!tbody) return;
   // Reorder rows by appending each in renderOrder.
   for (const entry of seq.entries) {
-    if (entry.row.parentNode === tbody) {
-      tbody.appendChild(entry.row);
+    if (entry.rowEl.parentNode === tbody) {
+      tbody.appendChild(entry.rowEl);
     }
   }
   // Apply / clear dim flags.
   for (const entry of seq.entries) {
-    if (entry.dimmed) {
-      entry.row.classList.add('gs-row--dimmed');
-      entry.row.setAttribute('data-gs-dimmed', 'true');
+    if (entry.state === 'dimmed') {
+      entry.rowEl.classList.add('gs-row--dimmed');
+      entry.rowEl.setAttribute('data-gs-dimmed', 'true');
     } else {
-      entry.row.classList.remove('gs-row--dimmed');
-      entry.row.removeAttribute('data-gs-dimmed');
+      entry.rowEl.classList.remove('gs-row--dimmed');
+      entry.rowEl.removeAttribute('data-gs-dimmed');
     }
   }
   // Update aria-sort on every header cell of row[0].

@@ -51,6 +51,41 @@ import type { GridSightSlider, Axis as SliderAxis } from './enrichments/slider';
 import { addThresholdSlider as sliderAddThresholdSlider } from './enrichments/slider-threshold';
 import { ensureHeatmapMarkerListener } from './ui/heatmap-marker';
 
+// Virtual columns (spec 012-virtual-columns)
+import {
+  activateDirective as vcActivate,
+  removeDirective as vcRemove,
+  detachAll as vcDetachAll,
+  restoreFromUrl as vcRestoreFromUrl,
+  setPersistOptions as vcSetPersistOptions,
+  listDirectives as vcListDirectives,
+  removeAllDirectivesOnTable as vcRemoveAllOnTable,
+  registerVirtualColumn,
+} from './enrichments/virtual-column';
+import { injectAllVirtualColumnLozenges } from './ui/virtual-column-lozenges';
+// Side-effect imports register renderers
+import './enrichments/cumulative-column';
+import './enrichments/sparkline-column';
+import './enrichments/compare-column';
+import type {
+  CompareDirective,
+  CumulativeDirective,
+  SparklineDirective,
+  VirtualColumnKind,
+} from './types/virtual-column';
+
+// Note: registerVirtualColumn and the virtual-column type names are reachable
+// for ESM consumers via direct imports from ./enrichments/virtual-column and
+// ./types/virtual-column. They are intentionally NOT re-exported here.
+//
+// ⚠ Do not add named top-level exports to this file. The IIFE bundle wrapper
+// in vite.config.ts (intro/outro + extend:true) silently corrupts
+// `window.gridSight` to `undefined` the moment a named export forces rollup
+// into the `this.gridSight = this.gridSight || {}` wrapper. See the comment
+// at vite.config.ts:rollupOptions.output and
+// specs/012-virtual-columns/research.md §R-13.
+void registerVirtualColumn;
+
 // Spec 012 — capability filtering
 import { ENRICHMENT_IDS } from './core/enrichment-registry';
 import { parsePageConfig } from './core/page-config';
@@ -63,9 +98,12 @@ import { resolveVisitorEnrichments } from './utils/slider-persistence';
 import { clearColumnTypes } from './core/column-types-cache';
 import { mountTogglePanel } from './ui/toggle-panel';
 
-export interface InitOptions extends TableProcessorOptions {
+// Internal InitOptions type. Not exported — see ⚠ note above and
+// specs/012-virtual-columns/research.md §R-13.
+interface InitOptions extends TableProcessorOptions {
   enrichments?: readonly string[];
   showToggleUi?: boolean;
+  virtualColumns?: { enabled?: boolean; persistInUrl?: boolean; urlParam?: string };
 }
 
 // Activate the heatmap-marker listener once at module load. It is a no-op if no
@@ -97,9 +135,10 @@ const GridSight = {
    * Initialize Grid-Sight on all valid tables in the document
    */
   init(options: InitOptions = {}) {
-    // Spec 012: read page-level enrichment config (window.gridSight.pageConfig)
-    // and merge any per-field overrides from `options`. Per-field precedence —
-    // `options` wins, then `pageConfig`, then library defaults.
+    // Spec 012-capability-filtering: read page-level enrichment config
+    // (window.gridSight.pageConfig) and merge any per-field overrides from
+    // `options`. Per-field precedence — `options` wins, then `pageConfig`,
+    // then library defaults.
     const w = typeof window !== 'undefined'
       ? (window as Window & { gridSight?: { pageConfig?: unknown } })
       : undefined;
@@ -119,10 +158,19 @@ const GridSight = {
     // is present so the resolver falls back to the page config.
     setVisitorOverride(resolveVisitorEnrichments());
 
+
     // Find all tables that have at least two rows.
     // Honour `data-gs-ignore`: tables marked with this attribute are left
     // untouched (no GS toggle, no lozenges) — useful for "before" reference
     // tables on demo pages.
+    const vcOpts = options.virtualColumns ?? {};
+    const vcEnabled = vcOpts.enabled !== false;
+    vcSetPersistOptions({
+      enabled: vcOpts.persistInUrl !== false,
+      urlParam: vcOpts.urlParam,
+    });
+
+    const processed: HTMLTableElement[] = [];
     document.querySelectorAll<HTMLTableElement>('table').forEach((table, index) => {
       if (table.hasAttribute('data-gs-ignore')) return;
       if (!this.isValidTable(table)) {
@@ -134,10 +182,18 @@ const GridSight = {
           id: `table-${index}`,
           ...options,
         });
+        if (vcEnabled) {
+          try { injectAllVirtualColumnLozenges(table); } catch (e) { console.warn('virtual-column lozenge init failed', e); }
+        }
+        processed.push(table);
       } catch (error) {
         console.error(`Failed to process table ${index}:`, error);
       }
     });
+
+    if (vcEnabled) {
+      try { vcRestoreFromUrl(processed); } catch (e) { console.warn('virtual-column URL restore failed', e); }
+    }
 
     // Mount the runtime toggle panel if the page opted in via either the
     // `showToggleUi` flag or a `[data-gs-toggle-panel]` element on the page.
@@ -152,6 +208,7 @@ const GridSight = {
       }
     }
 
+
     return this;
   },
 
@@ -162,6 +219,7 @@ const GridSight = {
    */
   disable() {
     sliderRemoveAllSliders();
+    try { vcDetachAll(); } catch (e) { /* ignore */ void e; }
     for (const table of Array.from(tableRegistry.values())) {
       try { removeHeatmap(table); } catch (e) { /* ignore */ void e; }
       const toggle = table.querySelector('.grid-sight-toggle-container');
@@ -169,6 +227,8 @@ const GridSight = {
       try { unmountFilterChip(table); } catch (e) { /* ignore */ void e; }
       try { teardownVisibleRows(table); } catch (e) { /* ignore */ void e; }
       removePlusIcons(table);
+      // Remove any virtual-column lozenges that were appended.
+      table.querySelectorAll('.gs-vc-lozenge').forEach((el) => el.remove());
       table.classList.remove('grid-sight-enabled');
       table.removeAttribute('data-grid-sight-processed');
       clearColumnTypes(table);
@@ -435,7 +495,62 @@ const GridSight = {
     sliderClearFormula(t);
   },
 
-  // ===== Capability filtering (spec 012) =====
+  // ===== Virtual columns (spec 012-virtual-columns) =====
+  virtualColumns: {
+    addCumulative(table: HTMLTableElement, colKey: string, mode: 'sum' | 'percent' = 'sum'): string | null {
+      const id = `cum-${colKey}`;
+      const directive: CumulativeDirective = {
+        id,
+        kind: 'cumulative',
+        tableEl: table,
+        sourceColKey: colKey,
+        mode,
+        activationIndex: 0,
+      };
+      const r = vcActivate(directive);
+      return r ? id : null;
+    },
+    addSparkline(table: HTMLTableElement, scale: 'per-row' | 'shared' = 'per-row'): string | null {
+      const directive: SparklineDirective = {
+        id: 'spark',
+        kind: 'sparkline',
+        tableEl: table,
+        scale,
+        style: 'bar',
+      };
+      const r = vcActivate(directive);
+      return r ? 'spark' : null;
+    },
+    addCompare(
+      table: HTMLTableElement,
+      colKeyA: string,
+      colKeyB: string,
+      mode: 'abs' | 'rel' | 'percent' = 'abs',
+    ): string | null {
+      const id = `cmp-${colKeyA}-${colKeyB}`;
+      const directive: CompareDirective = {
+        id,
+        kind: 'compare',
+        tableEl: table,
+        colKeyA,
+        colKeyB,
+        mode,
+      };
+      const r = vcActivate(directive);
+      return r ? id : null;
+    },
+    remove(_table: HTMLTableElement, directiveId: string): void {
+      vcRemove(directiveId);
+    },
+    removeAll(table: HTMLTableElement): void {
+      vcRemoveAllOnTable(table);
+    },
+    list(table: HTMLTableElement): ReadonlyArray<{ id: string; kind: VirtualColumnKind; mode?: string }> {
+      return vcListDirectives(table);
+    },
+  },
+
+  // ===== Capability filtering (spec 012-capability-filtering) =====
 
   /** Read-only list of every registered enrichment id, in display order. */
   enrichmentIds: ENRICHMENT_IDS,

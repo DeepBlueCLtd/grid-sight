@@ -147,3 +147,4 @@ storybook-static
 # runtime state — never source. `.last-run.json` was committed by mistake
 # in the first commit (55f90ef) and is untracked from this PR onward.
 test-results/
+playwright-report/

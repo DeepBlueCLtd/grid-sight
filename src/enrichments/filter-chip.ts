@@ -68,7 +68,7 @@ function render(
   container.appendChild(clearAll);
 
   // Zero-match empty state
-  const anyVisible = seq.entries.some((e) => !e.dimmed);
+  const anyVisible = seq.entries.some((e) => e.state === 'visible');
   if (!anyVisible && seq.entries.length > 0) {
     const msg = document.createElement('span');
     msg.className = EMPTY_STATE_CLASS;
