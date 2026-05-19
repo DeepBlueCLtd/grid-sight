@@ -9,7 +9,7 @@ test.describe('Virtual columns — canonical ordering', () => {
   let port: number;
 
   test.beforeAll(async () => {
-    port = 3123;
+    port = 3133;
     const { preview } = await import('vite');
     server = await preview({
       preview: { port, open: false },

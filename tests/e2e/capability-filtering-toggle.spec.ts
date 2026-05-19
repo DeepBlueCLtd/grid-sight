@@ -32,9 +32,28 @@ test.describe('US2: live enrichment toggle panel', () => {
     await page.goto(DEMO);
     await page.waitForFunction(() => !!(window as any).gridSight);
     await expect(page.locator('[data-gs-toggle-panel-root]')).toBeVisible();
-    // Every registered id has a checkbox.
+
+    // The panel renders one checkbox per *shipped* enrichment (per the
+    // comment in src/ui/toggle-panel.ts). Spec-only entries stay in the
+    // registry but are not user-toggleable, so they intentionally do not
+    // surface a checkbox. Update this list when a new enrichment flips
+    // `shipped: true` in src/core/enrichment-registry.ts.
+    const shippedIds = [
+      'heatmap',
+      'sliders',
+      'slider-threshold',
+      'statistics',
+      'frequency',
+      'frequency-chart',
+    ];
+    for (const id of shippedIds) {
+      await expect(
+        page.locator(`[data-gs-toggle-panel-root] input[type="checkbox"][value="${id}"]`),
+      ).toHaveCount(1);
+    }
+    // And no checkbox exists for any unshipped id.
     const count = await page.locator('[data-gs-toggle-panel-root] input[type="checkbox"]').count();
-    expect(count).toBeGreaterThanOrEqual(15);
+    expect(count).toBe(shippedIds.length);
   });
 
   test('unticking heatmap removes the heatmap lozenge live', async ({ page }) => {

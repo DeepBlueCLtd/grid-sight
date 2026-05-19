@@ -8,7 +8,7 @@ test.describe('Virtual columns — sparkline', () => {
   let port: number;
 
   test.beforeAll(async () => {
-    port = 3121;
+    port = 3131;
     const { preview } = await import('vite');
     server = await preview({
       preview: { port, open: false },

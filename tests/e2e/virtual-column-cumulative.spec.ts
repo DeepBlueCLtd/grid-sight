@@ -8,7 +8,7 @@ test.describe('Virtual columns — cumulative', () => {
   let port: number;
 
   test.beforeAll(async () => {
-    port = 3120;
+    port = 3130;
     const { preview } = await import('vite');
     server = await preview({
       preview: { port, open: false },

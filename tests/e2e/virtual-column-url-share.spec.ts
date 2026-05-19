@@ -8,7 +8,7 @@ test.describe('Virtual columns — URL share', () => {
   let port: number;
 
   test.beforeAll(async () => {
-    port = 3124;
+    port = 3134;
     const { preview } = await import('vite');
     server = await preview({
       preview: { port, open: false },

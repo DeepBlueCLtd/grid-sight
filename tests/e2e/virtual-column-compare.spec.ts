@@ -8,7 +8,7 @@ test.describe('Virtual columns — compare', () => {
   let port: number;
 
   test.beforeAll(async () => {
-    port = 3122;
+    port = 3132;
     const { preview } = await import('vite');
     server = await preview({
       preview: { port, open: false },
