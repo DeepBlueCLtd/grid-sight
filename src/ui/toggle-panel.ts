@@ -18,7 +18,7 @@
  * wrapped in try/catch so a buggy hook does not stall the toggle.
  */
 
-import { ENRICHMENT_REGISTRY } from '../core/enrichment-registry';
+import { ENRICHMENT_REGISTRY, SHIPPED_ENRICHMENTS } from '../core/enrichment-registry';
 import type { EnrichmentRegistryEntry } from '../core/enrichment-registry';
 import {
   getEffectiveEnabledSet,
@@ -80,7 +80,12 @@ export function mountTogglePanel(
   const enabled = getEffectiveEnabledSet();
   const checkboxes = new Map<string, HTMLInputElement>();
 
-  for (const entry of ENRICHMENT_REGISTRY) {
+  // Only render checkboxes for enrichments with a real implementation in
+  // this build. Spec-only entries stay in the registry (so pageConfig
+  // declarations naming them are forward-compatible) but a visitor cannot
+  // toggle something that does not exist yet. Extend the registry's
+  // `shipped` flag when a new enrichment lands.
+  for (const entry of SHIPPED_ENRICHMENTS) {
     const label = document.createElement('label');
     label.setAttribute(`${LABEL_ATTR_PREFIX}`, entry.id);
 
@@ -133,51 +138,67 @@ function resolveContainer(container?: HTMLElement): HTMLElement | null {
   return document.body ?? null;
 }
 
-function onCheckboxChange(state: PanelState, id: string, checked: boolean): void {
+function collectCheckedIds(state: PanelState): Set<string> {
+  const out = new Set<string>();
+  for (const [eid, cb] of state.checkboxes) {
+    if (cb.checked) out.add(eid);
+  }
+  return out;
+}
+
+function runTearDownsForDisabled(
+  before: Set<string>,
+  after: Set<string>,
+  tables: Iterable<HTMLTableElement>
+): void {
+  for (const e of ENRICHMENT_REGISTRY) {
+    if (!e.tearDown) continue;
+    if (!before.has(e.id) || after.has(e.id)) continue;
+    runTearDownAcrossTables(e.id, e.tearDown, tables);
+  }
+}
+
+function runTearDownAcrossTables(
+  id: string,
+  tearDown: (t: HTMLTableElement) => void,
+  tables: Iterable<HTMLTableElement>
+): void {
+  for (const table of tables) {
+    try {
+      tearDown(table);
+    } catch (err) {
+      console.warn(`[gridsight] tearDown(${id}) threw; continuing`, err);
+    }
+  }
+}
+
+function resolveColumnTypes(table: HTMLTableElement) {
+  const cached = getColumnTypes(table);
+  if (cached) return cached;
+  const rows = Array.from(table.rows).map(row =>
+    Array.from(row.cells).map(cell => cell.textContent || '')
+  );
+  return analyzeTable(rows).columnTypes;
+}
+
+function rebuildLozengesAcrossTables(tables: Iterable<HTMLTableElement>): void {
+  for (const table of tables) {
+    if (!table.classList.contains('grid-sight-enabled')) continue;
+    injectPlusIcons(table, resolveColumnTypes(table));
+  }
+}
+
+function onCheckboxChange(state: PanelState, _id: string, _checked: boolean): void {
   // Re-derive visitor override from the current checkbox states (rather than
   // mutating a snapshot) so concurrent ticks settle to the right result.
-  const next = new Set<string>();
-  for (const [eid, cb] of state.checkboxes) {
-    if (cb.checked) next.add(eid);
-  }
-  // Capture old set BEFORE we update state.
+  const next = collectCheckedIds(state);
   const before = new Set(getEffectiveEnabledSet());
   setVisitorOverride(next);
   persistVisitorEnrichments(Array.from(next));
   const after = new Set(getEffectiveEnabledSet());
 
-  // tearDown for ids that transitioned ON → OFF (only matters when toggling off).
-  if (!checked) {
-    void id; // identity captured by diff below
-  }
-  for (const e of ENRICHMENT_REGISTRY) {
-    if (before.has(e.id) && !after.has(e.id) && e.tearDown) {
-      for (const table of state.tables.values()) {
-        try {
-          e.tearDown(table);
-        } catch (err) {
-          console.warn(`[gridsight] tearDown(${e.id}) threw; continuing`, err);
-        }
-      }
-    }
-  }
-
-  // Rebuild lozenges on every registered table using the cached column-types
-  // (R-10) where available, falling back to recomputation if cache is empty.
-  for (const table of state.tables.values()) {
-    let types = getColumnTypes(table);
-    if (!types) {
-      const rows = Array.from(table.rows).map(row =>
-        Array.from(row.cells).map(cell => cell.textContent || '')
-      );
-      types = analyzeTable(rows).columnTypes;
-    }
-    // Only rebuild for tables that currently have GS enabled (have lozenges
-    // or the master toggle in the active state).
-    if (table.classList.contains('grid-sight-enabled')) {
-      injectPlusIcons(table, types);
-    }
-  }
+  runTearDownsForDisabled(before, after, state.tables.values());
+  rebuildLozengesAcrossTables(state.tables.values());
 }
 
 function teardownPanel(state: PanelState): void {

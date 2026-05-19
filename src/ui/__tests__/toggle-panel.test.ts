@@ -4,7 +4,7 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { mountTogglePanel, unmountTogglePanel } from '../toggle-panel';
-import { ENRICHMENT_REGISTRY } from '../../core/enrichment-registry';
+import { ENRICHMENT_REGISTRY, SHIPPED_ENRICHMENTS } from '../../core/enrichment-registry';
 import {
   setPageConfig,
   setVisitorOverride,
@@ -34,14 +34,20 @@ function makeTable(id: string): HTMLTableElement {
 }
 
 describe('mountTogglePanel — DOM shape', () => {
-  it('renders one checkbox per registered enrichment id', () => {
+  it('renders one checkbox per shipped enrichment id', () => {
     const root = mountTogglePanel();
     expect(root).not.toBeNull();
     const checkboxes = root!.querySelectorAll<HTMLInputElement>('input[type="checkbox"]');
-    expect(checkboxes.length).toBe(ENRICHMENT_REGISTRY.length);
+    expect(checkboxes.length).toBe(SHIPPED_ENRICHMENTS.length);
     const ids = new Set(Array.from(checkboxes).map(cb => cb.value));
+    for (const e of SHIPPED_ENRICHMENTS) {
+      expect(ids.has(e.id), `shipped enrichment "${e.id}" must have a checkbox`).toBe(true);
+    }
+    // Spec-only entries are NOT surfaced in the panel.
     for (const e of ENRICHMENT_REGISTRY) {
-      expect(ids.has(e.id)).toBe(true);
+      if (!e.shipped) {
+        expect(ids.has(e.id), `spec-only "${e.id}" must NOT have a checkbox`).toBe(false);
+      }
     }
   });
 

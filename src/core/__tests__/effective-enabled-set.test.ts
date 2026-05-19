@@ -3,10 +3,10 @@ import { resolveEnabledSet } from '../effective-enabled-set';
 import type { EnrichmentRegistryEntry } from '../enrichment-registry';
 
 const REGISTRY: readonly EnrichmentRegistryEntry[] = Object.freeze([
-  { id: 'heatmap', label: 'Heatmap', defaultOn: true },
-  { id: 'sliders', label: 'Sliders', defaultOn: true },
-  { id: 'sort',    label: 'Sort',    defaultOn: false },
-  { id: 'filter',  label: 'Filter',  defaultOn: true },
+  { id: 'heatmap', label: 'Heatmap', defaultOn: true,  shipped: true  },
+  { id: 'sliders', label: 'Sliders', defaultOn: true,  shipped: true  },
+  { id: 'sort',    label: 'Sort',    defaultOn: false, shipped: false },
+  { id: 'filter',  label: 'Filter',  defaultOn: true,  shipped: false },
 ]);
 
 describe('resolveEnabledSet — precedence', () => {

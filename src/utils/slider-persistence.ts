@@ -15,9 +15,9 @@
  *    `entries: string[]`.
  */
 
-const SLIDER_URL_KEY = 'gs.s';
+const SLIDER_URL_PARAM = 'gs.s';
 const SLIDER_STORAGE_SUFFIX = 'sliders';
-const ENRICHMENTS_URL_KEY = 'gs.e';
+const ENRICHMENTS_URL_PARAM = 'gs.e';
 const ENRICHMENTS_STORAGE_SUFFIX = 'enrichments';
 const STORAGE_VERSION = 1;
 const POS_DECIMALS = 5;
@@ -98,7 +98,7 @@ function writeUrlValueForKey(key: string, encoded: string, currentHash: string):
 export function readFromUrl(
   hash: string = (typeof location !== 'undefined' ? location.hash : '')
 ): Record<string, number> {
-  const raw = readUrlValueForKey(SLIDER_URL_KEY, hash);
+  const raw = readUrlValueForKey(SLIDER_URL_PARAM, hash);
   return raw === undefined ? {} : decodeFragment(raw);
 }
 
@@ -108,7 +108,7 @@ export function writeUrlHash(
   entries: Record<string, number>,
   currentHash: string = (typeof location !== 'undefined' ? location.hash : '')
 ): string {
-  return writeUrlValueForKey(SLIDER_URL_KEY, encodeFragment(entries), currentHash);
+  return writeUrlValueForKey(SLIDER_URL_PARAM, encodeFragment(entries), currentHash);
 }
 
 function urlStem(): string {
@@ -237,7 +237,7 @@ function sanitiseEnrichmentList(raw: unknown): string[] | undefined {
 export function readEnrichmentsFromUrl(
   hash: string = (typeof location !== 'undefined' ? location.hash : '')
 ): string[] | undefined {
-  const raw = readUrlValueForKey(ENRICHMENTS_URL_KEY, hash);
+  const raw = readUrlValueForKey(ENRICHMENTS_URL_PARAM, hash);
   if (raw === undefined) return undefined;
   if (raw === '') return [];
   const out: string[] = [];
@@ -261,7 +261,7 @@ export function writeEnrichmentsToUrl(
 ): string {
   const sanitised = sanitiseEnrichmentList(ids) ?? [];
   const sorted = sanitised.slice().sort();
-  return writeUrlValueForKey(ENRICHMENTS_URL_KEY, sorted.join(','), currentHash);
+  return writeUrlValueForKey(ENRICHMENTS_URL_PARAM, sorted.join(','), currentHash);
 }
 
 /** Read the enrichments list from localStorage; returns `undefined` when no

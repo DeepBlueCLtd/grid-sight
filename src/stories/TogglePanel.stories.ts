@@ -1,8 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/html';
-import { expect, waitFor, within } from '@storybook/test';
+import { expect, waitFor } from '@storybook/test';
 import { mountTogglePanel, unmountTogglePanel } from '../ui/toggle-panel';
 import { setPageConfig, setVisitorOverride } from '../core/enabled-set-state';
-import { ENRICHMENT_REGISTRY } from '../core/enrichment-registry';
+import { SHIPPED_ENRICHMENTS } from '../core/enrichment-registry';
 
 const meta: Meta = {
   title: 'Spec 012 / Toggle Panel',
@@ -11,20 +11,24 @@ const meta: Meta = {
     setVisitorOverride(undefined);
     setPageConfig({ enrichments: undefined, showToggleUi: true });
     unmountTogglePanel();
+    // Clear any persisted URL/storage state from a previous story run.
+    if (typeof history !== 'undefined' && typeof location !== 'undefined') {
+      history.replaceState(null, '', location.pathname + location.search);
+    }
 
     const container = document.createElement('div');
     container.style.padding = '20px';
     container.innerHTML = `
-      <div data-gs-toggle-panel id="panel-slot"></div>
-      <table id="story-table" style="margin-top:24px; border-collapse:collapse;">
+      <div data-gs-toggle-panel class="gs-story-panel-slot"></div>
+      <table style="margin-top:24px; border-collapse:collapse;">
         <tr><th></th><th>10</th><th>20</th></tr>
         <tr><th>1000</th><td>1</td><td>2</td></tr>
         <tr><th>2000</th><td>3</td><td>4</td></tr>
       </table>
     `;
     requestAnimationFrame(() => {
-      const slot = container.querySelector<HTMLElement>('#panel-slot')!;
-      mountTogglePanel(slot);
+      const slot = container.querySelector<HTMLElement>('.gs-story-panel-slot');
+      if (slot) mountTogglePanel(slot);
     });
     return container;
   },
@@ -35,29 +39,37 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-export const RendersOneRowPerRegisteredId: Story = {
-  name: 'Renders one row per registered id',
+async function waitForCheckbox(
+  canvasElement: HTMLElement,
+  value: string
+): Promise<HTMLInputElement> {
+  return await waitFor(() => {
+    const el = canvasElement.querySelector<HTMLInputElement>(
+      `input[type="checkbox"][value="${value}"]`
+    );
+    if (!el) throw new Error(`checkbox for "${value}" not yet mounted`);
+    return el;
+  });
+}
+
+export const RendersOneRowPerShippedId: Story = {
+  name: 'Renders one row per shipped enrichment id',
   play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
     await waitFor(() => {
       const checkboxes = canvasElement.querySelectorAll('input[type="checkbox"]');
-      expect(checkboxes.length).toBe(ENRICHMENT_REGISTRY.length);
+      expect(checkboxes.length).toBe(SHIPPED_ENRICHMENTS.length);
     });
-    // Each enrichment id is rendered.
-    for (const e of ENRICHMENT_REGISTRY) {
+    for (const e of SHIPPED_ENRICHMENTS) {
       const cb = canvasElement.querySelector(`input[value="${e.id}"]`);
       expect(cb, `checkbox for "${e.id}" must exist`).not.toBeNull();
     }
-    void canvas;
   },
 };
 
 export const CheckboxChangeUpdatesPersistedSet: Story = {
   name: 'Unticking heatmap removes it from persisted set',
-  play: async () => {
-    const heatmap = (await waitFor(() =>
-      document.querySelector<HTMLInputElement>('#panel-slot input[value="heatmap"]')!
-    )) as HTMLInputElement;
+  play: async ({ canvasElement }) => {
+    const heatmap = await waitForCheckbox(canvasElement, 'heatmap');
     expect(heatmap.checked).toBe(true);
     heatmap.checked = false;
     heatmap.dispatchEvent(new Event('change', { bubbles: true }));
