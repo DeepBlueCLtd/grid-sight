@@ -55,6 +55,81 @@ function computeTotalFromRows(rows: HTMLTableRowElement[], colIndex: number): nu
   return total;
 }
 
+function runningSumOverSequence(
+  sequence: VisibleRowEntry[],
+  colIndex: number,
+  targetRow: HTMLTableRowElement,
+): { sum: number; saw: boolean } {
+  let sum = 0;
+  for (const entry of sequence) {
+    if (entry.state !== 'visible') continue;
+    const v = getRowValue(entry.rowEl, colIndex);
+    if (v !== null) sum += v;
+    if (entry.rowEl === targetRow) return { sum, saw: true };
+  }
+  return { sum, saw: false };
+}
+
+function runningSumOverRows(
+  rows: HTMLTableRowElement[],
+  colIndex: number,
+  targetRow: HTMLTableRowElement,
+): number {
+  let sum = 0;
+  for (const r of rows) {
+    const v = getRowValue(r, colIndex);
+    if (v !== null) sum += v;
+    if (r === targetRow) return sum;
+  }
+  return sum;
+}
+
+function computeRunningSumUpTo(
+  table: HTMLTableElement,
+  targetRow: HTMLTableRowElement,
+  colIndex: number,
+  sequence: VisibleRowEntry[],
+): number {
+  if (sequence.length > 0) {
+    const { sum, saw } = runningSumOverSequence(sequence, colIndex, targetRow);
+    if (saw) return sum;
+  }
+  // Row not in sequence (e.g. detached, dimmed): fall back to DOM walk.
+  const tbody = table.tBodies[0];
+  return tbody ? runningSumOverRows(Array.from(tbody.rows), colIndex, targetRow) : 0;
+}
+
+function totalForMode(
+  table: HTMLTableElement,
+  colIndex: number,
+  sequence: VisibleRowEntry[],
+): number {
+  if (sequence.length > 0) return computeTotalFromSequence(sequence, colIndex);
+  return computeTotalFromRows(Array.from(table.tBodies[0]?.rows ?? []), colIndex);
+}
+
+function writeBlankCell(td: HTMLTableCellElement): void {
+  td.textContent = '';
+  td.setAttribute('aria-label', 'non-numeric');
+}
+
+function writeSumCell(td: HTMLTableCellElement, runningSum: number): void {
+  const text = formatNumber(runningSum);
+  td.textContent = text;
+  td.setAttribute('aria-label', `running sum ${text}`);
+}
+
+function writePercentCell(td: HTMLTableCellElement, runningSum: number, total: number): void {
+  if (total === 0) {
+    td.textContent = '—';
+    td.setAttribute('aria-label', 'percent of total: total is zero');
+    return;
+  }
+  const text = formatPercent((runningSum / total) * 100);
+  td.textContent = text;
+  td.setAttribute('aria-label', `percent of total ${text}`);
+}
+
 const cumulativeRenderer: Renderer<CumulativeDirective> = {
   kind: 'cumulative',
 
@@ -80,60 +155,15 @@ const cumulativeRenderer: Renderer<CumulativeDirective> = {
 
   renderCell(directive, td, rowEl, sequence, _rowIndex) {
     const colIdx = getColIndex(directive);
-    // Compute partial accumulator up to and including this row in the supplied sequence.
-    const targetRow = rowEl;
-    let runningSum = 0;
-    let saw = false;
-    if (sequence.length > 0) {
-      for (const entry of sequence) {
-        if (entry.state !== 'visible') continue;
-        const v = getRowValue(entry.rowEl, colIdx);
-        if (v !== null) runningSum += v;
-        if (entry.rowEl === targetRow) {
-          saw = true;
-          break;
-        }
-      }
-    }
-    if (!saw) {
-      // Row not in sequence (e.g. detached, dimmed); fall back to DOM walk.
-      const tbody = directive.tableEl.tBodies[0];
-      if (tbody) {
-        runningSum = 0;
-        for (const r of Array.from(tbody.rows)) {
-          const v = getRowValue(r, colIdx);
-          if (v !== null) runningSum += v;
-          if (r === targetRow) {
-            saw = true;
-            break;
-          }
-        }
-      }
-    }
-
-    const cellValue = getRowValue(rowEl, colIdx);
-    if (cellValue === null) {
-      td.textContent = '';
-      td.setAttribute('aria-label', 'non-numeric');
+    if (getRowValue(rowEl, colIdx) === null) {
+      writeBlankCell(td);
       return;
     }
-
+    const runningSum = computeRunningSumUpTo(directive.tableEl, rowEl, colIdx, sequence);
     if (directive.mode === 'sum') {
-      td.textContent = formatNumber(runningSum);
-      td.setAttribute('aria-label', `running sum ${formatNumber(runningSum)}`);
+      writeSumCell(td, runningSum);
     } else {
-      // percent-of-total
-      const total = sequence.length > 0
-        ? computeTotalFromSequence(sequence, colIdx)
-        : computeTotalFromRows(Array.from(directive.tableEl.tBodies[0]?.rows ?? []), colIdx);
-      if (total === 0) {
-        td.textContent = '—';
-        td.setAttribute('aria-label', 'percent of total: total is zero');
-      } else {
-        const pct = (runningSum / total) * 100;
-        td.textContent = formatPercent(pct);
-        td.setAttribute('aria-label', `percent of total ${formatPercent(pct)}`);
-      }
+      writePercentCell(td, runningSum, totalForMode(directive.tableEl, colIdx, sequence));
     }
   },
 
@@ -149,23 +179,13 @@ const cumulativeRenderer: Renderer<CumulativeDirective> = {
       const td = record.bodyCells.get(entry.rowEl);
       if (!td) continue;
       const v = entry.state === 'visible' ? getRowValue(entry.rowEl, colIdx) : null;
-      if (v !== null && entry.state === 'visible') running += v;
       if (v === null) {
-        td.textContent = '';
-        td.setAttribute('aria-label', 'non-numeric');
+        writeBlankCell(td);
         continue;
       }
-      if (directive.mode === 'sum') {
-        td.textContent = formatNumber(running);
-        td.setAttribute('aria-label', `running sum ${formatNumber(running)}`);
-      } else {
-        if (total === 0) {
-          td.textContent = '—';
-        } else {
-          const pct = (running / total) * 100;
-          td.textContent = formatPercent(pct);
-        }
-      }
+      running += v;
+      if (directive.mode === 'sum') writeSumCell(td, running);
+      else writePercentCell(td, running, total);
     }
   },
 

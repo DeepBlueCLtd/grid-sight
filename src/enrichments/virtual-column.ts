@@ -152,20 +152,26 @@ function teardownSubscription(ctx: TableContext): void {
   ctx.subscription = null;
 }
 
+function requestFrame(cb: FrameRequestCallback): number {
+  if (typeof requestAnimationFrame !== 'undefined') return requestAnimationFrame(cb);
+  return setTimeout(() => cb(0), 0) as unknown as number;
+}
+
+function drainPendingFanout(): void {
+  pendingFrame = null;
+  const tables = Array.from(pendingTables);
+  pendingTables.clear();
+  for (const t of tables) {
+    const ctx = tableContexts.get(t);
+    if (!ctx || !ctx.subscription) continue;
+    fanoutPipelineChange(ctx, ctx.subscription.current());
+  }
+}
+
 function schedulePipelineFanout(table: HTMLTableElement, _entries: VisibleRowEntry[]): void {
   pendingTables.add(table);
   if (pendingFrame !== null) return;
-  pendingFrame = (typeof requestAnimationFrame !== 'undefined' ? requestAnimationFrame : (cb: FrameRequestCallback) => setTimeout(() => cb(0), 0) as unknown as number)(() => {
-    pendingFrame = null;
-    const tables = Array.from(pendingTables);
-    pendingTables.clear();
-    for (const t of tables) {
-      const ctx = tableContexts.get(t);
-      if (!ctx || !ctx.subscription) continue;
-      const seq = ctx.subscription.current();
-      fanoutPipelineChange(ctx, seq);
-    }
-  });
+  pendingFrame = requestFrame(drainPendingFanout);
 }
 
 function fanoutPipelineChange(ctx: TableContext, sequence: VisibleRowEntry[]): void {
@@ -186,15 +192,8 @@ function fanoutPipelineChange(ctx: TableContext, sequence: VisibleRowEntry[]): v
 export function __flushVirtualColumnFrame(): void {
   if (pendingFrame !== null && typeof cancelAnimationFrame !== 'undefined') {
     cancelAnimationFrame(pendingFrame);
-    pendingFrame = null;
   }
-  const tables = Array.from(pendingTables);
-  pendingTables.clear();
-  for (const t of tables) {
-    const ctx = tableContexts.get(t);
-    if (!ctx || !ctx.subscription) continue;
-    fanoutPipelineChange(ctx, ctx.subscription.current());
-  }
+  drainPendingFanout();
 }
 
 function computeInsertionPosition(ctx: TableContext, directive: VirtualColumnDirective): number {
@@ -324,49 +323,96 @@ function cardinalityViolation(ctx: TableContext, directive: VirtualColumnDirecti
   return false;
 }
 
+function canActivate(
+  ctx: TableContext,
+  directive: VirtualColumnDirective,
+  renderer: Renderer<VirtualColumnDirective>,
+): boolean {
+  if (cardinalityViolation(ctx, directive)) return false;
+  if (renderer.canActivate && !renderer.canActivate(directive, ctx.tableEl, ctx.numericColumns)) return false;
+  return true;
+}
+
+function assignActivationIndex(directive: VirtualColumnDirective): void {
+  if (directive.kind === 'cumulative' && directive.activationIndex === 0) {
+    directive.activationIndex = ++activationCounter;
+  }
+}
+
 export function activateDirective(
   directive: VirtualColumnDirective,
 ): AppendedColumnRecord | null {
   const table = directive.tableEl;
   if (table.hasAttribute('data-gs-ignore')) return null;
-
   const ctx = ensureContext(table);
   const renderer = renderers.get(directive.kind);
-  if (!renderer) return null;
+  if (!renderer || !canActivate(ctx, directive, renderer)) return null;
 
-  if (cardinalityViolation(ctx, directive)) return null;
-
-  if (renderer.canActivate && !renderer.canActivate(directive, table, ctx.numericColumns)) {
-    return null;
-  }
-
-  if (directive.kind === 'cumulative' && directive.activationIndex === 0) {
-    directive.activationIndex = ++activationCounter;
-  }
-
-  ctx.directives.push(directive);
-  ctx.directives = sortCanonical(ctx.directives);
-
+  assignActivationIndex(directive);
+  ctx.directives = sortCanonical([...ctx.directives, directive]);
   const record = appendCellsForDirective(ctx, directive, renderer);
   ctx.records.set(directive.id, record);
+  safeRegisterExporter(table, renderer, directive);
+  ensureSubscription(ctx);
+  persistAll();
+  return record;
+}
 
-  // Copy-as-CSV registration
+function resetCellForRender(td: HTMLTableCellElement): void {
+  while (td.firstChild) td.removeChild(td.firstChild);
+  td.removeAttribute('aria-label');
+  td.className = '';
+}
+
+function safeRenderCell(
+  renderer: Renderer<VirtualColumnDirective>,
+  directive: VirtualColumnDirective,
+  td: HTMLTableCellElement,
+  rowEl: HTMLTableRowElement,
+  sequence: VisibleRowEntry[],
+  rowIndex: number,
+): void {
+  try {
+    renderer.renderCell(directive, td, rowEl, sequence, rowIndex);
+  } catch (err) {
+    console.error('virtual-column renderCell error', err);
+  }
+}
+
+function rerenderRecord(
+  renderer: Renderer<VirtualColumnDirective>,
+  directive: VirtualColumnDirective,
+  record: AppendedColumnRecord,
+  sequence: VisibleRowEntry[],
+): void {
+  if (record.headerCells[0]) {
+    record.headerCells[0].textContent = renderer.headerText(directive);
+  }
+  let i = 0;
+  for (const [rowEl, td] of record.bodyCells) {
+    resetCellForRender(td);
+    const seqIdx = sequence.findIndex((e) => e.rowEl === rowEl);
+    safeRenderCell(renderer, directive, td, rowEl, sequence, seqIdx >= 0 ? seqIdx : i);
+    i++;
+  }
+}
+
+function safeRegisterExporter(
+  table: HTMLTableElement,
+  renderer: Renderer<VirtualColumnDirective>,
+  directive: VirtualColumnDirective,
+): void {
   try {
     registerVirtualColumnForCopy(table, directive.id, renderer.exporter(directive));
   } catch (err) {
     console.error('virtual-column exporter error', err);
   }
-
-  ensureSubscription(ctx);
-  persistAll();
-  return record;
 }
 
 export function mutateDirective(
   directiveId: string,
   patch: Partial<VirtualColumnDirective>,
 ): void {
-  // Find owning context
   for (const directive of allDirectives()) {
     if (directive.id !== directiveId) continue;
     Object.assign(directive, patch);
@@ -376,60 +422,47 @@ export function mutateDirective(
     const record = ctx.records.get(directiveId);
     if (!renderer || !record) return;
 
-    // Re-render header text and per-row body
-    if (record.headerCells[0]) {
-      record.headerCells[0].textContent = renderer.headerText(directive);
-    }
-    const subscription = getVisibleRows(table);
-    const sequence = subscription.current();
-    let i = 0;
-    for (const [rowEl, td] of record.bodyCells) {
-      // Clear cell content before re-render
-      while (td.firstChild) td.removeChild(td.firstChild);
-      td.removeAttribute('aria-label');
-      td.className = '';
-      const seqIdx = sequence.findIndex((e) => e.rowEl === rowEl);
-      try {
-        renderer.renderCell(directive, td, rowEl, sequence, seqIdx >= 0 ? seqIdx : i);
-      } catch (err) {
-        console.error('virtual-column renderCell error', err);
-      }
-      i++;
-    }
-    // Update exporter
-    try {
-      registerVirtualColumnForCopy(table, directive.id, renderer.exporter(directive));
-    } catch {
-      /* ignore */
-    }
+    rerenderRecord(renderer, directive, record, getVisibleRows(table).current());
+    safeRegisterExporter(table, renderer, directive);
     persistAll();
     return;
   }
 }
 
+function safeOnDetach(
+  renderer: Renderer<VirtualColumnDirective> | undefined,
+  directive: VirtualColumnDirective,
+  record: AppendedColumnRecord,
+): void {
+  if (!renderer?.onDetach) return;
+  try {
+    renderer.onDetach(directive, record);
+  } catch (err) {
+    console.error('virtual-column onDetach error', err);
+  }
+}
+
+function detachDirectiveFromContext(
+  ctx: TableContext,
+  directive: VirtualColumnDirective,
+): void {
+  const renderer = renderers.get(directive.kind);
+  const record = ctx.records.get(directive.id);
+  if (record) {
+    safeOnDetach(renderer, directive, record);
+    detachRecord(record);
+    ctx.records.delete(directive.id);
+  }
+  unregisterVirtualColumnForCopy(ctx.tableEl, directive.id);
+}
+
 export function removeDirective(directiveId: string): void {
   for (const directive of allDirectives()) {
     if (directive.id !== directiveId) continue;
-    const table = directive.tableEl;
-    const ctx = ensureContext(table);
-    const renderer = renderers.get(directive.kind);
-    const record = ctx.records.get(directiveId);
-    if (record) {
-      if (renderer?.onDetach) {
-        try {
-          renderer.onDetach(directive, record);
-        } catch (err) {
-          console.error('virtual-column onDetach error', err);
-        }
-      }
-      detachRecord(record);
-      ctx.records.delete(directiveId);
-    }
+    const ctx = ensureContext(directive.tableEl);
+    detachDirectiveFromContext(ctx, directive);
     ctx.directives = ctx.directives.filter((d) => d.id !== directiveId);
-    unregisterVirtualColumnForCopy(table, directiveId);
-    if (ctx.directives.length === 0) {
-      teardownSubscription(ctx);
-    }
+    if (ctx.directives.length === 0) teardownSubscription(ctx);
     persistAll();
     return;
   }
@@ -449,34 +482,22 @@ export function _internalGetContext(table: HTMLTableElement): TableContext {
   return ensureContext(table);
 }
 
-/** Detach every appended cell across all tracked tables. Used by GridSight.disable. */
+function detachContext(ctx: TableContext): void {
+  // Remove directives in reverse insertion order so renderers tear down
+  // their state in the inverse of build order (R-12).
+  const directives = [...ctx.directives].reverse();
+  for (const directive of directives) detachDirectiveFromContext(ctx, directive);
+  ctx.directives = [];
+  teardownSubscription(ctx);
+}
+
+/** Detach every appended cell across all tracked tables. Used by GridSight.disable.
+ *  URL state is left intact (FR-VC-012). */
 export function detachAll(): void {
   for (const table of Array.from(hostTables)) {
     const ctx = tableContexts.get(table);
-    if (!ctx) continue;
-    // Remove in reverse order
-    const ids = ctx.directives.map((d) => d.id).reverse();
-    for (const id of ids) {
-      const directive = ctx.directives.find((d) => d.id === id);
-      const renderer = directive ? renderers.get(directive.kind) : null;
-      const record = ctx.records.get(id);
-      if (record) {
-        if (directive && renderer?.onDetach) {
-          try {
-            renderer.onDetach(directive, record);
-          } catch {
-            /* ignore */
-          }
-        }
-        detachRecord(record);
-        ctx.records.delete(id);
-      }
-      unregisterVirtualColumnForCopy(table, id);
-    }
-    ctx.directives = [];
-    teardownSubscription(ctx);
+    if (ctx) detachContext(ctx);
   }
-  // Note: URL state is left intact (FR-VC-012).
 }
 
 /** Build the persisted state across every tracked table. */
@@ -536,49 +557,58 @@ export function restoreFromUrl(tables: HTMLTableElement[]): void {
     tableByKey.set(ctx.tableKey, t);
   }
 
-  const runFrame = (cb: () => void) => {
-    if (typeof requestAnimationFrame !== 'undefined') requestAnimationFrame(cb);
-    else setTimeout(cb, 0);
-  };
-
-  runFrame(() => {
+  requestFrame(() => {
     for (const block of state.blocks) {
       const table = tableByKey.get(block.tableKey);
-      if (!table) continue;
-      const ctx = ensureContext(table);
-      for (const token of block.tokens) {
-        if (token.kind === 'cumulative') {
-          if (!ctx.numericColumns.has(token.colKey)) continue;
-          activateDirective({
-            id: `cum-${token.colKey}`,
-            kind: 'cumulative',
-            tableEl: table,
-            sourceColKey: token.colKey,
-            mode: token.mode,
-            activationIndex: 0,
-          });
-        } else if (token.kind === 'compare') {
-          if (!ctx.numericColumns.has(token.colKeyA) || !ctx.numericColumns.has(token.colKeyB)) continue;
-          activateDirective({
-            id: `cmp-${token.colKeyA}-${token.colKeyB}`,
-            kind: 'compare',
-            tableEl: table,
-            colKeyA: token.colKeyA,
-            colKeyB: token.colKeyB,
-            mode: token.mode,
-          });
-        } else if (token.kind === 'sparkline') {
-          activateDirective({
-            id: 'spark',
-            kind: 'sparkline',
-            tableEl: table,
-            scale: token.scale,
-            style: 'bar',
-          });
-        }
-      }
+      if (table) restoreBlock(table, block.tokens);
     }
   });
+}
+
+function restoreBlock(table: HTMLTableElement, tokens: ReadonlyArray<PersistedToken>): void {
+  const ctx = ensureContext(table);
+  for (const token of tokens) restoreToken(ctx, table, token);
+}
+
+function restoreToken(
+  ctx: TableContext,
+  table: HTMLTableElement,
+  token: PersistedToken,
+): void {
+  const numeric = ctx.numericColumns;
+  if (token.kind === 'cumulative') {
+    if (!numeric.has(token.colKey)) return;
+    activateDirective({
+      id: `cum-${token.colKey}`,
+      kind: 'cumulative',
+      tableEl: table,
+      sourceColKey: token.colKey,
+      mode: token.mode,
+      activationIndex: 0,
+    });
+    return;
+  }
+  if (token.kind === 'compare') {
+    if (!numeric.has(token.colKeyA) || !numeric.has(token.colKeyB)) return;
+    activateDirective({
+      id: `cmp-${token.colKeyA}-${token.colKeyB}`,
+      kind: 'compare',
+      tableEl: table,
+      colKeyA: token.colKeyA,
+      colKeyB: token.colKeyB,
+      mode: token.mode,
+    });
+    return;
+  }
+  if (token.kind === 'sparkline') {
+    activateDirective({
+      id: 'spark',
+      kind: 'sparkline',
+      tableEl: table,
+      scale: token.scale,
+      style: 'bar',
+    });
+  }
 }
 
 /** List active directives on a table in canonical order. */

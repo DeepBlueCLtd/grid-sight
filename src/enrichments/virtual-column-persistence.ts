@@ -58,30 +58,39 @@ function emitToken(t: PersistedToken): string | null {
   }
 }
 
+function parseCumulativeToken(parts: string[]): PersistedToken | null {
+  if (parts.length !== 3) return null;
+  const [, colKey, mode] = parts;
+  if (!SAFE_KEY.test(colKey) || !(mode in CUM_MODE_INV)) return null;
+  return { kind: 'cumulative', colKey, mode: CUM_MODE_INV[mode] };
+}
+
+function parseCompareToken(parts: string[]): PersistedToken | null {
+  if (parts.length !== 4) return null;
+  const [, colKeyA, colKeyB, mode] = parts;
+  if (!SAFE_KEY.test(colKeyA) || !SAFE_KEY.test(colKeyB) || !(mode in CMP_MODE_INV)) return null;
+  return { kind: 'compare', colKeyA, colKeyB, mode: CMP_MODE_INV[mode] };
+}
+
+function parseSparklineToken(parts: string[]): PersistedToken | null {
+  if (parts.length !== 2) return null;
+  const [, scale] = parts;
+  if (!(scale in SPK_SCALE_INV)) return null;
+  return { kind: 'sparkline', scale: SPK_SCALE_INV[scale] };
+}
+
+const TOKEN_PARSERS: Record<string, (parts: string[]) => PersistedToken | null> = {
+  c: parseCumulativeToken,
+  d: parseCompareToken,
+  t: parseSparklineToken,
+};
+
 function parseToken(text: string): PersistedToken | null {
   const parts = text.split('.');
   if (parts.length < 2) return null;
-  const prefix = parts[0];
-  if (prefix === 'c') {
-    if (parts.length !== 3) return null;
-    const [, colKey, mode] = parts;
-    if (!SAFE_KEY.test(colKey) || !(mode in CUM_MODE_INV)) return null;
-    return { kind: 'cumulative', colKey, mode: CUM_MODE_INV[mode] };
-  }
-  if (prefix === 'd') {
-    if (parts.length !== 4) return null;
-    const [, colKeyA, colKeyB, mode] = parts;
-    if (!SAFE_KEY.test(colKeyA) || !SAFE_KEY.test(colKeyB) || !(mode in CMP_MODE_INV)) return null;
-    return { kind: 'compare', colKeyA, colKeyB, mode: CMP_MODE_INV[mode] };
-  }
-  if (prefix === 't') {
-    if (parts.length !== 2) return null;
-    const [, scale] = parts;
-    if (!(scale in SPK_SCALE_INV)) return null;
-    return { kind: 'sparkline', scale: SPK_SCALE_INV[scale] };
-  }
-  // Unknown prefix — ignored silently.
-  return null;
+  const parser = TOKEN_PARSERS[parts[0]];
+  // Unknown prefix → ignored silently.
+  return parser ? parser(parts) : null;
 }
 
 /** Encode persisted state into a fragment value (no `#`, no `gs.vc=`). */
@@ -96,47 +105,69 @@ export function encodeFragment(state: PersistedVirtualColumnState): string {
   return blocks.join(';');
 }
 
+interface BlockAccumulator {
+  orderedCumulative: PersistedCumulative[];
+  seenCumulative: Map<string, PersistedCumulative>;
+  compareToken: PersistedCompare | null;
+  sparklineToken: PersistedSparkline | null;
+}
+
+function emptyBlockAccumulator(): BlockAccumulator {
+  return {
+    orderedCumulative: [],
+    seenCumulative: new Map(),
+    compareToken: null,
+    sparklineToken: null,
+  };
+}
+
+function absorbCumulative(acc: BlockAccumulator, tok: PersistedCumulative): void {
+  if (acc.seenCumulative.has(tok.colKey)) {
+    // Replace (keep last per data-model.md).
+    const idx = acc.orderedCumulative.findIndex((c) => c.colKey === tok.colKey);
+    if (idx >= 0) acc.orderedCumulative[idx] = tok;
+  } else {
+    acc.orderedCumulative.push(tok);
+  }
+  acc.seenCumulative.set(tok.colKey, tok);
+}
+
+function absorbToken(acc: BlockAccumulator, tok: PersistedToken): void {
+  if (tok.kind === 'cumulative') absorbCumulative(acc, tok);
+  else if (tok.kind === 'compare' && acc.compareToken === null) acc.compareToken = tok;
+  else if (tok.kind === 'sparkline' && acc.sparklineToken === null) acc.sparklineToken = tok;
+}
+
+function flattenAccumulator(acc: BlockAccumulator): PersistedToken[] {
+  const tokens: PersistedToken[] = [...acc.orderedCumulative];
+  if (acc.compareToken) tokens.push(acc.compareToken);
+  if (acc.sparklineToken) tokens.push(acc.sparklineToken);
+  return tokens;
+}
+
+function decodeBlock(blockText: string): PersistedTableBlock | null {
+  const colonIdx = blockText.indexOf(':');
+  if (colonIdx <= 0) return null;
+  const tableKey = blockText.slice(0, colonIdx);
+  if (!SAFE_TABLE_KEY.test(tableKey)) return null;
+  const acc = emptyBlockAccumulator();
+  for (const tokenText of blockText.slice(colonIdx + 1).split(',')) {
+    if (!tokenText) continue;
+    const tok = parseToken(tokenText);
+    if (tok) absorbToken(acc, tok);
+  }
+  const tokens = flattenAccumulator(acc);
+  return tokens.length > 0 ? { tableKey, tokens } : null;
+}
+
 /** Decode a fragment value into persisted state. Invalid tokens are dropped. */
 export function decodeFragment(text: string): PersistedVirtualColumnState {
   const state: PersistedVirtualColumnState = { blocks: [] };
   if (!text) return state;
   for (const blockText of text.split(';')) {
     if (!blockText) continue;
-    const colonIdx = blockText.indexOf(':');
-    if (colonIdx <= 0) continue;
-    const tableKey = blockText.slice(0, colonIdx);
-    if (!SAFE_TABLE_KEY.test(tableKey)) continue;
-    const tokensText = blockText.slice(colonIdx + 1);
-    const seenCumulative = new Map<string, PersistedCumulative>();
-    let compareToken: PersistedCompare | null = null;
-    let sparklineToken: PersistedSparkline | null = null;
-    const orderedCumulative: PersistedCumulative[] = [];
-
-    for (const tokenText of tokensText.split(',')) {
-      if (!tokenText) continue;
-      const tok = parseToken(tokenText);
-      if (!tok) continue;
-      if (tok.kind === 'cumulative') {
-        if (seenCumulative.has(tok.colKey)) {
-          // Replace (keep last per data-model.md).
-          const idx = orderedCumulative.findIndex((c) => c.colKey === tok.colKey);
-          if (idx >= 0) orderedCumulative[idx] = tok;
-        } else {
-          orderedCumulative.push(tok);
-        }
-        seenCumulative.set(tok.colKey, tok);
-      } else if (tok.kind === 'compare') {
-        if (compareToken === null) compareToken = tok; // keep first
-      } else if (tok.kind === 'sparkline') {
-        if (sparklineToken === null) sparklineToken = tok; // keep first
-      }
-    }
-
-    const tokens: PersistedToken[] = [];
-    for (const c of orderedCumulative) tokens.push(c);
-    if (compareToken) tokens.push(compareToken);
-    if (sparklineToken) tokens.push(sparklineToken);
-    if (tokens.length > 0) state.blocks.push({ tableKey, tokens });
+    const block = decodeBlock(blockText);
+    if (block) state.blocks.push(block);
   }
   return state;
 }

@@ -41,16 +41,19 @@ function rowStats(values: Array<number | null>): { min: number | null; max: numb
   };
 }
 
-function computeSharedMax(sequence: VisibleRowEntry[], indices: number[]): number {
+function maxAbsAcross(rowEl: HTMLTableRowElement, indices: number[]): number {
   let max = 0;
-  for (const entry of sequence) {
-    if (entry.state !== 'visible') continue;
-    for (const i of indices) {
-      const v = cleanNumericCell(entry.rowEl.cells[i]?.textContent ?? '');
-      if (v !== null && isFinite(v)) max = Math.max(max, Math.abs(v));
-    }
+  for (const i of indices) {
+    const v = cleanNumericCell(rowEl.cells[i]?.textContent ?? '');
+    if (v !== null && isFinite(v)) max = Math.max(max, Math.abs(v));
   }
   return max;
+}
+
+function computeSharedMax(sequence: VisibleRowEntry[], indices: number[]): number {
+  return sequence
+    .filter((entry) => entry.state === 'visible')
+    .reduce((max, entry) => Math.max(max, maxAbsAcross(entry.rowEl, indices)), 0);
 }
 
 const sparklineRenderer: Renderer<SparklineDirective> = {

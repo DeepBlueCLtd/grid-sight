@@ -64,6 +64,37 @@ export function buildSparklineSvg(
   return svg;
 }
 
+function readSvgHeight(svg: SVGElement): number {
+  const vb = svg.getAttribute('viewBox')?.split(' ')[3];
+  return vb ? parseFloat(vb) : DEFAULT_HEIGHT;
+}
+
+function rebuildSparklineChildren(
+  svg: SVGElement,
+  values: Array<number | null>,
+  scaleMax: number | undefined,
+): void {
+  while (svg.firstChild) svg.removeChild(svg.firstChild);
+  const fresh = buildSparklineSvg(values, undefined, undefined, scaleMax);
+  while (fresh.firstChild) svg.appendChild(fresh.firstChild);
+}
+
+function setBaselineRect(rect: SVGRectElement | Element, height: number): void {
+  rect.setAttribute('y', String(height - 1));
+  rect.setAttribute('height', '1');
+}
+
+function setScaledRect(
+  rect: SVGRectElement | Element,
+  value: number,
+  safeMax: number,
+  height: number,
+): void {
+  const h = Math.max(1, (Math.abs(value) / safeMax) * height);
+  rect.setAttribute('y', String(height - h));
+  rect.setAttribute('height', String(h));
+}
+
 /** Update the SVG in place for a new value set / scaleMax.
  *  Reuses <rect> children when count matches; otherwise rebuilds. */
 export function updateSparklineSvg(
@@ -73,30 +104,17 @@ export function updateSparklineSvg(
 ): void {
   const rects = svg.querySelectorAll('rect');
   if (rects.length !== values.length) {
-    while (svg.firstChild) svg.removeChild(svg.firstChild);
-    const fresh = buildSparklineSvg(values, undefined, undefined, scaleMax);
-    while (fresh.firstChild) svg.appendChild(fresh.firstChild);
+    rebuildSparklineChildren(svg, values, scaleMax);
     return;
   }
-  const height = parseFloat(svg.getAttribute('viewBox')?.split(' ')[3] || String(DEFAULT_HEIGHT));
   const definedValues = values.filter((v): v is number => v !== null && isFinite(v));
   if (definedValues.length === 0) return;
+  const height = readSvgHeight(svg);
   const localMax = Math.max(...definedValues.map((v) => Math.abs(v)));
-  const max = scaleMax !== undefined ? scaleMax : localMax;
-  const safeMax = max === 0 ? 1 : max;
-  for (let i = 0; i < values.length; i++) {
-    const v = values[i];
+  const safeMax = (scaleMax ?? localMax) || 1;
+  values.forEach((v, i) => {
     const rect = rects[i];
-    if (v === null || !isFinite(v)) {
-      rect.setAttribute('y', String(height - 1));
-      rect.setAttribute('height', '1');
-    } else if (localMax === 0) {
-      rect.setAttribute('y', String(height - 1));
-      rect.setAttribute('height', '1');
-    } else {
-      const h = Math.max(1, (Math.abs(v) / safeMax) * height);
-      rect.setAttribute('y', String(height - h));
-      rect.setAttribute('height', String(h));
-    }
-  }
+    if (v === null || !isFinite(v) || localMax === 0) setBaselineRect(rect, height);
+    else setScaledRect(rect, v, safeMax, height);
+  });
 }
