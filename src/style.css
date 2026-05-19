@@ -226,9 +226,22 @@ th[data-gs-row-slot] input[type="range"] {
 }
 
 td.gs-slider-highlight {
-  background-color: #ff9 !important;
-  transition: background-color 80ms linear;
+  position: relative;
 }
+
+td.gs-slider-highlight::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  box-sizing: border-box;
+  z-index: 10;
+  border: 0 solid #1976d2;
+}
+td.gs-slider-highlight-t::after { border-top-width: 5px; }
+td.gs-slider-highlight-r::after { border-right-width: 5px; }
+td.gs-slider-highlight-b::after { border-bottom-width: 5px; }
+td.gs-slider-highlight-l::after { border-left-width: 5px; }
 
 
 @media (prefers-color-scheme: light) {
