@@ -231,7 +231,9 @@ Either one opts in. If both are absent, the panel is intentionally suppressed.
 **"My visitor's toggle choices stuck across pages."** Each page has its own
 persisted set, keyed by `location.origin + location.pathname`. Two different
 URLs are two different sets. Clear via `localStorage.removeItem(
-'gridsight:<url-stem>:enrichments')` for that page if needed.
+'gs:<url-stem>:enrichments')` for that page if needed — the `gs:` prefix is
+shared with the slider persistence, so clearing the whole `gs:` namespace for
+a stem clears every Grid-Sight feature's state for that page at once.
 
 ---
 

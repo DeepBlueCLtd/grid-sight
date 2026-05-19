@@ -212,7 +212,12 @@ the resolver and the toggle panel.
 
 ---
 
-## Persistence shape
+## Persistence shape (revised after review fix 1A)
+
+The enrichments-toggle persistence shares helpers with the existing slider
+persistence in `src/utils/slider-persistence.ts` rather than duplicating its
+idioms. This section documents the resulting on-the-wire and on-disk shapes,
+which match the slider precedent exactly.
 
 URL fragment key (consistent with existing `gs.s`):
 
@@ -224,16 +229,39 @@ URL fragment key (consistent with existing `gs.s`):
 - No spaces.
 - Alphabetical order on write (stable bookmark diff).
 - Unknown ids and malformed entries are ignored on read (FR-007 / FR-022).
+- Coexists in the hash with other `&`-separated GS keys (e.g. `gs.s=`); the
+  parser is the same `readFromUrl(key, hash?)` helper that the slider code
+  uses today.
 
 `localStorage` key:
 
 ```text
-gridsight:<url-stem>:enrichments  →  ["heatmap","sliders","statistics"]
+gs:<url-stem>:enrichments  →  { "version": 1, "entries": ["heatmap","sliders","statistics"] }
 ```
 
-`<url-stem>` is the existing stem used by sliders — typically
-`location.origin + location.pathname` (no query, no fragment), matching the
-project's per-URL persistence model.
+- Prefix `gs:` matches the existing slider key (`gs:<url-stem>:sliders`).
+- Payload is the same `PersistedState` versioned wrapper the slider code
+  defines (`{ version: number, entries: ... }`). Slider entries are a
+  `Record<string, number>`; enrichment entries are a `string[]` (the id
+  list). The wrapper itself is shared.
+- Unknown `version` values cause a fall-back to defaults (mirrors slider
+  precedent — no throw).
+- `<url-stem>` is the existing stem used by sliders — typically
+  `location.origin + location.pathname` (no query, no fragment).
+
+Helpers used (after the slider-persistence refactor described in research
+R-4):
+
+| Helper | New signature | Used for |
+|---|---|---|
+| `urlStem()` | unchanged | derives the per-URL stem |
+| `readFromUrl(key, hash?)` | parameterised by `key` | reads either `gs.s` or `gs.e` from the same hash |
+| `writeUrlHash(key, encoded, hash?)` | parameterised by `key` | writes either `gs.s=` or `gs.e=` while preserving the other |
+| `readFromStorage(suffix, stem?)` | parameterised by `suffix` | reads `gs:<stem>:sliders` or `gs:<stem>:enrichments` |
+| `writeToStorage(suffix, payload, stem?)` | parameterised by `suffix` | writes either key with the versioned wrapper |
+
+No new persistence module is created; `utils/enrichment-persistence.ts` is
+**removed** from the proposed file list (replaced by the refactor).
 
 ---
 

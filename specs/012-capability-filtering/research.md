@@ -40,10 +40,60 @@ adding them now is harmless; adding them now means demos don't need to be edited
 again when those enrichments ship).
 
 **Note on the spec → code naming reconciliation**: The spec FR-003 lists
-`slider` (singular); the code uses `sliders` (plural). The code wins because it's
-the existing surface; we'll note this in the quickstart so authors copy the right
-spelling. The spec is not under SemVer freeze (Development-Phase Posture) so no
-backwards-compat shim is required.
+`slider` (singular); the lozenge code (`src/ui/header-utils.ts`) uses `sliders`
+(plural). The code wins because it's the existing surface; we'll note this in
+the quickstart so authors copy the right spelling. The spec is not under SemVer
+freeze (Development-Phase Posture) so no backwards-compat shim is required.
+
+See **R-1.1** below for the second naming clash uncovered during review — the
+parallel `EnrichmentType` vocabulary in `src/ui/enrichment-menu.ts`.
+
+---
+
+## R-1.1: Reconciling `EnrichmentType` in `src/ui/enrichment-menu.ts` (review fix 2A)
+
+**Decision**: Rename the ids in the `EnrichmentType` union and the matching
+`ENRICHMENT_ITEMS` entries so that there is exactly one identifier vocabulary
+shared by:
+
+- `src/ui/header-utils.ts` `LozengeSpec.id`
+- `src/ui/enrichment-menu.ts` `EnrichmentType`
+- The new `src/core/enrichment-registry.ts`
+
+Mapping:
+
+| Old id (menu)        | New id (registry-aligned) | Notes |
+|----------------------|---------------------------|-------|
+| `slider`             | `sliders`                 | Matches `header-utils.ts` and registry. |
+| `threshold-slider`   | `slider-threshold`        | Matches `data-gs-slider-axis="threshold"` and registry. |
+| `toggle-sliders`     | `sliders` (collapsed)     | Logical duplicate of per-axis `sliders`; one menu predicate covers both axes. |
+| `zscore`             | (removed)                 | No handler in code, no demo, no spec. Treated as dead code; deletion documented. |
+| `aggregate`          | (removed)                 | Same as `zscore`. If revived later, re-add to the registry first. |
+
+Registry ids `heatmap`, `statistics`, `frequency`, `frequency-chart`, `sort`,
+`filter` are already shared with `EnrichmentType` and need no rename.
+
+**Rationale**: Without this rename, the plan's "MODIFIED — filter menu items by
+effective enabled set" step in `src/ui/enrichment-menu.ts` would silently drop
+every slider-family menu item because the registry doesn't recognise `slider` /
+`threshold-slider` / `toggle-sliders`. That breaks FR-010 (disabled enrichments
+absent from menus) in the inverse direction — *enabled* enrichments would also
+disappear. Aligning ids is the only way the single set-membership filter works
+correctly on both call sites.
+
+**Backlog item raised**: `zscore` and `aggregate` are deleted on the assumption
+that they are dead code; the BACKLOG.md entry "investigate `zscore`/`aggregate`
+in `enrichment-menu.ts`" records the call so it can be reversed if either turns
+out to be planned future work.
+
+**Alternatives considered**:
+
+- **Translation layer** (menu-id → registry-id map): rejected — extra layer to
+  maintain, easy to drift, TypeScript can't enforce coverage.
+- **Use menu ids in the registry instead** (rename `sliders` → `slider`): rejected
+  — would also force a rename of the shipped `data-gs-lozenge-id="sliders"` DOM
+  attribute and the `header-utils.ts` `LozengeSpec.id` literal type. More
+  surface area to change for the same end state.
 
 **Alternatives considered**:
 
@@ -134,30 +184,61 @@ lozenge-build path branchless.
 
 ---
 
-## R-4: Persistence of the visitor toggle set
+## R-4: Persistence of the visitor toggle set (revised, review fix 1A)
 
-**Decision**: Reuse the existing per-URL-stem `localStorage` model and the URL
-fragment, with a new fragment key `gs.e` (for **e**nrichments):
+**Decision**: Reuse `src/utils/slider-persistence.ts` literally — not by copying
+its idioms into a new module, but by refactoring its existing helpers to be
+parameterised by the URL fragment key and storage-key suffix, then calling
+them from the enrichment-persistence path. Concretely:
 
-- URL fragment: `#gs.e=heatmap,sliders` (comma-separated ids, alphabetical for
-  stable diff). Parsed alongside the existing `gs.s=` slider key.
-- localStorage fallback: key `gridsight:<url-stem>:enrichments` → JSON string
-  array of ids.
-- On load, URL wins if present; otherwise localStorage; otherwise no visitor
-  override (page config + defaults take over).
-- The toggle panel writes both on every change so that the bookmark and the
-  next-session-on-this-page case both work.
+1. **Refactor `src/utils/slider-persistence.ts`** to expose a small generic
+   layer:
+   - Extract `urlStem()`, `readFromUrl(key, hash?)`, `writeUrlHash(key, entries, hash?)`,
+     `readFromStorage(suffix, stem?)`, `writeToStorage(suffix, payload, stem?)` as
+     reusable building blocks. Existing slider call sites pass `'gs.s'` /
+     `'sliders'` and remain byte-identical in behaviour.
+   - Keep the existing `PersistedState` versioned wrapper
+     (`{ version: 1, entries: ... }`) as the storage payload shape. Sliders
+     use `entries: Record<string, number>`; the enrichments use
+     `entries: string[]` (the id list). Both are valid JSON values of the
+     `entries` field; `isValidPersistedState` widens to accept either.
+2. **Storage key**: `gs:<stem>:enrichments` (NOT `gridsight:...` — the existing
+   slider precedent is `gs:<stem>:sliders`, so the prefix is `gs:`).
+3. **URL fragment key**: `gs.e=heatmap,sliders` (comma-separated ids,
+   alphabetical for stable diff). Parsed alongside the existing `gs.s=` slider
+   key by the same `readFromUrl(key)` helper; values are URL-decoded by the
+   existing path.
+4. **Payload shape on disk**:
+   ```json
+   { "version": 1, "entries": ["heatmap","sliders","statistics"] }
+   ```
+   `version: 1` initially; bumped if the shape ever needs to change. Unrecognised
+   versions cause a fall-back to defaults rather than a throw (mirrors slider
+   precedent).
+5. **Load precedence on init**: URL fragment > localStorage > undefined
+   (page config + defaults then take over). Identical to the slider precedent.
 
-**Rationale**: Sliders, sort (spec 002), and other URL-encoded state already use
-this dual mechanism. Reusing it means one place to read the spec for how
-state outlives a reload, and zero new storage surface.
+**Rationale**: This is the difference between "we use the same model" (the
+original wording, which left two parallel implementations) and "we share the
+helpers" (this revision). The latter satisfies DRY and Principle I (one
+implementation to fit through the bundle budget) and ensures that a future
+fix to the persistence layer fixes both feature surfaces at once.
 
 **Alternatives considered**:
 
-- **Cookie**: rejected — irrelevant for offline / `file://` pages; also leaks to
-  the host page domain unnecessarily.
-- **IndexedDB**: rejected — overkill for a 14-element string list.
+- **Parallel `utils/enrichment-persistence.ts`** that copies the slider idioms:
+  rejected — silently invites divergence (different versioning, different key
+  prefix, different malformed-input policy). Caught by review issue 1.
+- **Cookie**: rejected — irrelevant for offline / `file://` pages; also leaks
+  to the host page domain unnecessarily.
+- **IndexedDB**: rejected — overkill for a 15-element string list.
 - **Per-table persistence**: rejected by the "per-page not per-table" scope.
+
+**Tests added by this revision**: the slider-persistence refactor is covered by
+the existing `src/utils/__tests__/slider-persistence.test.ts` (which moves to
+exercise the generic helpers via the existing call sites). One new unit test
+file `src/utils/__tests__/slider-persistence.enrichments.test.ts` covers the
+`gs.e` + `entries: string[]` round-trip path. No new module file is created.
 
 ---
 
@@ -190,6 +271,16 @@ Host opt-in:
   append to a `<div data-gs-toggle-panel>` if present, else `<body>`.
 - Alternatively: an empty `<div data-gs-toggle-panel></div>` on the page is
   interpreted as opt-in even without the flag (declarative HTML-only opt-in).
+
+**Container resilience (review failure-mode guard)**: before each panel refresh
+(after `onCheckboxChange`), the panel checks `this.root.isConnected`. If the
+host has removed the `[data-gs-toggle-panel]` container (or its descendant
+`[data-gs-toggle-panel-root]`) from the document — a realistic SPA failure
+mode — the panel detaches every listener it owns and stops refreshing. It does
+**not** attempt to remount; the host has explicitly removed the surface, and
+re-attaching could clobber whatever replaced it. A single console warning is
+emitted (`[gridsight] toggle panel container detached; panel disabled until
+next init()`).
 
 **Rationale**: Native form controls are accessible by default and add almost no
 bytes (vs a custom switch widget). Using the same opt-in marker (`data-gs-...`)
@@ -231,6 +322,14 @@ Toggling ON simply rebuilds; no setup hook is needed because the user has to
 click the lozenge to activate the enrichment in the first place — re-enabling
 restores the **availability**, not the prior **activation**.
 
+**Safety wrap (review failure-mode guard)**: every `tearDown(table)` call from
+the runtime refresh path is wrapped in `try { tearDown(table); } catch (e) {
+console.warn('[gridsight] tearDown(' + id + ') threw; continuing', e); }`. A
+buggy tearDown in a third-party-registered enrichment (future use case)
+therefore degrades to a console warning, not a broken page where every
+subsequent toggle stalls. Data-model still mandates "MUST NOT throw" — the
+guard is defence-in-depth, not licence to throw.
+
 **Rationale**: tearDown is the only direction with side effects to clean up.
 Keeping it in the registry colocates each enrichment's "I exist, here's how to
 dismiss me" knowledge, so adding a new enrichment in future is one registry
@@ -248,68 +347,203 @@ edit + one tearDown function.
 
 ---
 
-## R-7: Bundle budget breakdown
+## R-7: Bundle budget breakdown (revised after review)
 
-**Decision**: Target ≤ 0.7 KB gzipped for the whole feature, well under the SC-007
+**Decision**: Target ≤ 0.9 KB gzipped for the whole feature, under the SC-007
 ceiling of 1 KB and within constitution §I's 10 KB total bundle ceiling.
+Estimate revised upward from 0.7 KB after the panel's actual surface area was
+audited during review.
 
 Estimated gzipped contributions:
 
 | Module | Estimate |
 |---|---|
-| `core/enrichment-registry.ts` (data only, 14 entries) | ~0.15 KB |
+| `core/enrichment-registry.ts` (data only, 15 entries) | ~0.15 KB |
 | `core/page-config.ts` (parser + normaliser) | ~0.12 KB |
 | `core/effective-enabled-set.ts` (resolver) | ~0.08 KB |
-| `utils/enrichment-persistence.ts` (URL + localStorage) | ~0.10 KB |
-| `ui/toggle-panel.ts` (DOM + change handler) | ~0.20 KB |
+| `core/column-types-cache.ts` (WeakMap helper, review fix 4A) | ~0.04 KB |
+| Refactor of `utils/slider-persistence.ts` (parameterise key/suffix) + enrichment-specific glue | ~0.05 KB |
+| `ui/toggle-panel.ts` (DOM + change handler + container.isConnected guard + tearDown try/catch) | ~0.40 KB |
 | Filter hooks in `ui/header-utils.ts` + `ui/enrichment-menu.ts` | ~0.05 KB |
-| **Total** | **~0.70 KB** |
+| **Total** | **~0.89 KB** |
 
 **Rationale**: Native checkboxes carry zero bytes (browser-supplied); the
-registry is a single literal; the resolver is one function. Most of the cost is
-the panel's DOM-creation code.
+registry is a single literal; the resolver is one function. The panel revised
+upward from 0.2 → 0.4 KB after counting: fieldset/legend/label scaffolding,
+~15 checkbox rows wired to listeners, the change handler with persistence
+write, the diff between old/new effective set, the per-table refresh loop,
+the container-resilience guard, and the tearDown try/catch wrap. Sharing the
+persistence helpers (review fix 1A) saves ~0.05 KB vs the parallel module
+originally planned.
 
-**Mitigations if budget is exceeded**:
+**Mitigations if measured delta exceeds budget**:
 
 - Compress the registry from object literals to two parallel arrays (ids, labels,
-  defaultOn bitmask).
+  defaultOn bitmask). Buys ~0.05 KB.
 - Inline `effective-enabled-set` into `page-config` (saves one function boundary).
+  Buys ~0.02 KB.
 - Make the panel module lazily-imported in ESM consumers (no gain for IIFE, but
   some for build-system consumers).
+- Inline the column-types-cache into `core/table-processor` if the standalone
+  module's bytes outweigh its testability benefit.
+
+**Measurement**: see R-11 for how the bundle ceiling is enforced at build
+time.
 
 ---
 
-## R-8: Demo subset choices
+## R-10: Column-types cache to keep toggle latency under one frame (review fix 4A)
 
-**Decision**: Each existing demo page declares an explicit `enrichments` list
-that matches the enrichments its narrative exercises, per `specs/011-demo-pages/`.
-The new live-toggle demo declares the full set and opts in to the panel.
+**Decision**: Introduce `src/core/column-types-cache.ts` exporting a
+module-scoped `WeakMap<HTMLTableElement, ColumnType[]>` plus three thin
+helpers:
 
-Initial subsets (the registry-friendly ids in each):
+```ts
+function getColumnTypes(table: HTMLTableElement): ColumnType[];
+function setColumnTypes(table: HTMLTableElement, types: ColumnType[]): void;
+function clearColumnTypes(table: HTMLTableElement): void;
+```
+
+`processTable` (the only function that legitimately changes a table's
+detected column types) calls `setColumnTypes` after running
+`detectColumnTypes`. `injectPlusIcons` on the runtime refresh path calls
+`getColumnTypes` instead of re-running `inferHeaderColumnType` per header.
+`clearColumnTypes(table)` is called from `disable()` so a re-init starts
+fresh.
+
+**Rationale**: Without the cache, every checkbox flip triggers a full
+column-type re-walk of every table on the page (R-6's `injectPlusIcons` path
+ends in `inferHeaderColumnType` which `cleanNumericCell`-walks the body
+cells). On a 10-table page averaging 25 headers, that's ~250 re-walks per
+toggle, plus the same `cleanNumericCell` work the original `processTable`
+already did. With the cache, the refresh path becomes "remove old lozenges,
+re-add filtered lozenges using cached types" — pure DOM work, bounded by the
+number of headers, not by cell count.
+
+A `WeakMap` is correct here because the table element's lifetime is the
+authoritative anchor for cache validity — when the host removes the table
+from the DOM and drops references, the cache entry is collected automatically.
+No manual eviction beyond `disable()` is required.
+
+**Tests added**:
+
+- `src/core/__tests__/column-types-cache.test.ts` — set/get/clear and WeakMap
+  semantics (verify identity behaviour, not GC timing).
+- `src/ui/__tests__/header-utils.refresh.test.ts` — assert that a synthesised
+  refresh path calls `getColumnTypes` (spy) without invoking
+  `inferHeaderColumnType` for already-known tables.
+
+**Alternatives considered**:
+
+- **Cache on the table element itself** (`table._gsColumnTypes`): rejected —
+  mutates host DOM, harder to unit-test, leaks into the DOM contract.
+- **Recompute lazily inside `inferHeaderColumnType`** with an instance check:
+  rejected — keeps the per-header overhead, only saves the cleanNumericCell
+  walk; the simpler full-table cache is both cheaper and more predictable.
+- **Do nothing** (Issue 4C in review): rejected — already measured 250
+  re-walks per toggle on a realistic demo size; SC-004's one-frame budget is
+  not credible without it.
+
+---
+
+## R-11: Bundle-size enforcement — reconcile constitution and existing script
+
+**Discovery**: `scripts/bundle-size.js` (wired into the `yarn build` pipeline
+via `package.json`) was previously hardened to fail builds above 10 KB
+gzipped but is currently **informational only** — its leading comment reads
+"Bundle size is informational only — Grid-Sight typically runs on a LAN or
+locally on a PC, so the bundle ceiling has been relaxed." This is in tension
+with constitution v1.1.0 §I and §Performance & Distribution Constraints,
+both of which still mandate the 10 KB gzipped ceiling and that increases
+above it "MUST be rejected or accompanied by an explicit budget-raise
+amendment to this constitution."
+
+**Decision for this feature's implementation**: re-enable enforcement in
+`scripts/bundle-size.js`. Specifically:
+
+- Replace the "informational only" comment with a one-paragraph
+  justification block citing constitution §I.
+- After computing `gzKB`, compare against a constant `MAX_GZ_KB = 10` and
+  `process.exit(1)` with a clear message if exceeded.
+- Add a `--soft` flag that preserves the existing warn-only behaviour for
+  pre-PR local builds where the author wants the number but not the fail.
+- Do not invent a new script (`scripts/check-bundle-size.mjs` from the
+  review's option 3A wording) — the existing `bundle-size.js` already runs
+  in the right place. Editing it is the minimal diff.
+
+**Open question for /speckit-tasks or implementation**: if the current
+bundle is already above 10 KB at the moment enforcement is re-enabled, the
+correct response is **not** to weaken the threshold silently — it is to
+either land a bundle-cut PR first or amend the constitution with a recorded
+budget-raise. The task that flips enforcement on MUST measure the current
+size and pick one of those two paths before merging.
+
+**Rationale**: 3A in the review explicitly committed to "scripts/check-bundle-size.mjs
+invoked by yarn build, failing >10 KB gzipped." The existing
+`scripts/bundle-size.js` is the path already wired in; re-enabling it
+fulfils the same goal with one fewer file. The "relaxed" comment is itself
+a constitution violation that pre-dates this feature; surfacing it here
+makes the violation resolvable in the same PR cycle rather than letting it
+ossify.
+
+**Alternatives considered**:
+
+- **Add a separate `.mjs` script and leave `bundle-size.js` informational**:
+  rejected — two scripts measuring the same bundle is a DRY violation, and
+  the existing script being informational while a new one fails is just
+  confusing.
+- **Amend the constitution to relax the ceiling**: out of scope for a
+  feature PR; would need a separate constitution amendment PR with the
+  Sync Impact Report bump per constitution Governance.
+- **Track delta-per-feature instead of absolute ceiling**: rejected —
+  constitution speaks in absolutes; per-feature deltas are useful as
+  reviewer aids but not as the gate.
+
+---
+
+## R-8: Demo subset choices (narrowed after review)
+
+**Decision**: Each demo page that **exists today** declares an explicit
+`enrichments` list that matches the enrichments its narrative exercises. The
+new live-toggle demo declares the full set and opts in to the panel. Demo
+pages from spec 011 (`real-world/atmosphere`, `mixed/categorical-and-numeric`,
+`before-after/*`, `retrofit/*`) are **not** in scope for this feature — they
+do not exist yet; their `pageConfig` declarations land in the spec-011
+implementation PR alongside the demo HTML itself.
+
+Initial subsets (the registry-friendly ids in each), covering only the five
+real files today:
 
 | Demo page | Subset |
 |---|---|
+| `public/demo/index.html` | `heatmap`, `sliders`, `slider-threshold`, `statistics`, `frequency`, `frequency-chart` (demo hub — keeps every shipped affordance available) |
 | `public/demo/sliders/interpolation.html` | `heatmap`, `sliders`, `statistics` |
 | `public/demo/sliders/alternate-calc-models.html` | `sliders`, `statistics` |
 | `public/demo/sliders/synced-tables.html` | `sliders` |
 | `public/demo/sliders/heatmap.html` | `heatmap`, `sliders`, `slider-threshold` |
-| `public/demo/real-world/atmosphere.html` (spec 011) | `heatmap`, `sliders`, `statistics` |
-| `public/demo/mixed/categorical-and-numeric.html` (spec 011) | `heatmap`, `sliders`, `statistics`, `sort`, `filter`, `frequency`, `frequency-chart` |
-| `public/demo/before-after/*.html` (spec 011) | full default set (the demo's whole point is "here's what GS adds") |
-| `public/demo/retrofit/*.html` (spec 011) | `heatmap`, `statistics` (minimal, to look unobtrusive) |
 | `public/demo/toggle/live-enrichments.html` (NEW) | full set + `showToggleUi: true` |
 
-**Rationale**: Each subset is the smallest set that still tells the demo's story.
-The exact subsets are recorded here so reviewers can match them against the demo
-acceptance criteria in story 3 of the spec.
+**Rationale**: Each subset is the smallest set that still tells the demo's
+story. Narrowing the list to existing files prevents the implementation task
+from either fabricating placeholder demos or skipping FR-019 silently. The
+spec-011 demos pick up their `pageConfig` declarations in their own PR — the
+registry-and-filter mechanism shipped here works fine for them because
+unknown ids and missing pages have no failure surface.
+
+**FR-019 reading under this scope**: "Every demo page that currently exists"
+literally means the five files in the table above plus the new live-toggle
+demo. The spec-011 demo PR is responsible for adding `pageConfig` to its own
+files when it lands.
 
 **Alternatives considered**:
 
-- **Move every demo to the full default set**: rejected — defeats the purpose of
-  the feature.
+- **Move every demo to the full default set**: rejected — defeats the purpose
+  of the feature.
 - **Leave existing demos un-configured and only configure the new demo**:
-  rejected — fails FR-019 (every demo must declare an explicit set so future
-  enrichments don't auto-appear).
+  rejected — fails FR-019 for the demos that *do* exist.
+- **Configure the spec-011 demos preemptively** (the pre-review wording):
+  rejected — the files don't exist, so the configuration cannot be checked in
+  or tested. Belongs to the spec-011 implementation PR.
 
 ---
 

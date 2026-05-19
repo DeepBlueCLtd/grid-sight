@@ -183,15 +183,23 @@ fixed` defaults that can be overridden by host CSS.
 
 ---
 
-## localStorage contract
+## localStorage contract (revised — matches existing slider precedent)
 
 | Key | Value | Notes |
 |---|---|---|
-| `gridsight:<url-stem>:enrichments` | JSON array of ids | Written every time the toggle panel changes. Read once at init if the URL fragment did not supply a value. |
+| `gs:<url-stem>:enrichments` | `{ "version": 1, "entries": ["heatmap","sliders",…] }` | Written every time the toggle panel changes. Read once at init if the URL fragment did not supply a value. |
 
-`<url-stem>` is identical to the stem used by the existing slider persistence
-(today: `location.origin + location.pathname`). Sharing the stem means clearing
-one page's GS state clears it for all features.
+- Prefix `gs:` is shared with the existing slider key `gs:<url-stem>:sliders`,
+  so a host clearing the `gs:` namespace clears all Grid-Sight state for that
+  page at once.
+- The payload is the same `PersistedState` versioned-wrapper shape the slider
+  persistence already defines; the only difference is that `entries` is a
+  `string[]` (id list) instead of a `Record<string, number>` (slider id →
+  position).
+- Unknown `version` values cause a fall-back to defaults rather than a throw
+  (mirrors slider behaviour).
+- `<url-stem>` is `location.origin + location.pathname`, matching the existing
+  per-URL persistence stem.
 
 ---
 
@@ -210,6 +218,20 @@ No errors are thrown for these cases; the library falls back to defaults.
 
 Unknown ids inside an otherwise-valid array are NOT warned about (this is the
 defined forward-compat path; warning would be noisy for legitimate use cases).
+
+### Runtime-panel resilience warnings
+
+In addition to init-time warnings, the runtime toggle panel emits these once
+each at the moment they happen (not once per init):
+
+| Condition | Console message |
+|---|---|
+| A registered `tearDown(table)` throws during a refresh | `[gridsight] tearDown(<id>) threw; continuing` (with the original error attached) |
+| The panel's container has been detached from the document since mount | `[gridsight] toggle panel container detached; panel disabled until next init()` |
+
+Both are warnings, not errors; the panel continues to function for any
+remaining tables after a tearDown throw, and quietly stops refreshing (and
+detaches its listeners) after a container detach.
 
 ---
 
