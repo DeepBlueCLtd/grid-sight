@@ -64,15 +64,11 @@ function encodeFilter(f: FilterDirective): string {
   return `f:${f.columnKey}:v:${values}${hide};`;
 }
 
-/** Decode the raw `gs.v=` value (URL-decoded already). Lenient: malformed
- *  directives are dropped, the rest survive. */
-export function decodeViewState(raw: string): TableViewDirective[] {
-  const out: TableViewDirective[] = [];
-  if (!raw) return out;
-  // Split top-level on commas that are NOT inside parens.
+/** Split `raw` on top-level commas (commas not inside parens). */
+function splitTopLevelSegments(raw: string): string[] {
+  const segments: string[] = [];
   let depth = 0;
   let start = 0;
-  const segments: string[] = [];
   for (let i = 0; i < raw.length; i++) {
     const ch = raw[i];
     if (ch === '(') depth++;
@@ -83,14 +79,23 @@ export function decodeViewState(raw: string): TableViewDirective[] {
     }
   }
   segments.push(raw.slice(start));
+  return segments;
+}
 
-  for (const seg of segments) {
-    const open = seg.indexOf('(');
-    const close = seg.lastIndexOf(')');
-    if (open <= 0 || close <= open) continue;
-    const tableId = seg.slice(0, open);
-    const body = seg.slice(open + 1, close);
-    const parsed = parseBody(tableId, body);
+function parseSegment(seg: string): TableViewDirective | null {
+  const open = seg.indexOf('(');
+  const close = seg.lastIndexOf(')');
+  if (open <= 0 || close <= open) return null;
+  return parseBody(seg.slice(0, open), seg.slice(open + 1, close));
+}
+
+/** Decode the raw `gs.v=` value (URL-decoded already). Lenient: malformed
+ *  directives are dropped, the rest survive. */
+export function decodeViewState(raw: string): TableViewDirective[] {
+  if (!raw) return [];
+  const out: TableViewDirective[] = [];
+  for (const seg of splitTopLevelSegments(raw)) {
+    const parsed = parseSegment(seg);
     if (parsed) out.push(parsed);
   }
   return out;
@@ -105,18 +110,17 @@ function parseBody(tableId: string, body: string): TableViewDirective | null {
     if (body.startsWith('f:', cursor)) {
       const end = body.indexOf(';', cursor);
       const clauseEnd = end < 0 ? body.length : end;
-      const clause = body.slice(cursor + 2, clauseEnd);
-      const f = parseFilterClause(clause);
+      const f = parseFilterClause(body.slice(cursor + 2, clauseEnd));
       if (f) filters.push(f);
       cursor = clauseEnd + 1;
-    } else if (body.startsWith('s:', cursor)) {
-      const clause = body.slice(cursor + 2);
-      sort = parseSortClause(clause);
-      break;
-    } else {
-      // Unknown marker; bail out lenient.
+      continue;
+    }
+    if (body.startsWith('s:', cursor)) {
+      sort = parseSortClause(body.slice(cursor + 2));
       break;
     }
+    // Unknown marker; bail out lenient.
+    break;
   }
 
   if (!sort && filters.length === 0) return null;
@@ -127,9 +131,9 @@ function parseSortClause(clause: string): SortDirective | null {
   const idx = clause.indexOf(':');
   if (idx < 0) return null;
   const columnKey = clause.slice(0, idx);
-  const direction = clause.slice(idx + 1) as 'asc' | 'desc';
-  if (direction !== 'asc' && direction !== 'desc') return null;
+  const direction = clause.slice(idx + 1);
   if (!columnKey) return null;
+  if (direction !== 'asc' && direction !== 'desc') return null;
   // columnIndex is resolved at hydrate time.
   return { columnIndex: -1, columnKey, direction };
 }
@@ -140,36 +144,48 @@ function parseFilterClause(clause: string): FilterDirective | null {
   const columnKey = clause.slice(0, firstColon);
   if (!columnKey) return null;
   const rest = clause.slice(firstColon + 1);
-  if (rest.startsWith('n:')) {
-    const body = rest.slice(2);
-    const parts = body.split(':');
-    if (parts.length < 2) return null;
-    const minStr = parts[0];
-    const maxStr = parts[1];
-    let hideEmpty = false;
-    if (parts.length >= 3) {
-      if (parts[2] === 'h') hideEmpty = true;
-      else return null;
-    }
-    const min = minStr === '' ? null : Number(minStr);
-    const max = maxStr === '' ? null : Number(maxStr);
-    if (min !== null && !Number.isFinite(min)) return null;
-    if (max !== null && !Number.isFinite(max)) return null;
-    return { kind: 'numeric-range', columnKey, min, max, hideEmpty };
-  }
-  if (rest.startsWith('v:')) {
-    let body = rest.slice(2);
-    let hideEmpty = false;
-    if (body.endsWith(':h')) {
-      hideEmpty = true;
-      body = body.slice(0, -2);
-    }
-    const values = body === '' ? [] : body.split('|').map((v) => {
-      try { return decodeURIComponent(v); } catch { return v; }
-    });
-    return { kind: 'categorical', columnKey, allowed: values, hideEmpty };
-  }
+  if (rest.startsWith('n:')) return parseNumericFilterBody(columnKey, rest.slice(2));
+  if (rest.startsWith('v:')) return parseCategoricalFilterBody(columnKey, rest.slice(2));
   return null;
+}
+
+function parseNumericFilterBody(columnKey: string, body: string): FilterDirective | null {
+  const parts = body.split(':');
+  if (parts.length < 2 || parts.length > 3) return null;
+  if (parts.length === 3 && parts[2] !== 'h') return null;
+  const min = parseOptionalNumber(parts[0]);
+  const max = parseOptionalNumber(parts[1]);
+  if (min === FAILED || max === FAILED) return null;
+  return {
+    kind: 'numeric-range',
+    columnKey,
+    min,
+    max,
+    hideEmpty: parts.length === 3,
+  };
+}
+
+const FAILED = Symbol('parse-failed');
+
+function parseOptionalNumber(s: string): number | null | typeof FAILED {
+  if (s === '') return null;
+  const n = Number(s);
+  return Number.isFinite(n) ? n : FAILED;
+}
+
+function parseCategoricalFilterBody(columnKey: string, raw: string): FilterDirective {
+  let body = raw;
+  let hideEmpty = false;
+  if (body.endsWith(':h')) {
+    hideEmpty = true;
+    body = body.slice(0, -2);
+  }
+  const values = body === '' ? [] : body.split('|').map(safeDecode);
+  return { kind: 'categorical', columnKey, allowed: values, hideEmpty };
+}
+
+function safeDecode(v: string): string {
+  try { return decodeURIComponent(v); } catch { return v; }
 }
 
 /* ── Fragment-parameter helpers (preserve other params) ─────────────── */

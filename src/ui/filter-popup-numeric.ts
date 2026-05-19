@@ -16,100 +16,118 @@ export interface NumericPopupArgs {
   onClose: () => void;
 }
 
-export function openNumericFilterPopup(args: NumericPopupArgs): () => void {
+interface NumericInputs {
+  min: HTMLInputElement;
+  max: HTMLInputElement;
+  hideEmpty: HTMLInputElement;
+}
+
+function buildLabelledInput(
+  labelText: string,
+  type: 'number' | 'checkbox',
+  initialValue: string | boolean
+): { row: HTMLDivElement; input: HTMLInputElement } {
+  const row = document.createElement('div');
+  row.className = 'gs-filter-popup__row';
+  const label = document.createElement('label');
+  const input = document.createElement('input');
+  input.type = type;
+  if (type === 'number') {
+    label.textContent = labelText + ' ';
+    input.value = initialValue as string;
+    input.placeholder = '—';
+    label.appendChild(input);
+  } else {
+    input.checked = initialValue as boolean;
+    label.appendChild(input);
+    label.appendChild(document.createTextNode(' ' + labelText));
+  }
+  row.appendChild(label);
+  return { row, input };
+}
+
+function buildPopupShell(args: NumericPopupArgs): { popup: HTMLDivElement; inputs: NumericInputs; clearBtn: HTMLButtonElement; applyBtn: HTMLButtonElement } {
   const popup = document.createElement('div');
   popup.className = 'gs-filter-popup gs-filter-popup--numeric';
   popup.setAttribute('role', 'dialog');
   popup.setAttribute('aria-label', 'Numeric filter');
 
-  const minRow = document.createElement('div');
-  minRow.className = 'gs-filter-popup__row';
-  const minLabel = document.createElement('label');
-  minLabel.textContent = 'Min ';
-  const minInput = document.createElement('input');
-  minInput.type = 'number';
-  minInput.value = args.current?.min ?? '' as any;
-  minInput.placeholder = '—';
-  minLabel.appendChild(minInput);
-  minRow.appendChild(minLabel);
-
-  const maxRow = document.createElement('div');
-  maxRow.className = 'gs-filter-popup__row';
-  const maxLabel = document.createElement('label');
-  maxLabel.textContent = 'Max ';
-  const maxInput = document.createElement('input');
-  maxInput.type = 'number';
-  maxInput.value = args.current?.max ?? '' as any;
-  maxInput.placeholder = '—';
-  maxLabel.appendChild(maxInput);
-  maxRow.appendChild(maxLabel);
-
-  const hideRow = document.createElement('div');
-  hideRow.className = 'gs-filter-popup__row';
-  const hideLabel = document.createElement('label');
-  const hideInput = document.createElement('input');
-  hideInput.type = 'checkbox';
-  hideInput.checked = !!args.current?.hideEmpty;
-  hideLabel.appendChild(hideInput);
-  hideLabel.appendChild(document.createTextNode(' Hide empty cells'));
-  hideRow.appendChild(hideLabel);
+  const min = buildLabelledInput('Min', 'number', stringifyNumber(args.current?.min));
+  const max = buildLabelledInput('Max', 'number', stringifyNumber(args.current?.max));
+  const hide = buildLabelledInput('Hide empty cells', 'checkbox', !!args.current?.hideEmpty);
 
   const actionsRow = document.createElement('div');
   actionsRow.className = 'gs-filter-popup__actions';
-  const clearBtn = document.createElement('button');
-  clearBtn.type = 'button';
-  clearBtn.textContent = 'Clear';
-  const applyBtn = document.createElement('button');
-  applyBtn.type = 'button';
-  applyBtn.textContent = 'Apply';
+  const clearBtn = makeButton('Clear');
+  const applyBtn = makeButton('Apply');
   actionsRow.appendChild(clearBtn);
   actionsRow.appendChild(applyBtn);
 
-  popup.append(minRow, maxRow, hideRow, actionsRow);
+  popup.append(min.row, max.row, hide.row, actionsRow);
+  return {
+    popup,
+    inputs: { min: min.input, max: max.input, hideEmpty: hide.input },
+    clearBtn,
+    applyBtn,
+  };
+}
 
+function stringifyNumber(n: number | null | undefined): string {
+  return n === null || n === undefined ? '' : String(n);
+}
+
+function makeButton(label: string): HTMLButtonElement {
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.textContent = label;
+  return btn;
+}
+
+function parseNumberInput(raw: string): number | null | 'invalid' {
+  const trimmed = raw.trim();
+  if (trimmed === '') return null;
+  const n = Number(trimmed);
+  return Number.isFinite(n) ? n : 'invalid';
+}
+
+function readPredicateFromInputs(args: NumericPopupArgs, inputs: NumericInputs): FilterPredicate | null {
+  const min = parseNumberInput(inputs.min.value);
+  const max = parseNumberInput(inputs.max.value);
+  if (min === 'invalid' || max === 'invalid') return null;
+  const hideEmpty = inputs.hideEmpty.checked;
+  if (min === null && max === null && !hideEmpty) return null;
+  return numericRange({
+    columnIndex: args.columnIndex,
+    columnKey: args.columnKey,
+    min,
+    max,
+    hideEmpty,
+  });
+}
+
+export function openNumericFilterPopup(args: NumericPopupArgs): () => void {
+  const { popup, inputs, clearBtn, applyBtn } = buildPopupShell(args);
   positionPopup(popup, args.anchorEl);
   document.body.appendChild(popup);
 
-  const focusables: HTMLElement[] = [minInput, maxInput, hideInput, clearBtn, applyBtn];
-  minInput.focus();
+  const focusables: HTMLElement[] = [inputs.min, inputs.max, inputs.hideEmpty, clearBtn, applyBtn];
+  inputs.min.focus();
 
-  const dispose = installPopupChrome(popup, args.anchorEl, focusables, () => {
-    args.onClose();
-  });
+  const dispose = installPopupChrome(popup, args.anchorEl, focusables, args.onClose);
 
-  function readPredicate(): FilterPredicate | null {
-    const minRaw = minInput.value.trim();
-    const maxRaw = maxInput.value.trim();
-    const min = minRaw === '' ? null : Number(minRaw);
-    const max = maxRaw === '' ? null : Number(maxRaw);
-    const hideEmpty = hideInput.checked;
-    if (min === null && max === null && !hideEmpty) return null;
-    if (min !== null && !Number.isFinite(min)) return null;
-    if (max !== null && !Number.isFinite(max)) return null;
-    return numericRange({
-      columnIndex: args.columnIndex,
-      columnKey: args.columnKey,
-      min,
-      max,
-      hideEmpty,
-    });
-  }
-
-  applyBtn.addEventListener('click', () => {
-    args.onApply(readPredicate());
+  const apply = () => {
+    args.onApply(readPredicateFromInputs(args, inputs));
     dispose();
-  });
+  };
+  applyBtn.addEventListener('click', apply);
   clearBtn.addEventListener('click', () => {
     args.onApply(null);
     dispose();
   });
-
-  // Apply on Enter.
   popup.addEventListener('keydown', (ev) => {
     if (ev.key === 'Enter' && ev.target !== clearBtn) {
       ev.preventDefault();
-      args.onApply(readPredicate());
-      dispose();
+      apply();
     }
   });
 
@@ -134,16 +152,12 @@ export function installPopupChrome(
     }
     if (ev.key !== 'Tab' || focusables.length === 0) return;
     const idx = focusables.indexOf(document.activeElement as HTMLElement);
-    if (ev.shiftKey) {
-      if (idx <= 0) {
-        ev.preventDefault();
-        focusables[focusables.length - 1].focus();
-      }
-    } else {
-      if (idx === focusables.length - 1) {
-        ev.preventDefault();
-        focusables[0].focus();
-      }
+    if (ev.shiftKey && idx <= 0) {
+      ev.preventDefault();
+      focusables[focusables.length - 1].focus();
+    } else if (!ev.shiftKey && idx === focusables.length - 1) {
+      ev.preventDefault();
+      focusables[0].focus();
     }
   };
 

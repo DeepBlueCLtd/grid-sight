@@ -154,18 +154,31 @@ tr[data-gs-dimmed="true"] {
   background: #fff;
   border: 1px solid #c0c0c0;
   border-radius: 4px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  box-shadow: 0 4px 12px rgb(0 0 0 / 15%);
   padding: 8px;
   font: 13px/1.4 system-ui, sans-serif;
   color: #222;
   min-width: 220px;
 }
 
-.gs-filter-popup__row { display: flex; gap: 6px; margin-bottom: 6px; align-items: center; }
-.gs-filter-popup__row label { white-space: nowrap; }
+.gs-filter-popup__row {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 6px;
+  align-items: center;
+}
+
+.gs-filter-popup__row label {
+  white-space: nowrap;
+}
+
 .gs-filter-popup__row input[type="number"],
 .gs-filter-popup__row input[type="text"],
-.gs-filter-popup__search { padding: 2px 4px; font: inherit; }
+.gs-filter-popup__search {
+  padding: 2px 4px;
+  font: inherit;
+}
+
 .gs-filter-popup__list {
   max-height: 200px;
   overflow: auto;
@@ -173,8 +186,18 @@ tr[data-gs-dimmed="true"] {
   padding: 4px;
   margin: 4px 0;
 }
-.gs-filter-popup__list label { display: block; cursor: pointer; }
-.gs-filter-popup__actions { display: flex; gap: 6px; justify-content: flex-end; }
+
+.gs-filter-popup__list label {
+  display: block;
+  cursor: pointer;
+}
+
+.gs-filter-popup__actions {
+  display: flex;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
 .gs-filter-popup__actions button {
   padding: 2px 8px;
   font: inherit;

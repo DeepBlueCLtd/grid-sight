@@ -197,9 +197,9 @@ called out as an extension point) plug in without changing the pipeline.
 
 **Decision**: Net IIFE delta budget for the combined feature is **≤ 6.0 KB
 gzipped** (relaxed from the original 2.0 KB target on 2026-05-19 after the
-implementation landed at 5.30 KB — the two filter popups, the chip render
-+ empty-state, and the URL codec all came in larger than the
-single-sentence estimates below allowed). The constitution §I 10 KB
+implementation landed at 5.30 KB — the two filter popups, the chip
+render and its empty-state, and the URL codec all came in larger than
+the single-sentence estimates below allowed). The constitution §I 10 KB
 total cap is already obsolete on this project (spec 001 alone took the
 baseline to 19 KB gz); the per-feature delta budget here is the live
 gate. Estimated split (after minification + gzip):

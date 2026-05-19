@@ -18,20 +18,27 @@ export interface NumericRangeArgs {
   hideEmpty: boolean;
 }
 
+function readNumericCell(row: HTMLTableRowElement, columnIndex: number): number | null {
+  const cell = row.cells[columnIndex];
+  if (!cell) return null;
+  const raw = (cell.textContent ?? '').trim();
+  return raw === '' ? null : cleanNumericCell(raw);
+}
+
+function withinRange(v: number, min: number | null, max: number | null): boolean {
+  if (min !== null && v < min) return false;
+  if (max !== null && v > max) return false;
+  return true;
+}
+
 export function numericRange(args: NumericRangeArgs): FilterPredicate {
   const { columnIndex, columnKey, min, max, hideEmpty } = args;
   return {
     columnIndex,
     columnKey,
     test(row: HTMLTableRowElement): boolean {
-      const cell = row.cells[columnIndex];
-      const raw = cell ? (cell.textContent ?? '').trim() : '';
-      if (raw === '') return !hideEmpty;
-      const v = cleanNumericCell(raw);
-      if (v === null) return !hideEmpty;
-      if (min !== null && v < min) return false;
-      if (max !== null && v > max) return false;
-      return true;
+      const v = readNumericCell(row, columnIndex);
+      return v === null ? !hideEmpty : withinRange(v, min, max);
     },
     toDirective(): FilterDirective {
       return { kind: 'numeric-range', columnKey, min, max, hideEmpty };

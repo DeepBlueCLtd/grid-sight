@@ -221,66 +221,66 @@ function reevaluate(state: PipelineState): void {
   }
 }
 
-function computeSequence(state: PipelineState): VisibleRowSequence {
-  const table = state.table;
+function getBaseRows(table: HTMLTableElement): readonly HTMLTableRowElement[] {
   const oor = getRecord(table);
-  const baseRows: readonly HTMLTableRowElement[] =
-    oor ?? (table.tBodies[0] ? Array.from(table.tBodies[0].rows) : []);
+  if (oor) return oor;
+  const tbody = table.tBodies[0];
+  return tbody ? Array.from(tbody.rows) : [];
+}
 
-  // pass[i] === true if every active filter passes
-  const filtersArr = Array.from(state.filters.values());
-  const pass = baseRows.map((row) =>
-    filtersArr.every((p) => {
-      try {
-        return p.test(row);
-      } catch {
-        return true;
-      }
-    })
-  );
+function safeTest(predicate: FilterPredicate, row: HTMLTableRowElement): boolean {
+  try { return predicate.test(row); } catch { return true; }
+}
 
-  let renderOrder: HTMLTableRowElement[];
+function computePassFlags(
+  baseRows: readonly HTMLTableRowElement[],
+  filters: ReadonlyMap<number, FilterPredicate>
+): boolean[] {
+  const filtersArr = Array.from(filters.values());
+  return baseRows.map((row) => filtersArr.every((p) => safeTest(p, row)));
+}
 
-  if (state.sort === null || !state.comparator) {
-    // Identity projection in OOR order (with dim flags).
-    renderOrder = baseRows.slice();
-  } else {
-    // mergeByOriginalIndex semantics.
-    const visible: HTMLTableRowElement[] = [];
-    for (let i = 0; i < baseRows.length; i++) {
-      if (pass[i]) visible.push(baseRows[i]);
-    }
-    visible.sort(state.comparator);
-    renderOrder = new Array(baseRows.length);
-    let vIdx = 0;
-    for (let i = 0; i < baseRows.length; i++) {
-      if (pass[i]) {
-        renderOrder[i] = visible[vIdx++];
-      } else {
-        renderOrder[i] = baseRows[i];
-      }
-    }
+function mergeByOriginalIndex(
+  baseRows: readonly HTMLTableRowElement[],
+  pass: readonly boolean[],
+  comparator: (a: HTMLTableRowElement, b: HTMLTableRowElement) => number
+): HTMLTableRowElement[] {
+  const visible = baseRows.filter((_, i) => pass[i]);
+  visible.sort(comparator);
+  const out: HTMLTableRowElement[] = new Array(baseRows.length);
+  let vIdx = 0;
+  for (let i = 0; i < baseRows.length; i++) {
+    out[i] = pass[i] ? visible[vIdx++] : baseRows[i];
   }
+  return out;
+}
 
-  // Build entries (dim flag computed from the original-order pass[] but
-  // dimmed flag follows the row's source position).
-  // entries are emitted in renderOrder; dimmed reflects whether the row
-  // is failing any filter.
+function buildEntries(
+  baseRows: readonly HTMLTableRowElement[],
+  renderOrder: readonly HTMLTableRowElement[],
+  pass: readonly boolean[]
+): VisibleRowEntry[] {
   const dimmedMap = new Map<HTMLTableRowElement, boolean>();
   const sourceIndexMap = new Map<HTMLTableRowElement, number>();
   for (let i = 0; i < baseRows.length; i++) {
     dimmedMap.set(baseRows[i], !pass[i]);
     sourceIndexMap.set(baseRows[i], i);
   }
-
-  const entries: VisibleRowEntry[] = renderOrder.map((row) => ({
+  return renderOrder.map((row) => ({
     row,
     dimmed: dimmedMap.get(row) ?? false,
     sourceIndex: sourceIndexMap.get(row) ?? 0,
   }));
+}
 
+function computeSequence(state: PipelineState): VisibleRowSequence {
+  const baseRows = getBaseRows(state.table);
+  const pass = computePassFlags(baseRows, state.filters);
+  const renderOrder = state.sort && state.comparator
+    ? mergeByOriginalIndex(baseRows, pass, state.comparator)
+    : baseRows.slice();
   return {
-    entries,
+    entries: buildEntries(baseRows, renderOrder, pass),
     sort: state.sort,
     filters: new Map(state.filters),
     revision: state.revision,
