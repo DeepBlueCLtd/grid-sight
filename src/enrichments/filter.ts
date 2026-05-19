@@ -5,8 +5,8 @@
  * Predicates DIM rows; they never remove them.
  */
 
-import { cleanNumericCell } from '../core/type-detection';
 import type { FilterDirective, FilterPredicate } from '../utils/visible-rows';
+import { readNumericCell, withinRange } from './filter-helpers';
 
 /* ── Numeric range ──────────────────────────────────────────────────── */
 
@@ -16,19 +16,6 @@ export interface NumericRangeArgs {
   min: number | null;
   max: number | null;
   hideEmpty: boolean;
-}
-
-function readNumericCell(row: HTMLTableRowElement, columnIndex: number): number | null {
-  const cell = row.cells[columnIndex];
-  if (!cell) return null;
-  const raw = (cell.textContent ?? '').trim();
-  return raw === '' ? null : cleanNumericCell(raw);
-}
-
-function withinRange(v: number, min: number | null, max: number | null): boolean {
-  if (min !== null && v < min) return false;
-  if (max !== null && v > max) return false;
-  return true;
 }
 
 export function numericRange(args: NumericRangeArgs): FilterPredicate {
