@@ -4,7 +4,7 @@
  * Codacy's complexity analyser bounds each function to this module.
  */
 
-import { getRecord } from './original-order';
+import { getRecord, getDataRows } from './original-order';
 import type {
   FilterPredicate,
   SortDirective,
@@ -14,8 +14,7 @@ import type {
 export function getBaseRows(table: HTMLTableElement): readonly HTMLTableRowElement[] {
   const oor = getRecord(table);
   if (oor) return oor;
-  const tbody = table.tBodies[0];
-  return tbody ? Array.from(tbody.rows) : [];
+  return getDataRows(table);
 }
 
 function safeTest(predicate: FilterPredicate, row: HTMLTableRowElement): boolean {

@@ -14,6 +14,7 @@ import { createSortLozenge } from './sort-lozenge';
 import { createFilterLozenge } from './filter-lozenge';
 import { detectSortColumnType } from '../enrichments/sort';
 import { getEffectiveEnabledSet } from '../core/enabled-set-state';
+import { ensureRowVisibilityStyles } from './row-visibility-styles';
 
 export type HeaderType = 'row' | 'column' | 'table';
 
@@ -29,6 +30,7 @@ const LOZENGE_ACTIVE_CLASS = 'gs-lozenge--active';
 export function injectPlusIcons(table: HTMLTableElement, columnTypes: ColumnType[]): void {
   removePlusIcons(table);
   ensureLozengeStyles();
+  ensureRowVisibilityStyles();
 
   const headerRow = table.rows[0];
   if (!headerRow) return;

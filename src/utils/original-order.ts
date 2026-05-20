@@ -19,10 +19,34 @@ interface FullRecord {
 
 const records = new WeakMap<HTMLTableElement, FullRecord>();
 
-function tbodyRows(table: HTMLTableElement): readonly HTMLTableRowElement[] {
+/**
+ * Return the data rows of `table` — every `<tr>` inside `tbody` EXCEPT a
+ * de-facto header row that the browser promoted into the implicit tbody
+ * when the markup lacked an explicit `<thead>`. Required because the
+ * slider demos and many real-world legacy tables use `<tr><th>…</th></tr>`
+ * directly under `<table>`; without this guard the row-visibility pipeline
+ * sorts the header along with the data rows.
+ *
+ * Header detection: `table.rows[0]` is the de-facto header iff
+ *  (a) it sits inside the same tbody we're about to read AND
+ *  (b) it contains at least one `<th>` cell.
+ * If `<thead>` is present, row 0 lives there and the tbody starts at the
+ * data rows already, so no skip is needed.
+ */
+export function getDataRows(table: HTMLTableElement): readonly HTMLTableRowElement[] {
   const tbody = table.tBodies[0];
   if (!tbody) return [];
-  return Array.from(tbody.rows);
+  const all = Array.from(tbody.rows);
+  if (all.length === 0) return all;
+  const headerRow = table.rows[0];
+  if (
+    headerRow &&
+    headerRow === all[0] &&
+    Array.from(headerRow.cells).some((c) => c.tagName === 'TH')
+  ) {
+    return all.slice(1);
+  }
+  return all;
 }
 
 /** Capture the OOR for this table if it hasn't been captured yet. Idempotent. */
@@ -30,7 +54,7 @@ export function captureOnce(table: HTMLTableElement): OriginalOrderRecord {
   const existing = records.get(table);
   if (existing) return existing.rows;
   const tbody = table.tBodies[0];
-  const rows = Object.freeze(tbodyRows(table).slice());
+  const rows = Object.freeze(getDataRows(table).slice());
   const childNodes = tbody ? Object.freeze(Array.from(tbody.childNodes)) : Object.freeze([]);
   records.set(table, { rows, childNodes });
   return rows;

@@ -60,6 +60,31 @@ describe('visible-rows pipeline — identity projection', () => {
     expect(seen).toEqual([]);
   });
 
+  it('skips the implicit header row when markup omits <thead>', () => {
+    // Regression: slider demos (and many legacy tables) use
+    //   <table>
+    //     <tr><th></th><th>10</th><th>20</th></tr>     <!-- header, no thead -->
+    //     <tr><th>1000</th><td>3</td><td>5</td></tr>
+    //     ...
+    // The browser wraps EVERY <tr> in an implicit <tbody>, so a naive
+    // `tbody.rows` read would include the header row and sort it along
+    // with the data rows.
+    table = document.createElement('table');
+    table.id = 'tbl-implicit-thead';
+    const t = (s: string) => s;  // hint
+    table.innerHTML = t(`
+      <tr><th></th><th>10</th><th>20</th></tr>
+      <tr><th>3000</th><td>9</td><td>8</td></tr>
+      <tr><th>1000</th><td>3</td><td>5</td></tr>
+      <tr><th>2000</th><td>4</td><td>7</td></tr>
+    `);
+    document.body.appendChild(table);
+    setSort(table, { columnIndex: 0, columnKey: 'rpm', direction: 'asc' });
+    // Header row must remain row[0]; data rows ordered by first-cell text.
+    const firstCells = Array.from(table.tBodies[0].rows).map((r) => r.cells[0].textContent?.trim());
+    expect(firstCells).toEqual(['', '1000', '2000', '3000']);
+  });
+
   it('teardown is idempotent', () => {
     table = makeTable([['10', 'EU']]);
     expect(() => teardown(table)).not.toThrow();
