@@ -29,6 +29,16 @@ import {
 import { injectToggle } from './ui/toggle-injector';
 import { removePlusIcons } from './ui/header-utils';
 
+// Row-visibility pipeline (spec 002-003-row-visibility)
+import { teardown as teardownVisibleRows, hydrateTable, serialiseTable, onVisibleRowsChange } from './utils/visible-rows';
+import './enrichments/sort'; // side-effect: registers comparator factory
+import { predicateFromDirective } from './enrichments/filter';
+import { mountFilterChip, unmountFilterChip } from './enrichments/filter-chip';
+import {
+  readViewStateFromHash,
+  commitViewStateToLocation,
+} from './utils/view-state-url';
+
 // Import slider feature (spec 001-dynamic-sliders)
 import {
   addSlider as sliderAddSlider,
@@ -214,12 +224,22 @@ const GridSight = {
       try { removeHeatmap(table); } catch (e) { /* ignore */ void e; }
       const toggle = table.querySelector('.grid-sight-toggle-container');
       if (toggle) toggle.remove();
+      try { unmountFilterChip(table); } catch (e) { /* ignore */ void e; }
+      try { teardownVisibleRows(table); } catch (e) { /* ignore */ void e; }
       removePlusIcons(table);
       // Remove any virtual-column lozenges that were appended.
       table.querySelectorAll('.gs-vc-lozenge').forEach((el) => el.remove());
       table.classList.remove('grid-sight-enabled');
       table.removeAttribute('data-grid-sight-processed');
       clearColumnTypes(table);
+      // Strip the per-cell index marker that processTableData added.
+      // Required for SC-005 (byte-identical DOM after disable()).
+      table.querySelectorAll('[data-gs-cell-index]').forEach((cell) =>
+        cell.removeAttribute('data-gs-cell-index')
+      );
+      // Drop empty class attributes that other enrichments may leave behind.
+      table.querySelectorAll('[class=""]').forEach((el) => el.removeAttribute('class'));
+      if (table.getAttribute('class') === '') table.removeAttribute('class');
     }
     tableRegistry.clear();
     return this;
@@ -239,25 +259,45 @@ const GridSight = {
     if (!table) {
       throw new Error('No table element provided');
     }
-    
+
     // Ensure the table has an ID
     if (!table.id) {
       table.id = options.id || `grid-sight-${Math.random().toString(36).substr(2, 9)}`;
     }
-    
+
+    // ── Apply persisted view-state BEFORE the lozenge cluster mounts so the
+    //    first paint already reflects the restored projection (SC-003).
+    try {
+      const restored = readViewStateFromHash().find((d) => d.tableId === table.id);
+      if (restored) {
+        hydrateTable(table, restored, predicateFromDirective);
+      }
+    } catch (e) { void e; /* lenient on malformed fragments */ }
+
     // Process the table
     const processedTable = processTable(table, options);
-    
+
     // Add to registry
     tableRegistry.set(table.id, table);
-    
+
     try {
       // Inject toggle which will handle the enrichment menu
       injectToggle(table);
     } catch (error) {
       console.warn('Failed to inject UI elements:', error);
     }
-    
+
+    // Mount filter chip + URL save subscription.
+    try { mountFilterChip(table); } catch (e) { void e; }
+    try {
+      onVisibleRowsChange(table, () => {
+        const directives = Array.from(tableRegistry.values())
+          .map((t) => serialiseTable(t))
+          .filter((d): d is NonNullable<typeof d> => d !== null);
+        commitViewStateToLocation(directives);
+      });
+    } catch (e) { void e; }
+
     return processedTable;
   },
   

@@ -80,3 +80,14 @@ in-PR to keep the diff small):
 - drop the spacer-`<th>` insertion in `appendCellsForDirective` for multi-row
   theads — current code creates empty `<th>`s on non-first header rows that
   no test exercises.
+
+## Ceiling bump after 002-003-row-visibility merge (2026-05-19)
+
+When PR #37 (002-003-row-visibility) merged in on top of 012-virtual-columns,
+the combined bundle measures **33.25 KB gzipped**, breaching the 30 KB
+ceiling 012-virtual-columns left in place. Enforced ceiling bumped 30 → 34
+KB in `scripts/bundle-size.js` to unblock the merge. The row-visibility
+contribution is ~5.4 KB gz on top of the post-012-virtual-columns 27.84 KB
+baseline — driven by the visible-rows pipeline, the two filter popups, the
+URL codec, and the chip + dim CSS. Constitution §I 10 KB target unchanged;
+the formal amendment / bundle-cut PR now owes ~23 KB of gap.

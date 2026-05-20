@@ -23,6 +23,8 @@
 
 import { removeHeatmap } from '../enrichments/heatmap';
 import { removeAllSliders, getSliders } from '../enrichments/slider';
+import { setSort, clearFilters } from '../utils/visible-rows';
+import { unmountFilterChip } from '../enrichments/filter-chip';
 
 export type EnrichmentId = string;
 
@@ -70,6 +72,15 @@ function dismissFrequencyChartDialog(_table: HTMLTableElement): void {
   w._gsFrequencyChartDialog?.hide?.();
 }
 
+function clearTableSort(table: HTMLTableElement): void {
+  setSort(table, null);
+}
+
+function clearTableFilters(table: HTMLTableElement): void {
+  clearFilters(table);
+  unmountFilterChip(table);
+}
+
 const ENTRIES: EnrichmentRegistryEntry[] = [
   // ── Shipped enrichments (real implementation in this build) ──────────
   { id: 'heatmap',          label: 'Heatmap',           defaultOn: true, shipped: true,  tearDown: removeAllHeatmaps },
@@ -85,9 +96,9 @@ const ENTRIES: EnrichmentRegistryEntry[] = [
   { id: 'copy-as-csv',      label: 'Copy as CSV',       defaultOn: true, shipped: false },  // spec 009
   { id: 'cumulative',       label: 'Cumulative col.',   defaultOn: true, shipped: false },  // spec 008
   { id: 'diff-compare',     label: 'Diff / compare',    defaultOn: true, shipped: false },  // spec 010
-  { id: 'filter',           label: 'Column filter',     defaultOn: true, shipped: false },  // spec 003
+  { id: 'filter',           label: 'Column filter',     defaultOn: true, shipped: true,  tearDown: clearTableFilters },  // spec 003 (landed via 002-003-row-visibility)
   { id: 'outlier',          label: 'Outlier marker',    defaultOn: true, shipped: false },  // spec 004
-  { id: 'sort',             label: 'Column sort',       defaultOn: true, shipped: false },  // spec 002
+  { id: 'sort',             label: 'Column sort',       defaultOn: true, shipped: true,  tearDown: clearTableSort },  // spec 002 (landed via 002-003-row-visibility)
   { id: 'sparkline',        label: 'Row sparkline',     defaultOn: true, shipped: false },  // spec 005
   { id: 'units-toggle',     label: 'Units toggle',      defaultOn: true, shipped: false },  // spec 007
 ];

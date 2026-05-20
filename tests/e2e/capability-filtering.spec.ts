@@ -106,12 +106,17 @@ test.describe('US3: each existing demo declares an explicit subset', () => {
       expected: new Set(['heatmap', 'sliders', 'statistics']),
     },
     {
+      // 'heatmap' added on top of spec-012's original ['sliders','statistics']
+      // so post-002-003-row-visibility reviewers can confirm the H lozenge
+      // still works on this demo's tables.
       path: '/grid-sight/demo/sliders/alternate-calc-models.html',
-      expected: new Set(['sliders', 'statistics']),
+      expected: new Set(['sliders', 'statistics', 'heatmap']),
     },
     {
+      // 'heatmap' added on top of spec-012's original ['sliders'] for the
+      // same reason — see the demo's inline rationale comment.
       path: '/grid-sight/demo/sliders/synced-tables.html',
-      expected: new Set(['sliders']),
+      expected: new Set(['sliders', 'heatmap']),
     },
     {
       path: '/grid-sight/demo/sliders/heatmap.html',

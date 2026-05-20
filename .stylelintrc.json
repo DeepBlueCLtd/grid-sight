@@ -1,0 +1,10 @@
+{
+  "rules": {
+    "selector-class-pattern": [
+      "^[a-z][a-z0-9]*(-[a-z0-9]+)*(--[a-z0-9]+(-[a-z0-9]+)*)?(__[a-z0-9]+(-[a-z0-9]+)*)?(--[a-z0-9]+(-[a-z0-9]+)*)?$",
+      {
+        "message": "Class selectors must be kebab-case, optionally with BEM modifier (`--name`) and/or element (`__name`) suffixes — matches the existing convention (`gs-lozenge--active`, `gs-plus-icon--visible`, `gs-filter-popup__row`)."
+      }
+    ]
+  }
+}
