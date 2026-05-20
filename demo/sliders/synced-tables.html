@@ -50,8 +50,11 @@
   </div>
 
   <script>
-    // spec 012 — this demo focuses solely on sliders.
-    window.gridSight = { pageConfig: { enrichments: ['sliders'] } };
+    // Sliders is this demo's headline feature; heatmap is also enabled so
+    // reviewers can confirm the H lozenge still works on these tables after
+    // a merge. Tighten back to ['sliders'] only if a future test requires
+    // the demo to surface only the slider lozenge.
+    window.gridSight = { pageConfig: { enrichments: ['sliders', 'heatmap'] } };
   </script>
   <script src="../../grid-sight.iife.js"></script>
 </body>
