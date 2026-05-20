@@ -10,9 +10,6 @@
  */
 
 const ROW_VISIBILITY_CSS = `
-.gs-lozenge--sort::before { content: '\\2195'; }
-.gs-lozenge--filter::before { content: '\\25BD'; }
-
 .gs-row--dimmed,
 tr[data-gs-dimmed="true"] {
   opacity: 0.35;

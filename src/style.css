@@ -95,9 +95,6 @@ button:focus-visible {
 
 /* === Row Visibility (spec 002-003-row-visibility) =================== */
 
-.gs-lozenge--sort::before { content: '\2195'; }
-.gs-lozenge--filter::before { content: '\25BD'; }
-
 .gs-row--dimmed,
 tr[data-gs-dimmed="true"] {
   opacity: 0.35;
