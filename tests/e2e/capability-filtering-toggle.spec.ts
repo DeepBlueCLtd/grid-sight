@@ -45,6 +45,13 @@ test.describe('US2: live enrichment toggle panel', () => {
       'statistics',
       'frequency',
       'frequency-chart',
+      // Shipped via 002-003-row-visibility.
+      'sort',
+      'filter',
+      // Shipped via 012-virtual-columns.
+      'cumulative',
+      'sparkline',
+      'diff-compare',
     ];
     for (const id of shippedIds) {
       await expect(

@@ -14,6 +14,10 @@ import { createSortLozenge } from './sort-lozenge';
 import { createFilterLozenge } from './filter-lozenge';
 import { detectSortColumnType } from '../enrichments/sort';
 import { getEffectiveEnabledSet } from '../core/enabled-set-state';
+import {
+  listEnrichmentDescriptors,
+  type AffordanceContext,
+} from '../core/enrichment-registry';
 import { ensureRowVisibilityStyles } from './row-visibility-styles';
 
 export type HeaderType = 'row' | 'column' | 'table';
@@ -49,6 +53,12 @@ export function injectPlusIcons(table: HTMLTableElement, columnTypes: ColumnType
     addLozengesToHeader(table, row.cells[0], 'row', 0);
   }
 }
+
+/** The single enrichment injection pass (docs/architecture/enrichments.md).
+ *  Mounts every shipped + enabled + applicable affordance — classic lozenges
+ *  and virtual-column lozenges alike — into the per-header cluster. Alias of
+ *  `injectPlusIcons`; prefer this name at call sites. */
+export const mountEnrichments = injectPlusIcons;
 
 export function removePlusIcons(table: HTMLTableElement): void {
   const icons = table.querySelectorAll(`.${PLUS_ICON_CLASS}, .${LOZENGE_CLASS}`);
@@ -179,7 +189,13 @@ function addLozengesToHeader(
   // Spec 012 (FR-009): drop specs whose id is not in the effective enabled set.
   const enabled = getEffectiveEnabledSet();
   const filteredSpecs = specs.filter(s => enabled.has(s.id));
-  if (filteredSpecs.length === 0) return;
+
+  // Descriptor-driven affordances (virtual columns). Same gate, same cluster.
+  // See docs/architecture/enrichments.md — one injection pass for every
+  // enrichment, classic or virtual-column.
+  const descriptorEls = buildDescriptorAffordances(table, header, type, colIndex, columnType, enabled);
+
+  if (filteredSpecs.length === 0 && descriptorEls.length === 0) return;
 
   const cluster = document.createElement('span');
   cluster.className = 'gs-lozenge-cluster';
@@ -193,9 +209,44 @@ function addLozengesToHeader(
       cluster.appendChild(buildLozenge(spec));
     }
   }
+  for (const el of descriptorEls) cluster.appendChild(el);
 
   header.appendChild(cluster);
   header.classList.add(HEADER_WITH_ICON_CLASS);
+}
+
+/** Build the affordance elements for every descriptor-based enrichment that
+ *  is shipped, enabled, and applies to this header context. Used for virtual
+ *  columns; classic enrichments still go through the inline `LozengeSpec`
+ *  path above during the migration (docs/architecture/enrichments.md). */
+function buildDescriptorAffordances(
+  table: HTMLTableElement,
+  header: HTMLTableCellElement,
+  headerType: HeaderType,
+  colIndex: number,
+  columnType: ColumnType,
+  enabled: ReadonlySet<string>,
+): HTMLElement[] {
+  if (table.hasAttribute('data-gs-ignore')) return [];
+  // The descriptor context only models numeric/categorical columns.
+  if (columnType !== 'numeric' && columnType !== 'categorical') return [];
+  const ctx: AffordanceContext = {
+    table,
+    header,
+    headerType,
+    colIndex,
+    columnType,
+  };
+  const out: HTMLElement[] = [];
+  for (const descriptor of listEnrichmentDescriptors()) {
+    const behavior = descriptor.behavior;
+    if (!descriptor.shipped || !behavior) continue;
+    if (!enabled.has(descriptor.id)) continue;
+    if (!behavior.appliesTo(ctx)) continue;
+    const el = behavior.mount(ctx);
+    if (el) out.push(el);
+  }
+  return out;
 }
 
 function buildSortSpec(

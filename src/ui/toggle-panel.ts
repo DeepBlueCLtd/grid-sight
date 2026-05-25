@@ -26,8 +26,7 @@ import {
   getVisitorOverride,
 } from '../core/enabled-set-state';
 import { persistVisitorEnrichments } from '../utils/slider-persistence';
-import { injectPlusIcons } from './header-utils';
-import { injectAllVirtualColumnLozenges } from './virtual-column-lozenges';
+import { mountEnrichments } from './header-utils';
 import { getColumnTypes } from '../core/column-types-cache';
 import { analyzeTable } from '../core/table-detection';
 
@@ -185,16 +184,9 @@ function resolveColumnTypes(table: HTMLTableElement) {
 function rebuildLozengesAcrossTables(tables: Iterable<HTMLTableElement>): void {
   for (const table of tables) {
     if (!table.classList.contains('grid-sight-enabled')) continue;
-    injectPlusIcons(table, resolveColumnTypes(table));
-    // Virtual-column lozenges live outside the H/S/# cluster, so refresh them
-    // separately. Each injector is capability-aware: it adds the Σ / ⌇ / Δ
-    // affordance when its enrichment id is enabled and removes a stale one
-    // when it has just been disabled.
-    try {
-      injectAllVirtualColumnLozenges(table);
-    } catch (err) {
-      console.warn('[gridsight] virtual-column lozenge refresh failed', err);
-    }
+    // Single injection pass: classic + virtual-column affordances, all gated
+    // by the current effective enabled set.
+    mountEnrichments(table, resolveColumnTypes(table));
   }
 }
 
