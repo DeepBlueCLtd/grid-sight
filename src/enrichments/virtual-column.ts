@@ -696,6 +696,19 @@ export function removeAllDirectivesOnTable(table: HTMLTableElement): void {
   for (const id of ids) removeDirective(id);
 }
 
+/** Remove every active directive of a single kind from a table. Used by the
+ *  capability-filtering tearDown hooks (enrichment-registry) when a visitor
+ *  unticks a virtual-column enrichment. */
+export function removeDirectivesByKind(
+  table: HTMLTableElement,
+  kind: VirtualColumnKind,
+): void {
+  const ctx = tableContexts.get(table);
+  if (!ctx) return;
+  const ids = ctx.directives.filter((d) => d.kind === kind).map((d) => d.id);
+  for (const id of ids) removeDirective(id);
+}
+
 /** Expose for tests; tree-shakable in production. */
 if (typeof globalThis !== 'undefined' && (import.meta as { env?: { MODE?: string } }).env?.MODE !== 'production') {
   (globalThis as Record<string, unknown>).__gridSightFlushVirtualColumnFrame = __flushVirtualColumnFrame;

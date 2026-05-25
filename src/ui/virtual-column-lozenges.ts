@@ -17,6 +17,16 @@ import type {
   SparklineDirective,
 } from '../types/virtual-column';
 import { openComparePicker } from './compare-picker';
+import { isEnrichmentEnabled } from '../core/enabled-set-state';
+
+/** Remove every virtual-column lozenge of a given kind from a table. Called
+ *  when a capability is toggled off so the affordance disappears alongside
+ *  the columns the registry tearDown removed. */
+function removeLozengesOfKind(table: HTMLTableElement, kind: string): void {
+  table
+    .querySelectorAll(`.gs-vc-lozenge[data-gs-vc-kind="${kind}"]`)
+    .forEach((el) => el.remove());
+}
 
 function findExistingDirective(
   table: HTMLTableElement,
@@ -42,6 +52,10 @@ function makeLozenge(glyph: string, label: string): HTMLButtonElement {
 export function injectCumulativeLozenges(table: HTMLTableElement): void {
   if (table.hasAttribute('data-gs-ignore')) return;
   if (table.hasAttribute('data-gs-no-cumulative')) return;
+  if (!isEnrichmentEnabled('cumulative')) {
+    removeLozengesOfKind(table, 'cumulative');
+    return;
+  }
   const head = table.tHead?.rows[0];
   if (!head) return;
   const numeric = getNumericColumns(table);
@@ -94,6 +108,10 @@ function getCornerCluster(table: HTMLTableElement): HTMLElement | null {
 export function injectSparklineLozenge(table: HTMLTableElement): void {
   if (table.hasAttribute('data-gs-ignore')) return;
   if (table.hasAttribute('data-gs-no-sparkline')) return;
+  if (!isEnrichmentEnabled('sparkline')) {
+    removeLozengesOfKind(table, 'sparkline');
+    return;
+  }
   const numeric = getNumericColumns(table);
   if (numeric.size < 3) return;
   const corner = getCornerCluster(table);
@@ -130,6 +148,12 @@ export function injectSparklineLozenge(table: HTMLTableElement): void {
 export function injectCompareLozenge(table: HTMLTableElement): void {
   if (table.hasAttribute('data-gs-ignore')) return;
   if (table.hasAttribute('data-gs-no-compare')) return;
+  // The compare lozenge is registered under the `diff-compare` enrichment id
+  // (carried from spec 010); the virtual-column kind is `compare`.
+  if (!isEnrichmentEnabled('diff-compare')) {
+    removeLozengesOfKind(table, 'compare');
+    return;
+  }
   const numeric = getNumericColumns(table);
   if (numeric.size < 2) return;
   const corner = getCornerCluster(table);

@@ -25,6 +25,7 @@ import { removeHeatmap } from '../enrichments/heatmap';
 import { removeAllSliders, getSliders } from '../enrichments/slider';
 import { setSort, clearFilters } from '../utils/visible-rows';
 import { unmountFilterChip } from '../enrichments/filter-chip';
+import { removeDirectivesByKind } from '../enrichments/virtual-column';
 
 export type EnrichmentId = string;
 
@@ -81,6 +82,18 @@ function clearTableFilters(table: HTMLTableElement): void {
   unmountFilterChip(table);
 }
 
+function removeCumulativeColumns(table: HTMLTableElement): void {
+  removeDirectivesByKind(table, 'cumulative');
+}
+
+function removeSparklineColumns(table: HTMLTableElement): void {
+  removeDirectivesByKind(table, 'sparkline');
+}
+
+function removeCompareColumns(table: HTMLTableElement): void {
+  removeDirectivesByKind(table, 'compare');
+}
+
 const ENTRIES: EnrichmentRegistryEntry[] = [
   // ── Shipped enrichments (real implementation in this build) ──────────
   { id: 'heatmap',          label: 'Heatmap',           defaultOn: true, shipped: true,  tearDown: removeAllHeatmaps },
@@ -94,12 +107,12 @@ const ENTRIES: EnrichmentRegistryEntry[] = [
   // wire it into the entry on the same line.
   { id: 'annotations',      label: 'Cell annotations',  defaultOn: true, shipped: false },  // spec 006
   { id: 'copy-as-csv',      label: 'Copy as CSV',       defaultOn: true, shipped: false },  // spec 009
-  { id: 'cumulative',       label: 'Cumulative col.',   defaultOn: true, shipped: false },  // spec 008
-  { id: 'diff-compare',     label: 'Diff / compare',    defaultOn: true, shipped: false },  // spec 010
+  { id: 'cumulative',       label: 'Cumulative col.',   defaultOn: true, shipped: true,  tearDown: removeCumulativeColumns },  // spec 008 (landed via 012-virtual-columns)
+  { id: 'diff-compare',     label: 'Diff / compare',    defaultOn: true, shipped: true,  tearDown: removeCompareColumns },  // spec 010 column-mode (landed via 012-virtual-columns)
   { id: 'filter',           label: 'Column filter',     defaultOn: true, shipped: true,  tearDown: clearTableFilters },  // spec 003 (landed via 002-003-row-visibility)
   { id: 'outlier',          label: 'Outlier marker',    defaultOn: true, shipped: false },  // spec 004
   { id: 'sort',             label: 'Column sort',       defaultOn: true, shipped: true,  tearDown: clearTableSort },  // spec 002 (landed via 002-003-row-visibility)
-  { id: 'sparkline',        label: 'Row sparkline',     defaultOn: true, shipped: false },  // spec 005
+  { id: 'sparkline',        label: 'Row sparkline',     defaultOn: true, shipped: true,  tearDown: removeSparklineColumns },  // spec 005 (landed via 012-virtual-columns)
   { id: 'units-toggle',     label: 'Units toggle',      defaultOn: true, shipped: false },  // spec 007
 ];
 
