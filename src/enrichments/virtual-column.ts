@@ -163,8 +163,11 @@ function drainPendingFanout(): void {
   pendingTables.clear();
   for (const t of tables) {
     const ctx = tableContexts.get(t);
-    if (!ctx || !ctx.subscription) continue;
-    fanoutPipelineChange(ctx, ctx.subscription.current());
+    if (!ctx) continue;
+    // Re-read the live sequence rather than the cached subscription snapshot
+    // — the latter was captured at activation time and would not reflect
+    // sort / filter events that fired afterwards.
+    fanoutPipelineChange(ctx, getVisibleRows(t).current());
   }
 }
 
@@ -235,6 +238,13 @@ function appendCellsForDirective(
       }
       insertCellAt(row, th, insertBeforeIdx);
       headerCells.push(th);
+      if (i === 0 && renderer.renderHeaderExtras) {
+        try {
+          renderer.renderHeaderExtras(directive, th);
+        } catch (err) {
+          console.error('virtual-column renderHeaderExtras error', err);
+        }
+      }
     }
   }
 
@@ -339,6 +349,28 @@ function assignActivationIndex(directive: VirtualColumnDirective): void {
   }
 }
 
+// In non-production builds, assert the canonical-order invariant after every
+// public mutation. T043 / FR-VC-003. Production builds skip this entirely.
+const IS_PROD =
+  (import.meta as { env?: { MODE?: string } }).env?.MODE === 'production';
+
+function assertCanonicalOrder(ctx: TableContext): void {
+  if (IS_PROD) return;
+  const expected = sortCanonical(ctx.directives);
+  if (expected.length !== ctx.directives.length) {
+    throw new Error('virtual-column: directives length mismatch after sort');
+  }
+  for (let i = 0; i < expected.length; i++) {
+    if (expected[i] !== ctx.directives[i]) {
+      throw new Error(
+        `virtual-column: canonical-order invariant violated at index ${i} ` +
+          `(expected ${expected[i].kind}/${expected[i].id}, ` +
+          `got ${ctx.directives[i].kind}/${ctx.directives[i].id})`,
+      );
+    }
+  }
+}
+
 export function activateDirective(
   directive: VirtualColumnDirective,
 ): AppendedColumnRecord | null {
@@ -350,6 +382,7 @@ export function activateDirective(
 
   assignActivationIndex(directive);
   ctx.directives = sortCanonical([...ctx.directives, directive]);
+  assertCanonicalOrder(ctx);
   const record = appendCellsForDirective(ctx, directive, renderer);
   ctx.records.set(directive.id, record);
   safeRegisterExporter(table, renderer, directive);
@@ -386,7 +419,15 @@ function rerenderRecord(
   sequence: VisibleRowEntry[],
 ): void {
   if (record.headerCells[0]) {
-    record.headerCells[0].textContent = renderer.headerText(directive);
+    const th = record.headerCells[0];
+    th.textContent = renderer.headerText(directive);
+    if (renderer.renderHeaderExtras) {
+      try {
+        renderer.renderHeaderExtras(directive, th);
+      } catch (err) {
+        console.error('virtual-column renderHeaderExtras error', err);
+      }
+    }
   }
   let i = 0;
   for (const [rowEl, td] of record.bodyCells) {
@@ -409,12 +450,22 @@ function safeRegisterExporter(
   }
 }
 
+function isInPlaceScalePatch(
+  directive: VirtualColumnDirective,
+  patch: Partial<VirtualColumnDirective>,
+): boolean {
+  if (directive.kind !== 'sparkline') return false;
+  const keys = Object.keys(patch);
+  return keys.length === 1 && keys[0] === 'scale';
+}
+
 export function mutateDirective(
   directiveId: string,
   patch: Partial<VirtualColumnDirective>,
 ): void {
   for (const directive of allDirectives()) {
     if (directive.id !== directiveId) continue;
+    const inPlace = isInPlaceScalePatch(directive, patch);
     Object.assign(directive, patch);
     const table = directive.tableEl;
     const ctx = ensureContext(table);
@@ -422,8 +473,21 @@ export function mutateDirective(
     const record = ctx.records.get(directiveId);
     if (!renderer || !record) return;
 
-    rerenderRecord(renderer, directive, record, getVisibleRows(table).current());
+    if (inPlace) {
+      try {
+        renderer.onPipelineChange(directive, record, getVisibleRows(table).current());
+      } catch (err) {
+        console.error('virtual-column onPipelineChange error', err);
+      }
+      if (renderer.renderHeaderExtras && record.headerCells[0]) {
+        try { renderer.renderHeaderExtras(directive, record.headerCells[0]); }
+        catch (err) { console.error('virtual-column renderHeaderExtras error', err); }
+      }
+    } else {
+      rerenderRecord(renderer, directive, record, getVisibleRows(table).current());
+    }
     safeRegisterExporter(table, renderer, directive);
+    assertCanonicalOrder(ctx);
     persistAll();
     return;
   }
@@ -462,6 +526,7 @@ export function removeDirective(directiveId: string): void {
     const ctx = ensureContext(directive.tableEl);
     detachDirectiveFromContext(ctx, directive);
     ctx.directives = ctx.directives.filter((d) => d.id !== directiveId);
+    assertCanonicalOrder(ctx);
     if (ctx.directives.length === 0) teardownSubscription(ctx);
     persistAll();
     return;

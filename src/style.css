@@ -423,6 +423,24 @@ th.gs-vc-source-highlight {
   white-space: nowrap;
 }
 
+.gs-vc-scale-toggle {
+  margin-left: 6px;
+  padding: 0 4px;
+  border: 1px solid currentcolor;
+  border-radius: 3px;
+  background: transparent;
+  color: inherit;
+  font-size: 0.85em;
+  line-height: 1.2;
+  cursor: pointer;
+}
+
+.gs-vc-scale-toggle[aria-pressed="true"] {
+  background: #4a90e2;
+  color: #fff;
+  border-color: #4a90e2;
+}
+
 
 @media (prefers-color-scheme: light) {
   :root {
