@@ -73,8 +73,8 @@
       if (!window.gridSight) return;
       const a = document.getElementById('tbl-A');
       const b = document.getElementById('tbl-B');
-      if (a) window.gridSight.registerFormula(a, (r, s) => Math.sqrt(s) / 2 + 30 / Math.sqrt(r) + 1);
-      if (b) window.gridSight.registerFormula(b, (r, s) => Math.log10(s) + 25 / Math.sqrt(r) + 2);
+      if (a) window.gridSight.registerFormula(a, (r, s) => Math.sqrt(s) / 2 + 30 / Math.sqrt(r) + 1, { expression: '√sl/2 + 30/√range + 1' });
+      if (b) window.gridSight.registerFormula(b, (r, s) => Math.log10(s) + 25 / Math.sqrt(r) + 2, { expression: 'log₁₀(sl) + 25/√range + 2' });
     });
   </script>
 </body>
