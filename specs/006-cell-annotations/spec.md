@@ -3,7 +3,11 @@
 **Feature Branch**: `006-cell-annotations`
 **Created**: 2026-05-18
 **Status**: Draft
-**Input**: User description: "Let users attach a short text note to any data cell when Grid-Sight is enabled, with a hover-revealed pin affordance, a popover editor, a visible per-cell marker, and shareable URL state."
+**Input**: User description: "Let users attach a short text note to any data cell
+when Grid-Sight is enabled, with a hover-revealed pin affordance, a popover
+editor, a visible per-cell marker, local persistence in the browser, and a
+cross-document popup that lists every annotation on this site (with the date
+each was modified) and jumps straight to the annotated cell."
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -19,9 +23,9 @@ corner triangle marker indicating an attached note. Hovering the marker shows th
 text in a tooltip (truncated with an ellipsis if it would otherwise overflow).
 
 **Why this priority**: Annotating a cell is the smallest, most self-contained piece of
-this feature. It is independently valuable even without the panel or sharing — a single
-user can mark up a table for their own next reading. It also exercises every UI piece
-that the other stories layer on top of (affordance, popover, marker).
+this feature. It is independently valuable even without persistence or the cross-document
+browser — a single user can mark up a table for their own next reading. It also exercises
+every UI piece that the other stories layer on top of (affordance, popover, marker).
 
 **Independent Test**: Open a page with one ordinary HTML table. Toggle Grid-Sight on,
 hover a body cell, click the pin affordance, type "check this", click Save, and
@@ -51,67 +55,80 @@ marker disappears.
 
 ---
 
-### User Story 2 - Share an annotated view via URL (Priority: P2)
+### User Story 2 - Annotations persist across reloads and follow their cell (Priority: P2)
 
-A user has annotated a handful of cells in a shared report and wants to send the
-exact annotated view to a colleague. The full set of annotations is encoded in the
-URL fragment using the same per-page persistence scheme as
-`src/utils/slider-persistence.ts`. Pasting the URL in a fresh tab reproduces every
-annotation in the same cells, with no reliance on `localStorage`.
+A user has annotated several cells in a report. They close the tab and come back
+the next day; every note is still attached to the same cell. In between, they sort
+and filter the table — the notes stay glued to their *source* cells, not to whatever
+row happens to occupy that visual position now. Persistence is local to the browser
+(per-document `localStorage`, same `gs:` per-URL-stem scheme as
+`src/utils/slider-persistence.ts`); nothing is sent over the network and nothing
+depends on the URL.
 
-**Why this priority**: Without sharing, annotations are a single-user scratchpad.
-With sharing, they become a lightweight review/comment workflow on any static HTML
-table. Sharing layers cleanly on top of Story 1 — Story 1 is shippable without it,
-but this is where the feature earns its keep.
+**Why this priority**: Without durable persistence, annotations are a throwaway
+scratchpad that evaporates on reload. Local persistence makes them a real
+single-user review tool on any static HTML table. It layers cleanly on top of Story
+1 — Story 1 is shippable without it, but this is where the feature earns its keep.
 
-**Independent Test**: Annotate three cells across two tables on a page, copy the
-URL, open it in a new private window. Verify all three markers render in the same
-cells and the popover content matches what was saved, with no prior `localStorage`
-value present.
+**Independent Test**: Annotate three cells across two tables on a page. Reload the
+page and confirm all three markers reappear on the same cells with the saved text.
+Then sort one table by a column so its rows reorder, and confirm each note is still
+on its original source cell, not on the row now sitting in that position.
 
 **Acceptance Scenarios**:
 
 1. **Given** the user has saved a note on a cell, **When** they reload the page,
    **Then** the same cell shows the marker and the saved note is retrievable via
    the popover.
-2. **Given** a URL fragment containing a note for a cell that no longer exists in
-   the table (e.g. the row was removed in the source), **When** the URL is opened,
-   **Then** the page loads with no error and the orphaned note is silently dropped
-   from the active set.
-3. **Given** the user opens a URL with five annotations in a private window,
-   **When** the page settles, **Then** all five markers are visible without any
-   `localStorage` value being read or written first.
+2. **Given** a stored note for a cell that no longer exists in the table (e.g. the
+   row was removed in the source), **When** the page loads, **Then** the page loads
+   with no error and the orphaned note is silently dropped from the active set.
+3. **Given** the user has annotated a cell, **When** the table is sorted or filtered
+   so rows reorder, **Then** the marker stays on the original source cell with no
+   visual drift.
+4. **Given** the user saves a note, **When** the save completes, **Then** the stored
+   record carries a last-modified timestamp set to the moment of the save.
 
 ---
 
-### User Story 3 - Page-level annotations panel for navigation (Priority: P3)
+### User Story 3 - Cross-document annotations popup (Priority: P3)
 
-A user reviewing a large page with many tables wants a single place to see every
-note they have left and to jump to each one. A "Show annotations" entry in the GS
-menu opens a panel listing all notes on the page with their table and column
-context (e.g. "Sales › Q3 — verify with finance"). Clicking an entry scrolls the
-cell into view and briefly pulses its marker.
+A user has left notes across several pages of the same site and wants a single place
+to see everything they have annotated — and to jump straight back to any of it. A
+"Show annotations" entry in the GS menu opens a popup that lists every annotation
+stored in this browser for the current site (origin), grouped by document, with the
+note text, the document it lives on, and the date each note was last modified.
+Clicking an entry opens that document (navigating if it is a different page) and
+scrolls the annotated cell into view, briefly pulsing its marker.
 
-**Why this priority**: The panel is a convenience layer over Stories 1 and 2. It
-is not required for the feature to be useful but it makes notes discoverable on
-long pages where markers might be off-screen.
+**Why this priority**: As notes accumulate across many pages, the per-page markers
+alone don't answer "where did I leave that comment?". The cross-document popup is the
+discovery and navigation layer over Stories 1 and 2. It replaces the earlier
+per-page-only panel concept with a site-wide view that also deep-links back to the
+exact cell.
 
-**Independent Test**: Annotate cells in three different tables on a long page.
-Open the annotations panel from the GS menu, confirm three entries are listed,
-click the bottom entry, and confirm the page scrolls so the target cell is
-visible and its marker pulses briefly.
+**Independent Test**: Annotate cells on two different pages of the same site. On
+either page, open the annotations popup from the GS menu, confirm entries from
+*both* documents are listed with their last-modified dates, click an entry that
+belongs to the *other* document, and confirm the browser navigates to that document
+and scrolls the target cell into view with its marker pulsing.
 
 **Acceptance Scenarios**:
 
-1. **Given** the page has at least one annotation, **When** the user opens the
-   annotations panel, **Then** every annotation is listed with table caption (or
-   fallback identifier), column header text, and the note text (truncated with
-   ellipsis past one line).
-2. **Given** the annotations panel is open, **When** the user clicks an entry,
-   **Then** the corresponding cell is scrolled into view and its marker is
+1. **Given** the browser holds at least one annotation for the current origin,
+   **When** the user opens the annotations popup, **Then** every annotation is
+   listed grouped by document, each entry showing the document identifier
+   (title or path), the column/cell context, the note text (truncated with
+   ellipsis past one line), and the last-modified date.
+2. **Given** the popup is open, **When** the user clicks an entry for a cell on the
+   *current* document, **Then** the cell is scrolled into view and its marker is
    visibly highlighted for at least one animation frame.
-3. **Given** the page has no annotations, **When** the user opens the panel,
-   **Then** the panel shows a single empty-state message and no list items.
+3. **Given** the popup is open, **When** the user clicks an entry for a cell on a
+   *different* document of the same origin, **Then** the browser navigates to that
+   document and, on load, scrolls the target cell into view and pulses its marker.
+4. **Given** the browser holds no annotations for the current origin, **When** the
+   user opens the popup, **Then** the popup shows a single empty-state message and
+   no list items.
 
 ---
 
@@ -131,21 +148,29 @@ visible and its marker pulses briefly.
   MUST enforce the cap on input. Marker tooltips MUST truncate display with an
   ellipsis if the rendered note would exceed the tooltip's one-line width; the
   full text remains available in the popover.
-- **URL length limit reached**: When adding a new annotation would push the URL
-  fragment past **8 KB**, Grid-Sight MUST refuse the save, leave the popover open,
-  and display an inline error in the popover ("URL is full — delete an existing
-  note to add a new one"). Existing annotations MUST NOT be silently dropped.
+- **`localStorage` unavailable**: When `localStorage` cannot be read or written
+  (private-mode restrictions, `file://` null-origin quirks, disabled storage),
+  Grid-Sight MUST still allow annotating for the current session (in-memory),
+  MUST NOT throw into the host page, and MUST emit at most one non-blocking
+  console warning per page noting that annotations will not persist.
+- **`localStorage` quota exceeded**: When saving a note would exceed the browser's
+  storage quota, Grid-Sight MUST refuse the save, leave the popover open, and
+  display an inline error in the popover ("Storage is full — delete an existing
+  note to add a new one"). Existing annotations MUST NOT be dropped.
+- **Cross-origin scope**: `localStorage` is per-origin, so the cross-document popup
+  lists only annotations for the **current origin**. Annotations made on other
+  origins are not visible and are out of scope for v1.
 - **`data-gs-ignore` or `data-gs-no-annotate` opt-out**: A table or cell carrying
-  either attribute MUST NOT show the annotate affordance, and any URL-encoded note
+  either attribute MUST NOT show the annotate affordance, and any stored note
   targeting such a cell MUST be silently ignored.
 - **Annotations on cells with `rowspan` / `colspan`**: A spanned cell MAY be
   annotated; the annotation attaches to the single source cell, not to each
   visually-covered grid position. The marker renders on the source cell only.
 - **Multiple annotations on the same cell**: Only one note per cell is supported in
-  v1. Re-saving replaces the existing note.
+  v1. Re-saving replaces the existing note and updates its last-modified timestamp.
 - **Disabling Grid-Sight while annotations are active**: Turning Grid-Sight off MUST
   hide all markers and affordances; turning it back on MUST re-apply the
-  URL-encoded annotations.
+  locally-stored annotations.
 - **Cell containing block-level content** (e.g. a nested list or image): The
   annotate affordance MUST still be offered; the popover anchors to the cell, not
   to the inner content.
@@ -178,8 +203,8 @@ visible and its marker pulses briefly.
   paste operations exceeding the cap MUST be truncated to the cap.
 - **FR-008**: The **Delete** button MUST be disabled when no note currently exists
   for the cell.
-- **FR-009**: Saving a note MUST close the popover, render the marker, and update
-  the URL fragment in a single user-visible step.
+- **FR-009**: Saving a note MUST close the popover, render the marker, and write the
+  note to local storage in a single user-visible step.
 
 **Cell identity & integration**
 
@@ -190,60 +215,73 @@ visible and its marker pulses briefly.
   and other Grid-Sight enrichments — identity MUST NOT depend on visual row
   position.
 - **FR-012**: Tables and cells carrying `data-gs-ignore` or `data-gs-no-annotate`
-  MUST NOT show the affordance, and URL-encoded notes targeting them MUST be
-  silently dropped.
+  MUST NOT show the affordance, and stored notes targeting them MUST be silently
+  dropped.
 - **FR-013**: When a table lacks any stable identifier, Grid-Sight MUST fall back
   to an index-based key and emit at most one non-blocking console warning per
   page.
 
 **Persistence**
 
-- **FR-014**: The full set of active annotations MUST be encoded in the URL
-  fragment using the same per-URL-stem scheme as `src/utils/slider-persistence.ts`.
-- **FR-015**: On page load, Grid-Sight MUST decode any annotation directives from
-  the URL fragment and render markers before the user interacts with the page.
-- **FR-016**: A URL directive referring to a missing table, missing row, or
-  missing column MUST be silently ignored without erroring.
-- **FR-017**: When the URL fragment would exceed **8 KB** as a result of saving a
-  new annotation, Grid-Sight MUST refuse the save, surface an inline error in
-  the popover, and leave existing annotations untouched. [NEEDS CLARIFICATION:
-  is "drop oldest" preferred over refuse-and-warn? Spec currently chooses
-  refuse-and-warn so existing notes are never lost without the user's consent.]
-- **FR-018**: Grid-Sight MUST NOT write annotations to `localStorage`,
-  `sessionStorage`, IndexedDB, cookies, or any other persistent store outside the
-  URL fragment.
+- **FR-014**: The set of annotations for a document MUST be persisted to
+  `localStorage`, keyed per document using the same per-URL-stem (`origin +
+  pathname`) scheme and `gs:` key prefix as `src/utils/slider-persistence.ts`.
+- **FR-015**: On page load, Grid-Sight MUST read the stored annotations for the
+  current document and render markers before the user interacts with the page.
+- **FR-016**: A stored annotation referring to a missing table, missing row, or
+  missing column MUST be silently ignored without erroring, and the active set
+  rendered from what remains.
+- **FR-017**: When `localStorage` is unavailable, Grid-Sight MUST degrade to
+  session-only (in-memory) annotations without throwing, emitting at most one
+  console warning per page. When a save would exceed the storage quota, Grid-Sight
+  MUST refuse the save, surface an inline error in the popover, and leave existing
+  annotations untouched.
+- **FR-018**: Each stored annotation MUST record a last-modified timestamp, set on
+  every create or replace, for display in the cross-document popup.
+- **FR-019**: Annotations MUST NOT be encoded in the URL fragment as a persistence
+  channel. The URL fragment MAY carry only a **transient** cell-target hint used by
+  the cross-document popup to scroll to a cell on load; that hint MUST be cleared
+  after it is consumed and MUST NOT be relied on for persistence.
 
-**Annotations panel**
+**Cross-document annotations popup**
 
-- **FR-019**: A "Show annotations" entry MUST appear in the GS menu when at least
-  one annotation exists on the page; selecting it MUST open a panel listing every
-  annotation with table identifier, column header text, and truncated note text.
-- **FR-020**: Clicking an entry in the panel MUST scroll the corresponding cell
-  into view and visually highlight its marker for at least one animation frame.
-- **FR-021**: The annotations panel MUST be keyboard-navigable: arrow keys move
-  between entries, Enter activates the focused entry, and Escape closes the
-  panel.
+- **FR-020**: A "Show annotations" entry MUST appear in the GS menu when at least
+  one annotation exists in `localStorage` for the current origin; selecting it MUST
+  open a popup listing every such annotation, grouped by document, with the
+  document identifier (title or path), the column/cell context, the truncated note
+  text, and the last-modified date.
+- **FR-021**: Clicking an entry MUST take the user to the annotated cell: if the
+  cell is on the current document, scroll it into view and highlight its marker for
+  at least one animation frame; if it is on a different document of the same origin,
+  navigate to that document and, on load, scroll the cell into view and pulse its
+  marker.
+- **FR-022**: The annotations popup MUST be keyboard-navigable: arrow keys move
+  between entries, Enter activates the focused entry, and Escape closes the popup.
 
 **Accessibility**
 
-- **FR-022**: Each annotated cell MUST expose its note to assistive technology via
+- **FR-023**: Each annotated cell MUST expose its note to assistive technology via
   `aria-describedby` pointing at a node containing the current note text.
-- **FR-023**: The affordance, marker, popover controls, and panel entries MUST all
+- **FR-024**: The affordance, marker, popover controls, and popup entries MUST all
   be operable by keyboard alone (Enter / Space activates buttons).
-- **FR-024**: Colour MUST NOT be the sole channel indicating an annotated cell —
+- **FR-025**: Colour MUST NOT be the sole channel indicating an annotated cell —
   the corner triangle / pin glyph MUST be distinguishable in monochrome.
 
 ### Key Entities
 
-- **Annotation**: A `(table-key, row-key, column-key, text)` record where `text`
-  is at most 280 characters. At most one annotation per cell.
+- **Annotation**: A `(table-key, row-key, column-key, text, modified-at)` record
+  where `text` is at most 280 characters and `modified-at` is the timestamp of the
+  last create/replace. At most one annotation per cell.
 - **Cell Identity Triple**: The persistence key for an annotation, derived from
   the source DOM at load time and stable across reorders.
-- **Persisted Annotation Set**: The serialisation of every active annotation on a
-  page, written to the URL fragment.
-- **Annotations Panel View Model**: An ordered list of annotations grouped by
-  table for display in the page-level panel, with each entry holding enough
-  context (table identifier, column header, truncated text) to render and
+- **Per-Document Annotation Set**: The serialisation of every active annotation on a
+  document, written to a per-document `localStorage` key under the `gs:` prefix,
+  wrapped in a versioned envelope.
+- **Cross-Document Annotation Index**: The aggregate, built by scanning all
+  `localStorage` annotation keys for the current origin, that backs the
+  cross-document popup — an ordered list grouped by document, each entry holding
+  enough context (document identifier, column/cell label, truncated text,
+  last-modified date, and the cell target needed to navigate) to render and
   scroll-target a cell.
 
 ## Success Criteria *(mandatory)*
@@ -253,33 +291,41 @@ visible and its marker pulses briefly.
 - **SC-001**: A user can attach a new note to a cell in **three interactions or
   fewer** from a Grid-Sight-enabled page (hover, click, type, Save counts as
   three discrete user actions plus typing).
-- **SC-002**: Re-opening a URL containing up to 50 annotations MUST render every
+- **SC-002**: Re-opening a document holding up to 50 annotations MUST render every
   marker within **one animation frame** of first paint on a mid-range laptop.
-- **SC-003**: An annotated view shared by URL MUST reproduce on another machine
-  **100% of the time** with no `localStorage` dependency.
+- **SC-003**: Annotations MUST survive a reload and a new browser session **100% of
+  the time** via `localStorage`, with no network access on the persistence path.
 - **SC-004**: Sorting, filtering, or otherwise reordering rows MUST keep every
   annotation on its original source cell in **100%** of cases (no visual drift).
-- **SC-005**: The full feature (affordance, popover, marker, panel, persistence)
-  MUST add no more than **2 KB gzipped** to the IIFE bundle, in line with the
-  Lightweight & Minimal Dependencies constitutional principle.
+- **SC-005**: The full feature (affordance, popover, marker, persistence,
+  cross-document popup) MUST add no more than **2 KB gzipped** to the IIFE bundle,
+  in line with the Lightweight & Minimal Dependencies constitutional principle.
+- **SC-006**: From the cross-document popup, clicking any entry MUST land the user
+  on the correct annotated cell **100%** of the time — scrolling in place for the
+  current document, or navigating then scrolling for another document on the same
+  origin.
 
 ## Assumptions
 
-- The existing per-URL-stem persistence model (URL fragment, same scheme as
-  `src/utils/slider-persistence.ts`) is reused unchanged.
-- A 280-character cap per note and an 8 KB cap on the total URL fragment are
-  reasonable defaults to keep shared URLs paste-able across mail clients and
-  chat tools. Both caps are tunable in code but not exposed to end users in v1.
+- Persistence is local to the browser: a per-document `localStorage` key under the
+  `gs:` prefix, reusing the per-URL-stem (`origin + pathname`) derivation of
+  `src/utils/slider-persistence.ts`. Annotations are NOT shared via URL in v1.
+- A 280-character cap per note is a reasonable default. The cap is tunable in code
+  but not exposed to end users in v1.
 - One annotation per cell is sufficient for v1. Threaded comments, replies,
   attachments, and rich text are out of scope.
 - Cell identity is derived from the load-time DOM. Annotations on tables whose
   rows are re-keyed by the host page on each load (e.g. server-rendered with
   rotating IDs) are out of scope; the index-based fallback MAY drift in that
   case and the console warning documents the risk.
-- The annotations panel reuses the existing GS menu surface; no new top-level UI
+- The cross-document popup is scoped to the current origin because `localStorage`
+  is per-origin; cross-origin aggregation is out of scope for v1.
+- The cross-document popup reuses the existing GS menu surface; no new top-level UI
   chrome is introduced.
-- No new runtime dependency is introduced; the popover, marker, and panel are
+- No new runtime dependency is introduced; the popover, marker, and popup are
   implemented with the platform DOM and the existing lozenge styling system in
   `src/ui/header-utils.ts`.
 - Annotations are scoped to body cells only. Annotating header cells or
   `<caption>` is out of scope for v1.
+- The URL fragment is used only as a transient scroll-to-cell hint when navigating
+  from the popup, then cleared; it is not a persistence channel.

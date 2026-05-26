@@ -3,9 +3,9 @@
 **Feature**: 006-cell-annotations | **Date**: 2026-05-26
 **Input**: [spec.md](./spec.md) Key Entities, [research.md](./research.md)
 
-All shapes are in-memory TypeScript (no DB, no `localStorage`). The only durable
-form is the `gs.a` URL fragment serialisation defined in
-[`contracts/url-fragment-schema.md`](./contracts/url-fragment-schema.md).
+All shapes are in-memory TypeScript. The only durable form is the per-document
+`localStorage` envelope defined in
+[`contracts/localstorage-schema.md`](./contracts/localstorage-schema.md).
 
 ---
 
@@ -38,7 +38,7 @@ interface CellIdentity {
   `WeakMap<HTMLTableCellElement, CellIdentity>`), so later sort/filter passes do
   not recompute it from shifted positions.
 - A serialised string form `tableKey/rowKey/columnKey` is the canonical map key
-  (`AnnotationKey`).
+  (`AnnotationKey`) and the value of the transient `#gs.annot=` navigation hint.
 
 ```ts
 type AnnotationKey = string; // `${tableKey}/${rowKey}/${columnKey}`
@@ -53,7 +53,8 @@ A single note attached to one cell (spec Key Entities).
 ```ts
 interface Annotation {
   readonly identity: CellIdentity;
-  text: string;                // trimmed; 1..280 chars after clamp; never empty
+  text: string;        // trimmed; 1..280 chars after clamp; never empty
+  modifiedAt: number;  // epoch ms, set on every create/replace (FR-018)
 }
 ```
 
@@ -62,14 +63,14 @@ interface Annotation {
 - `text` MUST be 1–280 chars (FR-007). Input and paste are clamped to 280 at the
   textarea; a save of empty/whitespace-only text is treated as a **delete**.
 - At most **one** `Annotation` per cell (spec edge case). Re-saving replaces the
-  existing `text` in place.
+  `text` in place **and** refreshes `modifiedAt`.
 
 ---
 
-## Entity: `AnnotationStore` (in-memory active set)
+## Entity: `AnnotationStore` (in-memory active set for the current document)
 
-The live set of annotations on the page; the single source of truth that the
-affordance/marker, popover, panel, and `gs.a` codec all read and write.
+The live set of annotations on the current document; the single source of truth
+that the affordance/marker, popover, and persistence codec read and write.
 
 ```ts
 type AnnotationStore = Map<AnnotationKey, Annotation>;
@@ -77,88 +78,118 @@ type AnnotationStore = Map<AnnotationKey, Annotation>;
 
 **Lifecycle**
 
-- **Load**: hydrated from `gs.a` (R-3). Entries whose triple resolves to a
-  missing table/row/column (FR-016) or to an opted-out target
-  (`data-gs-ignore`/`data-gs-no-annotate`, FR-012) are **dropped** during
-  hydration and never enter the store.
-- **Mutate**: `save(identity, text)` upserts; `delete(identity)` removes. Every
-  mutation re-serialises the whole store to `gs.a` in one step (FR-009) —
-  subject to the 8 KB cap (R-1).
-- **Teardown**: on Grid-Sight toggle-off the store is cleared from the DOM
-  (markers/affordances/`aria-describedby` nodes removed) but the `gs.a` fragment
-  is left intact so toggle-on re-hydrates (spec edge case "Disabling Grid-Sight").
+- **Load**: hydrated from the document's `localStorage` envelope (R-3). Entries
+  whose triple resolves to a missing table/row/column (FR-016) or to an opted-out
+  target (`data-gs-ignore`/`data-gs-no-annotate`, FR-012) are **dropped** during
+  hydration and never enter the store. If `localStorage` is unavailable the store
+  simply starts empty and runs session-only (FR-017).
+- **Mutate**: `save(identity, text)` upserts (and sets `modifiedAt = Date.now()`);
+  `delete(identity)` removes. Every mutation re-writes the document envelope to
+  `localStorage` in one step (FR-009), subject to the quota guard (R-1).
+- **Teardown**: on Grid-Sight toggle-off the DOM is restored (markers/affordances/
+  `aria-describedby` nodes removed) but the `localStorage` envelope is left intact
+  so toggle-on re-hydrates (spec edge case "Disabling Grid-Sight").
 
 **State transitions**
 
 ```text
-(no note)  --save(text)-->            (annotated)
-(annotated) --save(newText)-->        (annotated, replaced)
-(annotated) --save("" / whitespace)-> (no note)        # empty save == delete
+(no note)  --save(text)-->            (annotated, modifiedAt=now)
+(annotated) --save(newText)-->        (annotated, replaced, modifiedAt=now)
+(annotated) --save("" / whitespace)-> (no note)                 # empty save == delete
 (annotated) --delete-->               (no note)
-(annotated) --save@cap(grows URL)-->  (annotated, unchanged) + inline error  # R-1 refuse-and-warn
+(annotated) --save@quota-->           (annotated, unchanged) + inline error   # R-1 refuse-and-warn
 ```
 
 ---
 
-## Entity: `PersistedAnnotationSet`
+## Entity: `PerDocumentAnnotationSet` (durable form)
 
-The serialisation of every active annotation into the `gs.a` fragment value
-(grammar in `contracts/url-fragment-schema.md`). Not a separate runtime object —
-it is the encode/decode of `AnnotationStore`:
+The serialisation of every active annotation on one document into its
+`localStorage` envelope (full grammar in `contracts/localstorage-schema.md`). Not
+a separate runtime object — it is the read/write of `AnnotationStore`:
 
-- `encode(store): string` — joins `tableKey/rowKey/colKey:encodeURIComponent(text)`
-  entries with `,`. Returns `''` for an empty store (removes the `gs.a` param).
-- `decode(raw): Annotation[]` — parses, slug-validates each triple, skips
-  malformed entries. Caller applies the missing-target / opt-out drops against
-  the live DOM.
-- **Cap**: if `encode(next)` would exceed **8 KB**, the mutation is refused
-  (R-1); the previously persisted value is retained.
+```jsonc
+// localStorage key: gs:${origin+pathname}:annotations
+{ "version": 1,
+  "title": "<document.title at write time>",
+  "entries": { "<AnnotationKey>": { "t": "<text>", "m": <epochMs> } } }
+```
+
+- `write(store)` — serialise non-empty store; an empty store **removes** the key.
+- `read()` — parse + version-check; malformed/legacy envelopes yield an empty
+  set. Caller applies the missing-target / opt-out drops against the live DOM.
+- **Quota**: if `setItem` throws (quota), the write is refused (R-1); the prior
+  stored value is retained.
 
 ---
 
-## Entity: `AnnotationPanelViewModel` (P3)
+## Entity: `CrossDocumentIndex` + `AnnotationPopupViewModel` (P3)
 
-An ordered, table-grouped projection of `AnnotationStore` for the page-level
-panel (spec Key Entities, FR-019/FR-020).
+The aggregate over **all** annotation keys for the current origin, backing the
+cross-document popup (spec Key Entities, FR-020/FR-021, research R-8).
 
 ```ts
-interface AnnotationPanelEntry {
+interface CrossDocEntry {
   readonly key: AnnotationKey;
-  readonly cell: HTMLTableCellElement;   // resolved live target for scroll-into-view
-  readonly tableLabel: string;           // caption | id | data-gs-key | `Table n`
-  readonly columnLabel: string;          // header text for the column
-  readonly previewText: string;          // full note; truncated with ellipsis in CSS at one line
+  readonly documentUrl: string;          // reconstructed from the localStorage key stem
+  readonly documentLabel: string;        // envelope.title || pathname
+  readonly isCurrentDocument: boolean;   // documentUrl stem === current stem
+  readonly columnLabel: string;          // columnKey (humanised where possible)
+  readonly previewText: string;          // full note; CSS-truncated at one line
+  readonly modifiedAt: number;           // epoch ms, for the displayed date
 }
 
-type AnnotationPanelViewModel = readonly AnnotationPanelEntry[]; // grouped by table, document order
+// grouped by document, documents in most-recently-modified order,
+// entries within a document by modifiedAt desc
+type AnnotationPopupViewModel = ReadonlyArray<{
+  readonly documentUrl: string;
+  readonly documentLabel: string;
+  readonly entries: readonly CrossDocEntry[];
+}>;
 ```
 
 **Rules**
 
-- Built on panel open from the current `AnnotationStore`; entries whose `cell`
-  cannot be resolved in the live DOM are omitted.
-- Empty store → empty view model → panel renders a single empty-state message,
-  no list items (US3 AC-3).
-- Activating an entry scrolls `cell` into view and pulses its marker for ≥ 1
-  animation frame (FR-020).
+- Built **on popup open** by scanning `localStorage` for `^gs:.*:annotations$`
+  keys (R-8); never on the page-load hot path.
+- For the **current** document, `isCurrentDocument` entries resolve a live cell
+  for in-place scroll; for other documents, activation navigates to
+  `documentUrl + '#gs.annot=' + key`.
+- Empty aggregate → empty view model → popup renders a single empty-state message
+  (US3 AC-4).
+
+---
+
+## Transient: `NavigationHint`
+
+Not persisted. When the popup navigates to another document it appends
+`#gs.annot=<AnnotationKey>` to the target URL. On load, `index.ts` reads it,
+resolves the cell, scrolls + pulses the marker, then clears the hint with
+`history.replaceState` (FR-019, FR-021). If the hint's cell cannot be resolved,
+it is cleared silently with no error.
 
 ---
 
 ## Relationships
 
 ```text
-CellIdentity 1───1 Annotation          (identity is the Annotation's key)
-AnnotationStore 1───* Annotation       (keyed by AnnotationKey)
-AnnotationStore ───encode/decode─── PersistedAnnotationSet (gs.a fragment)
-AnnotationStore ───project─── AnnotationPanelViewModel (P3 read-only view)
-Annotation ───aria-describedby─── HTMLTableCellElement (live cell, FR-022)
+CellIdentity 1───1 Annotation              (identity is the Annotation's key)
+AnnotationStore 1───* Annotation           (current document, keyed by AnnotationKey)
+AnnotationStore ───read/write─── PerDocumentAnnotationSet (localStorage envelope)
+localStorage (gs:*:annotations) ───scan─── CrossDocumentIndex ───project─── AnnotationPopupViewModel
+Annotation ───aria-describedby─── HTMLTableCellElement (live cell, FR-023)
+AnnotationPopupViewModel ───navigate via #gs.annot─── target document
 ```
 
 ## Invariants
 
-1. One annotation per cell; `AnnotationKey` is unique in the store.
+1. One annotation per cell; `AnnotationKey` is unique within a document's store.
 2. `text` length ∈ [1, 280] for every stored annotation (empty == not stored).
-3. The store never holds an entry targeting an opted-out or missing cell.
-4. `gs.a` is the only durable form; nothing is written to `localStorage`/
-   `sessionStorage`/cookies (FR-018).
-5. Toggle-off leaves `gs.a` untouched; the DOM is restored byte-identical.
+3. `modifiedAt` is set on every create/replace.
+4. The store never holds an entry targeting an opted-out or missing cell.
+5. `localStorage` (per-document `gs:…:annotations` key) is the only durable form;
+   the URL fragment is never a persistence channel (FR-019).
+6. Toggle-off leaves the `localStorage` envelope untouched; the DOM is restored
+   byte-identical.
+7. The cross-document index reflects only the current origin (per-origin
+   `localStorage`).
