@@ -36,6 +36,31 @@ describe('formula readout (Story 2)', () => {
     expect(readouts[0].textContent).toContain('4000');
   });
 
+  it('equation value is italic-tagged, has a "Calculated result" tooltip, and an info button', () => {
+    const tbl = buildTable();
+    const s = addSlider(tbl, 'row');
+    registerFormula(tbl, (r) => r * 2);
+    s.setPosition(2000);
+    const value = tbl.parentElement!.querySelector('[data-gs-equation-value]') as HTMLElement;
+    expect(value).not.toBeNull();
+    expect(value.title).toBe('Calculated result');
+    expect(tbl.parentElement!.querySelector('button[data-gs-equation-info]')).not.toBeNull();
+  });
+
+  it('info button opens a panel showing the expression, inputs, and result', () => {
+    const tbl = buildTable();
+    const s = addSlider(tbl, 'row');
+    registerFormula(tbl, (r) => r * 2, { expression: 'R × 2' });
+    s.setPosition(2000);
+    const info = tbl.parentElement!.querySelector('button[data-gs-equation-info]') as HTMLButtonElement;
+    info.click();
+    const panel = document.querySelector('.gs-eqp') as HTMLElement;
+    expect(panel).not.toBeNull();
+    expect(panel.textContent).toContain('R × 2');
+    expect(panel.textContent).toContain('Result');
+    expect(panel.textContent).toContain('4000');
+  });
+
   it('clear → readout disappears', () => {
     const tbl = buildTable();
     const s = addSlider(tbl, 'row');

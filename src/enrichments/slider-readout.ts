@@ -9,6 +9,14 @@ import { parseHeaderNumber } from '../utils/sync-key';
 import { locateSpan } from '../utils/segment';
 import { formatNumber } from '../ui/slider-control';
 import type { TableContext } from './slider-injection';
+import { openEquationPanel } from './equation-panel';
+
+/** A registered formula plus an optional human-readable expression shown in the
+ *  calculation-details panel. */
+export interface FormulaEntry {
+  fn: (rowVal: number, colVal: number) => number;
+  expression?: string;
+}
 
 export interface AxisSliderRef {
   axis: 'row' | 'col';
@@ -159,44 +167,75 @@ function evaluateFormula(
   formula: (rowVal: number, colVal: number) => number,
   rowVal: number,
   colVal: number
-): string {
+): number {
   try {
-    const result = formula(rowVal, colVal);
-    if (isFinite(result)) return formatNumber(result);
+    return formula(rowVal, colVal);
   } catch (err) {
     console.warn('[gridSight] formula threw:', err);
+    return NaN;
   }
-  return '—';
 }
 
-function ensureEquationLine(ctx: TableContext): HTMLDivElement | null {
+function ensureEquationLine(ctx: TableContext): HTMLSpanElement | null {
   if (!ctx.cornerCell) return null;
-  if (ctx.equationLine) return ctx.equationLine;
+  if (ctx.equationValue) return ctx.equationValue;
+
   const line = document.createElement('div');
   line.setAttribute('data-gs-slider-readout', 'equation');
-  line.setAttribute('aria-live', 'polite');
-  line.style.fontSize = '11px';
-  line.style.color = '#6a1b9a';
+
+  const value = document.createElement('span');
+  value.setAttribute('data-gs-equation-value', '');
+  value.setAttribute('aria-live', 'polite');
+  value.title = 'Calculated result';
+
+  const info = document.createElement('button');
+  info.type = 'button';
+  info.setAttribute('data-gs-equation-info', '');
+  info.setAttribute('aria-label', 'Explain calculated result');
+  info.title = 'Calculated result';
+  info.textContent = 'ⓘ';
+  info.addEventListener('click', (ev) => {
+    ev.stopPropagation();
+    if (ctx.equationData) openEquationPanel(info, ctx.equationData);
+  });
+
+  line.append(value, info);
   ctx.cornerCell.appendChild(line);
   ctx.equationLine = line;
-  return line;
+  ctx.equationValue = value;
+  ctx.equationInfoBtn = info;
+  return value;
+}
+
+function clearEquationReadout(ctx: TableContext): void {
+  ctx.equationLine?.remove();
+  ctx.equationLine = null;
+  ctx.equationValue = null;
+  ctx.equationInfoBtn = null;
+  ctx.equationData = null;
 }
 
 function updateEquationReadout(
   ctx: TableContext,
-  formula: ((rowVal: number, colVal: number) => number) | undefined,
+  formula: FormulaEntry | undefined,
   rowPos: number | null,
   colPos: number | null
 ): void {
   if (!formula) {
-    ctx.equationLine?.remove();
-    ctx.equationLine = null;
+    clearEquationReadout(ctx);
     return;
   }
   const rv = rowPos ?? (parseHeaderNumber(ctx.rowHeaders[0] ?? '') ?? 0);
   const cv = colPos ?? (parseHeaderNumber(ctx.colHeaders[0] ?? '') ?? 0);
-  const line = ensureEquationLine(ctx);
-  if (line) line.textContent = evaluateFormula(formula, rv, cv);
+  const result = evaluateFormula(formula.fn, rv, cv);
+  const value = ensureEquationLine(ctx);
+  if (value) value.textContent = isFinite(result) ? formatNumber(result) : '—';
+  ctx.equationData = {
+    expression: formula.expression ?? null,
+    rowValue: rowPos !== null ? rv : null,
+    colValue: colPos !== null ? cv : null,
+    result,
+  };
 }
 
 /* ────────────────────────────────────────────────────────────────────────── */
@@ -207,7 +246,7 @@ export function refreshTable(
   ctx: TableContext,
   rowSlider: AxisSliderRef | null,
   colSlider: AxisSliderRef | null,
-  formula: ((rowVal: number, colVal: number) => number) | undefined
+  formula: FormulaEntry | undefined
 ): void {
   updateValueLabels(ctx, rowSlider, colSlider);
   const rowPos = rowSlider?.position ?? null;

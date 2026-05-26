@@ -207,7 +207,7 @@
     function registerFeaturedFormula() {
       if (!window.gridSight) return;
       const t = document.getElementById('featured-table');
-      if (t) window.gridSight.registerFormula(t, (range, sl) => Math.sqrt(range / 100) - sl / 250);
+      if (t) window.gridSight.registerFormula(t, (range, sl) => Math.sqrt(range / 100) - sl / 250, { expression: '√(R/100) − sl/250' });
     }
     window.addEventListener('DOMContentLoaded', registerFeaturedFormula);
 
