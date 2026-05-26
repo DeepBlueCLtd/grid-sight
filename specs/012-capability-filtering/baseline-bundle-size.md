@@ -92,19 +92,31 @@ baseline — driven by the visible-rows pipeline, the two filter popups, the
 URL codec, and the chip + dim CSS. Constitution §I 10 KB target unchanged;
 the formal amendment / bundle-cut PR now owes ~23 KB of gap.
 
-## Ceiling bump after 012-virtual-columns US4 / US5 / US8 polish (2026-05-23)
+## Ceiling bump for slider calculated-result panel (2026-05-26)
+
+Adding the calculated-result info panel to the slider corner readout (italic
+value + ⓘ button + dismissable details panel showing the equation, inputs,
+and result) brings the combined bundle to **~34.6 KB gzipped**, breaching the
+34 KB ceiling. Enforced ceiling bumped 34 → 35 KB in `scripts/bundle-size.js`.
+Contribution is ~1.4 KB gz: the `equation-panel` module + CSS and the readout
+rewiring. Constitution §I 10 KB target unchanged.
+
+## Ceiling bump after 012-virtual-columns US4 / US5 / US8 polish (2026-05-23, re-recorded on merge)
 
 When the remaining spec-012 tasks landed (sparkline focus/hover/tooltip
 interactions + arrow-key navigation + header highlight, the scale-toggle
 button next to the Trend header, in-place scale-flip via mutateDirective,
 the dev-mode canonical-order guard, and the test-only `__gridSightVisibleRows`
-global that backs the Playwright mock-VRS helper for US8 e2e), the bundle
-measures **34.59 KB gzipped** — 1.34 KB on top of the previous 33.25 KB
-baseline, breaching the 34 KB ceiling. Enforced ceiling bumped 34 → 36 KB
-in `scripts/bundle-size.js` to unblock the work.
+global that backs the Playwright mock-VRS helper for US8 e2e), the spec-012
+branch measured **34.59 KB gzipped** against the then-34 KB ceiling.
 
-Constitution §I 10 KB target unchanged; the formal amendment / bundle-cut
-PR now owes ~26 KB of gap. Cheapest follow-up cuts (not done in-PR):
+Merging that branch on top of the slider calculated-result panel (which had
+already moved the ceiling to 35 KB) combines both deltas. The merged bundle
+breaches 35 KB, so the enforced ceiling is bumped **35 → 37 KB** in
+`scripts/bundle-size.js`. Constitution §I 10 KB target unchanged; the formal
+amendment / bundle-cut PR now owes ~27 KB of gap.
+
+Cheapest follow-up cuts (not done in-PR):
 
 - collapse the sparkline interaction helpers into the bottom of
   `sparkline-column.ts` — a chunk of helpers are only reachable when a

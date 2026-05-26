@@ -486,11 +486,12 @@ const GridSight = {
 
   registerFormula(
     table: HTMLTableElement | string,
-    fn: (rowValue: number, colValue: number) => number
+    fn: (rowValue: number, colValue: number) => number,
+    options?: { expression?: string }
   ): void {
     const t = typeof table === 'string' ? this.getTableById(table) : table;
     if (!t) throw new Error('Table not found');
-    sliderRegisterFormula(t, fn);
+    sliderRegisterFormula(t, fn, options);
   },
 
   clearFormula(table: HTMLTableElement | string): void {

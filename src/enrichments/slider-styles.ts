@@ -59,7 +59,19 @@ th[data-gs-row-slot] input[type="range"] {
 th[data-gs-corner] { font-weight: 600; font-size: 14px; background: #f4f4f4; }
 th[data-gs-corner] [data-gs-slider-readout="interpolated"],
 th[data-gs-corner] [data-gs-slider-readout="equation"] { display: block; min-height: 1.2em; }
-th[data-gs-corner] [data-gs-slider-readout="equation"] { font-size: 11px; color: #6a1b9a; }
+th[data-gs-corner] [data-gs-slider-readout="equation"] {
+  font-size: 11px; color: #6a1b9a; min-height: 1.2em;
+  display: flex; align-items: center; justify-content: center; gap: 3px;
+}
+th[data-gs-corner] [data-gs-equation-value] { font-style: italic; }
+th[data-gs-corner] [data-gs-equation-info] {
+  appearance: none; -webkit-appearance: none;
+  border: none; background: none; padding: 0; margin: 0;
+  font-size: 11px; line-height: 1; color: #6a1b9a; cursor: pointer;
+  border-radius: 50%;
+}
+th[data-gs-corner] [data-gs-equation-info]:hover { color: #4a148c; }
+th[data-gs-corner] [data-gs-equation-info]:focus-visible { outline: 2px solid #6a1b9a; outline-offset: 1px; }
 th[data-gs-row-header] { background: #fafafa; }
 th[data-gs-row-slot] { background: #fafafa; }
 [data-gs-injected] { background: #fafafa; }

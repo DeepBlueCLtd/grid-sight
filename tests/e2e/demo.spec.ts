@@ -37,10 +37,7 @@ test.describe('Grid-Sight landing page', () => {
     // Featured table is auto-detected — has the GS toggle.
     await expect(page.locator('#featured-table .grid-sight-toggle')).toHaveCount(1);
 
-    // Demo cards link to the published demos. As of commit a36737a the
-    // heatmap card was dropped and card 3 reframed around URL persistence;
-    // 04cf720 added the live-enrichments card; the opt-in playground card
-    // was added alongside it.
+    // Demo cards link to the five published demos shown on the landing page.
     const cardTitles = await page.locator('.demo-card h3').allTextContents();
     expect(cardTitles).toEqual(expect.arrayContaining([
       expect.stringContaining('Interpolation'),

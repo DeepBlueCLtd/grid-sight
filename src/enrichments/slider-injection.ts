@@ -9,6 +9,7 @@
 
 import { parseHeaderNumber } from '../utils/sync-key';
 import { SLIDER_HIGHLIGHT_CLASSES } from './slider-readout';
+import type { EquationSnapshot } from './equation-panel';
 
 export type Axis = 'row' | 'col';
 
@@ -38,6 +39,9 @@ export interface TableContext {
   colValueSpan: HTMLSpanElement | null;
   rowValueSpan: HTMLSpanElement | null;
   equationLine: HTMLDivElement | null;
+  equationValue: HTMLSpanElement | null;
+  equationInfoBtn: HTMLButtonElement | null;
+  equationData: EquationSnapshot | null;
 }
 
 export const tableContexts = new WeakMap<HTMLTableElement, TableContext>();
@@ -171,6 +175,9 @@ export function ensureInjection(table: HTMLTableElement): TableContext {
     colValueSpan: null,
     rowValueSpan: null,
     equationLine: null,
+    equationValue: null,
+    equationInfoBtn: null,
+    equationData: null,
   };
 
   tagDataCells(table);

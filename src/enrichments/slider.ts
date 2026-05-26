@@ -29,6 +29,7 @@ import {
 } from './slider-injection';
 import type { Axis, AxisBinding, TableContext } from './slider-injection';
 import { refreshTable } from './slider-readout';
+import type { FormulaEntry } from './slider-readout';
 
 export type { Axis, AxisBinding };
 export { buildAxisBinding };
@@ -66,7 +67,7 @@ interface InternalSlider extends GridSightSlider {
 }
 
 const sliderRegistry: InternalSlider[] = [];
-const formulaRegistry = new WeakMap<HTMLTableElement, (rowVal: number, colVal: number) => number>();
+const formulaRegistry = new WeakMap<HTMLTableElement, FormulaEntry>();
 const recomputeListeners = new Set<() => void>();
 const destroyListeners = new Set<() => void>();
 
@@ -233,7 +234,7 @@ function buildSliderHandle(input: HTMLInputElement, ctx: TableContext, schedule:
       return (ctx.cornerCell?.querySelector('[data-gs-slider-readout="interpolated"]') as HTMLElement) ?? ctx.cornerCell!;
     },
     get readoutEquation() {
-      return ctx.equationLine;
+      return ctx.equationValue;
     },
     setEquationReadout: (_text) => { /* equation readout owned by refreshTable */ },
     setInterpolatedReadout: (text) => {
@@ -390,10 +391,11 @@ export function removeAllSliders(table?: HTMLTableElement): void {
 
 export function registerFormula(
   table: HTMLTableElement,
-  fn: (rowValue: number, colValue: number) => number
+  fn: (rowValue: number, colValue: number) => number,
+  options?: { expression?: string }
 ): void {
   if (typeof fn !== 'function') throw new Error('Formula must be a function');
-  formulaRegistry.set(table, fn);
+  formulaRegistry.set(table, { fn, expression: options?.expression });
   refreshTableReadouts(table);
 }
 
