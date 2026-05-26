@@ -22,6 +22,7 @@ considered.
 ## R-1 — Persistence failure handling (`localStorage` unavailable / quota)
 
 **Decision**: All `localStorage` access is wrapped in `try/catch`.
+
 - **Unavailable** (private-mode block, `file://` null-origin quirk, disabled
   storage): annotating still works for the session (the in-memory
   `AnnotationStore`), nothing throws into the host page, and **one** non-blocking
@@ -39,6 +40,7 @@ never silently destroys a colleague's earlier note. `localStorage` quota
 quota path is a rare safety net rather than a routine concern.
 
 **Alternatives considered**:
+
 - *Throw on unavailable storage*: rejected — violates §IV.
 - *Drop oldest to make room*: rejected — silent data loss with no meaningful
   "oldest" ordering.
@@ -72,6 +74,7 @@ header-ish value, fall back to index). A text-derived row-key also survives the
 author moving a row in the page source better than a bare index.
 
 **Alternatives considered**:
+
 - *Bare visual row index*: rejected — breaks under sort/filter (violates SC-004).
 - *Whole-row content hash*: rejected — changes on any cell edit, orphaning the
   note; heavier in bundle.
@@ -114,6 +117,7 @@ enumeration. Storing the timestamp inline satisfies FR-018 with no extra
 bookkeeping.
 
 **Alternatives considered**:
+
 - *Extend `slider-persistence.ts`*: rejected — different payload + the timestamp
   and URL-free rules make it a poor fit; would complicate the shared helper.
 - *One global key for all documents*: rejected — couples unrelated pages, bloats
@@ -138,6 +142,7 @@ identical to the rest of the library, costs ~0 bundle, and avoids re-deriving a
 focus trap.
 
 **Alternatives considered**:
+
 - *Native `<dialog>`*: rejected — modal semantics wrong for a cell-anchored inline
   editor; anchored positioning is manual anyway.
 - *Bespoke popover*: rejected — duplicates `popup-chrome.ts`, risk of diverging
@@ -164,6 +169,7 @@ no external icon (§VI). Shape-not-just-colour satisfies the accessibility hard
 minimum.
 
 **Alternatives considered**:
+
 - *SVG icon node per cell*: rejected — heavier DOM at 50+ markers; CSS triangle is
   free and scales.
 - *Inline-styling each cell*: rejected — harder to tear down cleanly (residue),
@@ -197,6 +203,7 @@ assumption. The transient fragment hint is the minimal cross-document deep-link
 mechanism that needs no persistence and no server.
 
 **Alternatives considered**:
+
 - *Per-page-only panel (the earlier design)*: superseded — does not satisfy the
   "see annotations across documents" requirement.
 - *Encode the target cell in `localStorage` "pending navigation"*: rejected — a
@@ -218,6 +225,7 @@ mechanism that needs no persistence and no server.
 draft exceeds it, the popup (P3) is the first candidate to trim/defer.
 
 **Alternatives considered**:
+
 - *No explicit budget*: rejected — §I requires the ≤ 10 KB ceiling be defended per
   PR; a per-feature sub-budget surfaces regressions early.
 
@@ -244,6 +252,7 @@ sees the current origin's annotations (spec edge case "Cross-origin scope");
 cross-origin aggregation is impossible without a server and is out of scope.
 
 **Alternatives considered**:
+
 - *Maintain a separate global manifest key*: rejected — extra write on every
   save, risk of drift vs. the per-document keys; the scan is simpler and correct
   by construction.
