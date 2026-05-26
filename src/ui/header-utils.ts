@@ -182,12 +182,11 @@ function addLozengesToHeader(
   //  - `data-gs-no-sort` / `data-gs-no-filter` is set on the header
   //  - any body cell in this column has rowspan > 1
   if (type === 'column' && !columnHasRowspanBodyCells(table, colIndex)) {
-    const columnKey = colKeyAt(table, colIndex);
     if (!header.hasAttribute('data-gs-no-sort')) {
-      specs.push(buildSortSpec(table, header, colIndex, columnKey));
+      specs.push(buildSortSpec(table, header, colIndex));
     }
     if (!header.hasAttribute('data-gs-no-filter')) {
-      specs.push(buildFilterSpec(table, header, colIndex, columnKey, columnType));
+      specs.push(buildFilterSpec(table, header, colIndex));
     }
   }
 
@@ -216,8 +215,7 @@ function addLozengesToHeader(
 function buildSortSpec(
   table: HTMLTableElement,
   _header: HTMLTableCellElement,
-  colIndex: number,
-  _columnKey: string
+  colIndex: number
 ): LozengeSpec {
   return {
     id: 'sort',
@@ -235,9 +233,7 @@ function buildSortSpec(
 function buildFilterSpec(
   table: HTMLTableElement,
   _header: HTMLTableCellElement,
-  colIndex: number,
-  _columnKey: string,
-  _columnType: ColumnType
+  colIndex: number
 ): LozengeSpec {
   return {
     id: 'filter',
