@@ -32,7 +32,7 @@ add a new one.
 
 ## 2. Runtime flow (one pass)
 
-```
+```text
 gridSight.init(options)
   ├─ resolve capability:  pageConfig ⊕ visitorOverride ⊕ defaults
   │                       → effective enabled set           (core/enabled-set-state)
@@ -110,7 +110,7 @@ populated purely by self-registration: `annotations`, `copy-as-csv`,
 
 Resolution precedence (spec 012-capability-filtering, R-3):
 
-```
+```text
 visitor override  >  page config  >  library defaults (defaultOn)
 ```
 
