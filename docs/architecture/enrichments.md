@@ -4,11 +4,12 @@ How Grid-Sight discovers tables, decides which enrichments are allowed, and
 mounts each enrichment's affordance — and the single contract you implement to
 add a new one.
 
-> Status: target architecture. The codebase is mid-migration from the legacy
-> "scattered metadata + two injection paths" model (see
-> [Appendix A](#appendix-a--legacy-model-being-removed)) to the unified
-> descriptor model described here. New enrichments MUST use the descriptor
-> model.
+> Status: current architecture. Every enrichment — classic lozenges (heatmap,
+> sliders, statistics, frequency, frequency-chart, sort, filter) and the three
+> virtual columns — registers a descriptor and is mounted by the single
+> injection pass. The legacy scattered-metadata / dual-injection model
+> ([Appendix A](#appendix-a--legacy-model-removed)) has been removed. New
+> enrichments MUST use the descriptor model.
 
 ---
 
@@ -178,31 +179,38 @@ capability resolver — they are all descriptor-driven.
 | Catalog + descriptor registry | `src/core/enrichment-registry.ts` |
 | Capability resolver (pure) | `src/core/effective-enabled-set.ts` |
 | Effective-set holder + `isEnrichmentEnabled` | `src/core/enabled-set-state.ts` |
-| Single injection pass (`mountEnrichments`) | `src/ui/header-utils.ts` |
+| Single injection pass (`mountEnrichments`) + classic descriptors | `src/ui/header-utils.ts` |
 | Runtime opt-in panel | `src/ui/toggle-panel.ts` |
 | Per-table GS toggle | `src/ui/toggle-injector.ts` |
 | Virtual-column scaffold (shared engine) | `src/enrichments/virtual-column.ts` |
-| Per-enrichment behavior | each `src/enrichments/*.ts` / `src/ui/*-lozenge.ts` |
+| Virtual-column descriptors | `src/ui/virtual-column-lozenges.ts` |
 
 ---
 
-## Appendix A — legacy model (being removed)
+## Appendix A — legacy model (removed)
 
 Before the descriptor model, enrichment metadata was duplicated across five
 sites that had to be hand-synced, with two separate injection paths:
 
 1. `core/enrichment-registry.ts` — id/label/defaultOn/shipped + tearDown.
 2. `ui/header-utils.ts` — an inline `LozengeSpec[]` literal hardcoding which
-   lozenges to build per column type (its own `id` union).
+   lozenges to build per column type (its own `id` union). **Removed** —
+   classic lozenges now register descriptors; `LozengeSpec` survives only as a
+   private helper shape for `buildLozenge`.
 3. `ui/enrichment-menu.ts` — `ENRICHMENT_ITEMS`, a third metadata list with
-   `availableFor` / `predicate` / `isActive`.
-4. `enrichments/virtual-column.ts` — a second renderer registry
-   (`registerRenderer`) keyed by virtual-column kind.
+   `availableFor` / `predicate` / `isActive`. **Removed** — the dropdown menu
+   it backed was already dead (replaced by inline lozenges); the file is
+   deleted.
+4. `enrichments/virtual-column.ts` — a renderer registry (`registerRenderer`)
+   keyed by virtual-column kind. **Retained by design**: this is the
+   virtual-column *rendering engine* (append/detach/ordering/persistence), not
+   an affordance-registration path. The affordance now registers a descriptor
+   like everything else (§5).
 5. `ui/virtual-column-lozenges.ts` — hardcoded Σ/⌇/Δ injection that bypassed
-   capability filtering entirely and mounted at `init()` rather than on
-   GS-enable.
+   capability filtering and mounted at `init()` rather than on GS-enable.
+   **Replaced** by descriptor `mount(ctx)` builders gated by the single pass.
 
 Symptoms this caused: the three `id` unions drifted; virtual-column lozenges
-appeared even when their capability was off; and virtual-column lozenges
-mounted on a different lifecycle than every classic lozenge. The descriptor
-model exists to collapse 1–5 into one declaration and one injection pass.
+appeared even when their capability was off; and they mounted on a different
+lifecycle than every classic lozenge. Collapsing 1–5 into one declaration and
+one injection pass removed all three.
