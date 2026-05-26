@@ -2,11 +2,11 @@
  * Compare picker overlay (spec 012-virtual-columns US3).
  *
  * Affordance (per UX request):
- *  - the Δ lozenge pulses while compare mode is active;
+ *  - the Δ lozenge takes a reversed-colour state while compare mode is armed;
  *  - numeric column headers are marked as clickable candidates;
- *  - each picked column header pulses as it is selected;
- *  - all pulses stop once the compare column is shown (resolve) or the pick
- *    is cancelled;
+ *  - each picked column header takes the same reversed-colour state;
+ *  - the reversed state is cleared once the compare column is shown (resolve)
+ *    or the pick is cancelled;
  *  - clicking anything that is not a candidate column header cancels the pick
  *    (so does Escape). Keyboard: a focused candidate is picked with Enter/Space.
  */
@@ -19,7 +19,7 @@ export interface PickerResult {
 }
 
 const TARGET_CLASS = 'gs-vc-pick-target';
-const PULSE_CLASS = 'gs-vc-pulse';
+const ACTIVE_CLASS = 'gs-vc-pick-active';
 
 export function openComparePicker(
   table: HTMLTableElement,
@@ -51,21 +51,21 @@ export function openComparePicker(
       return;
     }
 
-    // Pulse the Δ lozenge for the duration of the pick.
-    lozenge?.classList.add(PULSE_CLASS);
+    // Reverse the Δ lozenge's colours for the duration of the pick.
+    lozenge?.classList.add(ACTIVE_CLASS);
 
     let pickedA: string | null = null;
     let settled = false;
 
     function cleanup() {
       for (const cell of targets) {
-        cell.classList.remove(TARGET_CLASS, PULSE_CLASS);
+        cell.classList.remove(TARGET_CLASS, ACTIVE_CLASS);
         cell.removeAttribute('role');
         cell.removeAttribute('tabindex');
         cell.removeAttribute('aria-pressed');
         delete cell.dataset.gsPickKey;
       }
-      lozenge?.classList.remove(PULSE_CLASS);
+      lozenge?.classList.remove(ACTIVE_CLASS);
       document.removeEventListener('keydown', onKey);
       document.removeEventListener('click', onOutside, true);
       for (const cell of targets) {
@@ -85,7 +85,7 @@ export function openComparePicker(
       if (pickedA === null) {
         pickedA = key;
         if (cell) {
-          cell.classList.add(PULSE_CLASS);
+          cell.classList.add(ACTIVE_CLASS);
           cell.setAttribute('aria-pressed', 'true');
         }
         return;
@@ -94,7 +94,7 @@ export function openComparePicker(
         // Re-clicking the first pick deselects it.
         const a = targetByKey.get(pickedA);
         if (a) {
-          a.classList.remove(PULSE_CLASS);
+          a.classList.remove(ACTIVE_CLASS);
           a.removeAttribute('aria-pressed');
         }
         pickedA = null;

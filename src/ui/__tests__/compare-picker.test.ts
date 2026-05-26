@@ -47,14 +47,14 @@ afterEach(() => {
 });
 
 describe('compare picker affordance (US3)', () => {
-  it('pulses the lozenge and marks numeric headers as candidates while active', () => {
+  it('highlights the lozenge and marks numeric headers as candidates while active', () => {
     const table = makeTable();
     const lozenge = document.createElement('button');
     document.body.appendChild(lozenge);
 
     openComparePicker(table, lozenge);
 
-    expect(lozenge.classList.contains('gs-vc-pulse')).toBe(true);
+    expect(lozenge.classList.contains('gs-vc-pick-active')).toBe(true);
     const [region, q1, q4] = headerCells(table);
     // Numeric headers are clickable candidates; the categorical one is not.
     expect(q1.classList.contains('gs-vc-pick-target')).toBe(true);
@@ -62,7 +62,7 @@ describe('compare picker affordance (US3)', () => {
     expect(region.classList.contains('gs-vc-pick-target')).toBe(false);
   });
 
-  it('pulses each column as it is picked and resolves with both keys', async () => {
+  it('highlights each column as it is picked and resolves with both keys', async () => {
     const table = makeTable();
     const lozenge = document.createElement('button');
     document.body.appendChild(lozenge);
@@ -71,17 +71,17 @@ describe('compare picker affordance (US3)', () => {
     const [, q1, q4] = headerCells(table);
 
     q1.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-    expect(q1.classList.contains('gs-vc-pulse')).toBe(true);
+    expect(q1.classList.contains('gs-vc-pick-active')).toBe(true);
     expect(q1.getAttribute('aria-pressed')).toBe('true');
 
     q4.dispatchEvent(new MouseEvent('click', { bubbles: true }));
     const result = await promise;
     expect(result).toEqual({ colKeyA: 'q1', colKeyB: 'q4' });
 
-    // All pulses + candidate markers cleared once the compare column shows.
-    expect(lozenge.classList.contains('gs-vc-pulse')).toBe(false);
+    // All highlights + candidate markers cleared once the compare column shows.
+    expect(lozenge.classList.contains('gs-vc-pick-active')).toBe(false);
     for (const cell of headerCells(table)) {
-      expect(cell.classList.contains('gs-vc-pulse')).toBe(false);
+      expect(cell.classList.contains('gs-vc-pick-active')).toBe(false);
       expect(cell.classList.contains('gs-vc-pick-target')).toBe(false);
     }
   });
@@ -100,11 +100,11 @@ describe('compare picker affordance (US3)', () => {
     outside.dispatchEvent(new MouseEvent('click', { bubbles: true }));
     const result = await promise;
     expect(result).toBeNull();
-    expect(lozenge.classList.contains('gs-vc-pulse')).toBe(false);
+    expect(lozenge.classList.contains('gs-vc-pick-active')).toBe(false);
     expect(headerCells(table)[1].classList.contains('gs-vc-pick-target')).toBe(false);
   });
 
-  it('Escape cancels and clears all pulses', async () => {
+  it('Escape cancels and clears all highlights', async () => {
     const table = makeTable();
     const lozenge = document.createElement('button');
     document.body.appendChild(lozenge);
@@ -114,7 +114,7 @@ describe('compare picker affordance (US3)', () => {
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
     const result = await promise;
     expect(result).toBeNull();
-    expect(lozenge.classList.contains('gs-vc-pulse')).toBe(false);
+    expect(lozenge.classList.contains('gs-vc-pick-active')).toBe(false);
   });
 
   it('a candidate-header click does not trigger the outside-click canceller', async () => {
@@ -127,8 +127,8 @@ describe('compare picker affordance (US3)', () => {
 
     const [, q1, q4] = headerCells(table);
     q1.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-    // Picking A must NOT have cancelled — picker still active, A still pulsing.
-    expect(q1.classList.contains('gs-vc-pulse')).toBe(true);
+    // Picking A must NOT have cancelled — picker still active, A still highlighted.
+    expect(q1.classList.contains('gs-vc-pick-active')).toBe(true);
     q4.dispatchEvent(new MouseEvent('click', { bubbles: true }));
     expect(await promise).toEqual({ colKeyA: 'q1', colKeyB: 'q4' });
   });

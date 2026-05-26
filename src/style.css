@@ -442,19 +442,22 @@ th.gs-vc-source-highlight {
 }
 
 /* ── Compare (Δ) picker affordance ──────────────────────────────────────
- * While compare mode is active the Δ lozenge pulses; numeric column headers
- * are marked as clickable candidates; and each picked column pulses too. All
- * pulses are cleared once the compare column is shown (or the pick is
- * cancelled). Honours prefers-reduced-motion by falling back to a static
- * colour-change. */
-@keyframes gs-vc-pulse {
-  0%, 100% { background-color: rgb(74 144 226 / 12%); }
-  50%      { background-color: rgb(74 144 226 / 55%); }
+ * While compare mode is armed the Δ lozenge shows a reversed-colour state;
+ * numeric column headers are marked as clickable candidates (dashed outline);
+ * and each picked column header takes the same reversed-colour state. All of
+ * this is cleared once the compare column is shown (or the pick is cancelled). */
+
+/* Reversed colours (white-on-accent) for the armed Δ lozenge and each picked
+ * column header — a clear, static signal that compare mode is in progress. */
+.gs-vc-lozenge.gs-vc-pick-active {
+  background: #4a90e2;
+  color: #fff;
+  border-color: #4a90e2;
 }
 
-.gs-vc-pulse {
-  animation: gs-vc-pulse 0.6s ease-in-out infinite;
-  border-radius: 3px;
+th.gs-vc-pick-active {
+  background-color: #4a90e2;
+  color: #fff;
 }
 
 /* Numeric headers offered as compare targets — clearly clickable. */
@@ -462,13 +465,6 @@ th.gs-vc-pick-target {
   cursor: pointer;
   outline: 2px dashed rgb(74 144 226 / 60%);
   outline-offset: -2px;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .gs-vc-pulse {
-    animation: none;
-    background-color: rgb(74 144 226 / 45%);
-  }
 }
 
 

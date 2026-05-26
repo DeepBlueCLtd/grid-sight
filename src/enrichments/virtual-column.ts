@@ -30,6 +30,7 @@ import {
   type PersistedVirtualColumnState,
 } from './virtual-column-persistence';
 import { extractTableData, detectColumnTypes } from '../core/type-detection';
+import { ensureVirtualColumnStyles } from '../ui/virtual-column-styles';
 
 interface TableContext {
   tableEl: HTMLTableElement;
@@ -379,6 +380,11 @@ export function activateDirective(
   const ctx = ensureContext(table);
   const renderer = renderers.get(directive.kind);
   if (!renderer || !canActivate(ctx, directive, renderer)) return null;
+
+  // Ensure the virtual-column stylesheet is present in the published bundle
+  // (style.css only loads in the dev server / Storybook). Covers the
+  // programmatic API and URL-restore paths, which bypass the lozenge UI.
+  ensureVirtualColumnStyles();
 
   assignActivationIndex(directive);
   ctx.directives = sortCanonical([...ctx.directives, directive]);

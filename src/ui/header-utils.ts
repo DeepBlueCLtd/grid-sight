@@ -20,6 +20,7 @@ import {
   type AffordanceContext,
 } from '../core/enrichment-registry';
 import { ensureRowVisibilityStyles } from './row-visibility-styles';
+import { ensureVirtualColumnStyles } from './virtual-column-styles';
 
 export type HeaderType = 'row' | 'column' | 'table';
 
@@ -49,6 +50,7 @@ export function injectPlusIcons(table: HTMLTableElement, columnTypes: ColumnType
   removePlusIcons(table);
   ensureLozengeStyles();
   ensureRowVisibilityStyles();
+  ensureVirtualColumnStyles();
 
   const rows = nonInjectedRows(table);
   const headerRow = rows[0];
