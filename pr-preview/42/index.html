@@ -152,11 +152,11 @@
       <p>Marked <code>data-gs-ignore</code> — GS will not attach. "Before" rendering.</p>
       <table id="plain-table" data-gs-ignore>
         <tr><th></th>  <th>10</th><th>20</th><th>30</th><th>40</th><th>50</th></tr>
-        <tr><th>1000</th> <td>4.2</td><td>5.1</td><td>5.9</td><td>6.4</td><td>6.7</td></tr>
-        <tr><th>6000</th> <td>3.6</td><td>4.4</td><td>5.0</td><td>5.5</td><td>5.8</td></tr>
-        <tr><th>11000</th><td>3.0</td><td>3.7</td><td>4.2</td><td>4.6</td><td>4.9</td></tr>
-        <tr><th>16000</th><td>2.5</td><td>3.0</td><td>3.5</td><td>3.9</td><td>4.2</td></tr>
-        <tr><th>21000</th><td>2.0</td><td>2.5</td><td>2.9</td><td>3.3</td><td>3.6</td></tr>
+        <tr><th>1000</th> <td>4.8</td><td>6.2</td><td>7.2</td><td>8.0</td><td>8.8</td></tr>
+        <tr><th>6000</th> <td>4.4</td><td>5.7</td><td>6.7</td><td>7.5</td><td>8.3</td></tr>
+        <tr><th>11000</th><td>4.1</td><td>5.4</td><td>6.4</td><td>7.3</td><td>8.0</td></tr>
+        <tr><th>16000</th><td>3.9</td><td>5.2</td><td>6.2</td><td>7.1</td><td>7.8</td></tr>
+        <tr><th>21000</th><td>3.7</td><td>5.0</td><td>6.0</td><td>6.9</td><td>7.6</td></tr>
       </table>
     </section>
 
@@ -167,14 +167,16 @@
          <strong>S</strong> (corner) toggles sliders for bilinear interpolation,
          <strong>H</strong> on a row / column / table header toggles a heatmap shading,
          and <strong>#</strong> opens a statistics popup (min, max, mean, etc.) for that axis.
-         Formula pre-registered: <code>√(R/100) − sl/250</code>.</p>
+         Formula pre-registered: <code>√sl − √R/100 + 2</code> (the table cells are
+         sampled from this formula and rounded to 1 dp, so the calculated result
+         matches the interpolated value to within rounding + interpolation error).</p>
       <table id="featured-table">
         <tr><th></th>  <th>10</th><th>20</th><th>30</th><th>40</th><th>50</th></tr>
-        <tr><th>1000</th> <td>4.2</td><td>5.1</td><td>5.9</td><td>6.4</td><td>6.7</td></tr>
-        <tr><th>6000</th> <td>3.6</td><td>4.4</td><td>5.0</td><td>5.5</td><td>5.8</td></tr>
-        <tr><th>11000</th><td>3.0</td><td>3.7</td><td>4.2</td><td>4.6</td><td>4.9</td></tr>
-        <tr><th>16000</th><td>2.5</td><td>3.0</td><td>3.5</td><td>3.9</td><td>4.2</td></tr>
-        <tr><th>21000</th><td>2.0</td><td>2.5</td><td>2.9</td><td>3.3</td><td>3.6</td></tr>
+        <tr><th>1000</th> <td>4.8</td><td>6.2</td><td>7.2</td><td>8.0</td><td>8.8</td></tr>
+        <tr><th>6000</th> <td>4.4</td><td>5.7</td><td>6.7</td><td>7.5</td><td>8.3</td></tr>
+        <tr><th>11000</th><td>4.1</td><td>5.4</td><td>6.4</td><td>7.3</td><td>8.0</td></tr>
+        <tr><th>16000</th><td>3.9</td><td>5.2</td><td>6.2</td><td>7.1</td><td>7.8</td></tr>
+        <tr><th>21000</th><td>3.7</td><td>5.0</td><td>6.0</td><td>6.9</td><td>7.6</td></tr>
       </table>
     </section>
 
@@ -207,7 +209,7 @@
     function registerFeaturedFormula() {
       if (!window.gridSight) return;
       const t = document.getElementById('featured-table');
-      if (t) window.gridSight.registerFormula(t, (range, sl) => Math.sqrt(range / 100) - sl / 250, { expression: '√(R/100) − sl/250' });
+      if (t) window.gridSight.registerFormula(t, (range, sl) => Math.sqrt(sl) - Math.sqrt(range) / 100 + 2, { expression: '√sl − √R/100 + 2' });
     }
     window.addEventListener('DOMContentLoaded', registerFeaturedFormula);
 
