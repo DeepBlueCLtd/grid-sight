@@ -48,9 +48,11 @@ describe('renderMarker / clearMarker', () => {
   it('paints a marker with an accessible name and wires aria-describedby', () => {
     const cell = makeCell();
     renderMarker(cell, 'check this');
-    const marker = cell.querySelector('.gs-annotation-marker') as HTMLElement;
+    const marker = cell.querySelector('.gs-annotation-marker') as HTMLButtonElement;
     expect(marker).not.toBeNull();
     expect(marker.getAttribute('aria-label')).toContain('check this');
+    // quickstart §2: hover the marker → the note shows in a native tooltip.
+    expect(marker.title).toBe('check this');
 
     const describedById = cell.getAttribute('aria-describedby');
     expect(describedById).toBeTruthy();

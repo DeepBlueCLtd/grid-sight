@@ -109,3 +109,18 @@ describe('isStorageAvailable (U6)', () => {
     spy.mockRestore();
   });
 });
+
+describe('blocked storage is reported as unavailable, not quota', () => {
+  let setItem: ReturnType<typeof vi.spyOn>;
+  afterEach(() => setItem?.mockRestore());
+
+  it('a non-quota write error → reason "unavailable" (so saves can degrade session-only)', () => {
+    setItem = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new DOMException('blocked', 'SecurityError');
+    });
+    const result = writeDocumentAnnotations([
+      { id: id('a', 'b', 'c'), text: 'x', modifiedAt: 1 },
+    ]);
+    expect(result).toEqual({ ok: false, reason: 'unavailable' });
+  });
+});

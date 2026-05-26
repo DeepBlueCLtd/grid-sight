@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import {
   applyAnnotations,
   saveAnnotation,
@@ -99,5 +99,52 @@ describe('tearDownAnnotations — byte-identical restore', () => {
     deleteAnnotation(cell);
     tearDownAnnotations(table);
     expect(tbody.innerHTML).toBe(snapshot);
+  });
+
+  // quickstart.md §"toggle-off" clause: tearDown restores the DOM but MUST leave
+  // the localStorage envelope intact so toggle-on / reload re-hydrates.
+  it('leaves the localStorage envelope intact after teardown', () => {
+    const table = makeTable();
+    const cell = table.querySelector('tbody td') as HTMLTableCellElement;
+    saveAnnotation(cell, 'durable note');
+    const key = Object.keys(localStorage).find((k) => k.endsWith(':annotations'))!;
+    expect(localStorage.getItem(key)).not.toBeNull();
+
+    tearDownAnnotations(table);
+    expect(cell.querySelector('.gs-annotation-marker')).toBeNull(); // DOM restored
+    expect(localStorage.getItem(key)).not.toBeNull(); // envelope retained
+    expect(JSON.parse(localStorage.getItem(key)!).entries['sales/acme/q3'].t).toBe('durable note');
+  });
+});
+
+describe('session-only fallback when storage is unavailable (FR-017, quickstart §4)', () => {
+  let setItem: ReturnType<typeof vi.spyOn>;
+  let warn: ReturnType<typeof vi.spyOn>;
+  beforeEach(() => {
+    setItem = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new DOMException('blocked', 'SecurityError');
+    });
+    warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+  });
+  afterEach(() => {
+    setItem.mockRestore();
+    warn.mockRestore();
+  });
+
+  it('allows the save in-memory (no quota refusal) and warns exactly once', () => {
+    const table = makeTable();
+    const cell = table.querySelector('tbody td') as HTMLTableCellElement;
+
+    const result = saveAnnotation(cell, 'session note');
+    expect(result).toEqual({ ok: true }); // NOT refused as quota
+    expect(getAnnotation(cell)).toBe('session note');
+    expect(cell.querySelector('.gs-annotation-marker')).not.toBeNull();
+
+    // Saving again does not multiply the warning (one per page).
+    saveAnnotation(cell, 'session note 2');
+    const sessionWarns = warn.mock.calls.filter((c) =>
+      String(c[0]).includes('localStorage is unavailable')
+    );
+    expect(sessionWarns).toHaveLength(1);
   });
 });

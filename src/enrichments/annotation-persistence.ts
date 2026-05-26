@@ -37,6 +37,22 @@ interface Envelope {
   entries: Record<string, StoredEntry>;
 }
 
+/** True for a genuine storage-quota exception (storage works but is full), as
+ *  opposed to storage being blocked/unavailable (private mode, sandboxed
+ *  iframe, disabled). Evergreen browsers throw a named DOMException for quota;
+ *  anything else is treated as unavailable so the save degrades to session-only
+ *  rather than showing a misleading "storage is full" error (FR-017). */
+function isQuotaError(e: unknown): boolean {
+  return (
+    typeof DOMException !== 'undefined' &&
+    e instanceof DOMException &&
+    (e.name === 'QuotaExceededError' ||
+      e.name === 'NS_ERROR_DOM_QUOTA_REACHED' ||
+      e.code === 22 ||
+      e.code === 1014)
+  );
+}
+
 /** True when localStorage is readable/writable in this context. */
 export function isStorageAvailable(): boolean {
   try {
@@ -121,7 +137,9 @@ export function writeDocumentAnnotations(
   try {
     localStorage.setItem(key, JSON.stringify(envelope));
     return { ok: true };
-  } catch {
-    return { ok: false, reason: 'quota' };
+  } catch (e) {
+    // Genuine quota → refuse-and-warn (FR-017). Blocked/unavailable storage →
+    // degrade to session-only so the in-memory note is still allowed.
+    return { ok: false, reason: isQuotaError(e) ? 'quota' : 'unavailable' };
   }
 }
