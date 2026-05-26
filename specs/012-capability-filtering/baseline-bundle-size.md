@@ -100,3 +100,38 @@ and result) brings the combined bundle to **~34.6 KB gzipped**, breaching the
 34 KB ceiling. Enforced ceiling bumped 34 → 35 KB in `scripts/bundle-size.js`.
 Contribution is ~1.4 KB gz: the `equation-panel` module + CSS and the readout
 rewiring. Constitution §I 10 KB target unchanged.
+
+## Ceiling bump for 006-cell-annotations (2026-05-26)
+
+| Stage                              | Raw KB | Gzipped KB | Δ from previous stage |
+|------------------------------------|--------|------------|-----------------------|
+| Before annotations (baseline)      | 128.21 | 34.73      | —                     |
+| After 006-cell-annotations         | 144.00 | 39.13      | **+4.40 KB**          |
+
+Result: 006-cell-annotations adds **+4.40 KB gzipped**, against the SC-005
+target of ≤ 2 KB — i.e. the budget is overrun by ~2.4 KB (the R-7 estimate of
+~2 KB under-projected the real cost). Drivers across the eight new modules:
+
+- identity triple derivation (`annotation-identity.ts`) — slug/derive/resolve.
+- the per-document `localStorage` codec (`annotation-persistence.ts`).
+- orchestration (`annotations.ts`) — store, hydrate, save/delete, nav-hint,
+  teardown, reorder subscription.
+- affordance + marker UI (`annotation-affordance.ts`) and the editor popover
+  (`annotation-popover.ts`) — DOM construction, 280-char clamp, aria wiring.
+- the cross-document index (`annotation-index.ts`) + popup
+  (`annotation-popup.ts`) for US3.
+- the injected CSS string (minified at source) + glue in `src/index.ts`.
+
+**Decision (2026-05-26 — user choice during implementation)**: raise the
+enforced ceiling from 35 KB to **40 KB gzipped** to land this PR, leaving the
+constitution §I 10 KB ceiling unchanged. Same posture as every prior overage:
+an **explicit, recorded constitution violation** pending the standing
+constitution-amendment / bundle-cut PR. The amendment now owes ~29 KB of gap.
+
+Cheapest follow-up cuts if the budget must be recovered later (not done in-PR):
+
+- defer the US3 popup + cross-document index behind a lazy entry point (~1.3 KB).
+- fold `annotation-index.ts` parsing into `annotation-persistence.ts` to share
+  the envelope-decode path.
+- drop the test-only `__reset*` exports from the production build via a
+  build-time `define` flag terser can strip.

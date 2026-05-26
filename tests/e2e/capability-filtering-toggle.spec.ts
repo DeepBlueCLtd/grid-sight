@@ -45,6 +45,9 @@ test.describe('US2: live enrichment toggle panel', () => {
       'statistics',
       'frequency',
       'frequency-chart',
+      'sort',
+      'filter',
+      'annotations',
     ];
     for (const id of shippedIds) {
       await expect(

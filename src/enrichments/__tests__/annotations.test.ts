@@ -1,0 +1,103 @@
+import { describe, it, expect, beforeEach } from 'vitest';
+import {
+  applyAnnotations,
+  saveAnnotation,
+  deleteAnnotation,
+  getAnnotation,
+  tearDownAnnotations,
+  __resetAnnotations,
+} from '../annotations';
+import { __resetIdentityWarnings } from '../annotation-identity';
+
+const nextFrame = () => new Promise((r) => requestAnimationFrame(() => r(null)));
+
+function makeTable(): HTMLTableElement {
+  document.body.innerHTML = `
+    <table data-gs-key="sales">
+      <thead><tr><th>Region</th><th>Q3</th></tr></thead>
+      <tbody>
+        <tr data-gs-row-key="acme"><th scope="row">Acme</th><td>1200</td></tr>
+        <tr data-gs-row-key="globex"><th scope="row">Globex</th><td>980</td></tr>
+      </tbody>
+    </table>`;
+  return document.querySelector('table') as HTMLTableElement;
+}
+
+beforeEach(() => {
+  localStorage.clear();
+  __resetAnnotations();
+  __resetIdentityWarnings();
+  document.body.innerHTML = '';
+});
+
+describe('saveAnnotation / getAnnotation / deleteAnnotation', () => {
+  it('upserts the store, sets modifiedAt, and getAnnotation reflects it', () => {
+    const table = makeTable();
+    const cell = table.querySelector('tbody td') as HTMLTableCellElement;
+    const before = Date.now();
+    expect(saveAnnotation(cell, 'check this')).toEqual({ ok: true });
+    expect(getAnnotation(cell)).toBe('check this');
+
+    const raw = localStorage.getItem(
+      Object.keys(localStorage).find((k) => k.endsWith(':annotations'))!
+    )!;
+    const env = JSON.parse(raw);
+    expect(env.version).toBe(1);
+    const entry = env.entries['sales/acme/q3'];
+    expect(entry.t).toBe('check this');
+    expect(entry.m).toBeGreaterThanOrEqual(before);
+  });
+
+  it('empty/whitespace save deletes', () => {
+    const table = makeTable();
+    const cell = table.querySelector('tbody td') as HTMLTableCellElement;
+    saveAnnotation(cell, 'note');
+    expect(getAnnotation(cell)).toBe('note');
+    saveAnnotation(cell, '   ');
+    expect(getAnnotation(cell)).toBeUndefined();
+  });
+
+  it('clamps to 280 chars', () => {
+    const table = makeTable();
+    const cell = table.querySelector('tbody td') as HTMLTableCellElement;
+    saveAnnotation(cell, 'x'.repeat(400));
+    expect(getAnnotation(cell)).toHaveLength(280);
+  });
+
+  it('deleteAnnotation removes the note and the marker', () => {
+    const table = makeTable();
+    const cell = table.querySelector('tbody td') as HTMLTableCellElement;
+    saveAnnotation(cell, 'note');
+    expect(cell.querySelector('.gs-annotation-marker')).not.toBeNull();
+    deleteAnnotation(cell);
+    expect(getAnnotation(cell)).toBeUndefined();
+    expect(cell.querySelector('.gs-annotation-marker')).toBeNull();
+    expect(cell.hasAttribute('aria-describedby')).toBe(false);
+  });
+});
+
+describe('tearDownAnnotations — byte-identical restore', () => {
+  it('restores cells byte-identically after apply (no notes)', async () => {
+    const table = makeTable();
+    const tbody = table.tBodies[0];
+    const snapshot = tbody.innerHTML;
+    applyAnnotations(table);
+    await nextFrame();
+    expect(tbody.innerHTML).not.toBe(snapshot); // pins injected
+    tearDownAnnotations(table);
+    expect(tbody.innerHTML).toBe(snapshot);
+  });
+
+  it('restores cells byte-identically after a saved-then-deleted note', async () => {
+    const table = makeTable();
+    const tbody = table.tBodies[0];
+    const snapshot = tbody.innerHTML;
+    applyAnnotations(table);
+    await nextFrame();
+    const cell = table.querySelector('tbody td') as HTMLTableCellElement;
+    saveAnnotation(cell, 'note');
+    deleteAnnotation(cell);
+    tearDownAnnotations(table);
+    expect(tbody.innerHTML).toBe(snapshot);
+  });
+});

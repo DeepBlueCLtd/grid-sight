@@ -25,6 +25,7 @@ import { removeHeatmap } from '../enrichments/heatmap';
 import { removeAllSliders, getSliders } from '../enrichments/slider';
 import { setSort, clearFilters } from '../utils/visible-rows';
 import { unmountFilterChip } from '../enrichments/filter-chip';
+import { tearDownAnnotations } from '../enrichments/annotations';
 
 export type EnrichmentId = string;
 
@@ -92,7 +93,7 @@ const ENTRIES: EnrichmentRegistryEntry[] = [
   // ── Spec-only registrations (flip `shipped` when the impl PR lands) ──
   // When you ship one of these, also add its tearDown function above and
   // wire it into the entry on the same line.
-  { id: 'annotations',      label: 'Cell annotations',  defaultOn: true, shipped: false },  // spec 006
+  { id: 'annotations',      label: 'Cell annotations',  defaultOn: true, shipped: true,  tearDown: tearDownAnnotations },  // spec 006
   { id: 'copy-as-csv',      label: 'Copy as CSV',       defaultOn: true, shipped: false },  // spec 009
   { id: 'cumulative',       label: 'Cumulative col.',   defaultOn: true, shipped: false },  // spec 008
   { id: 'diff-compare',     label: 'Diff / compare',    defaultOn: true, shipped: false },  // spec 010

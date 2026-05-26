@@ -111,12 +111,17 @@ export function writeUrlHash(
   return writeUrlValueForKey(SLIDER_URL_PARAM, encodeFragment(entries), currentHash);
 }
 
-function urlStem(): string {
+/** Per-document storage stem: `origin + pathname` (no search, no hash).
+ *  Shared by every `gs:` storage key so sliders, enrichment toggles, and
+ *  annotations live side-by-side under one consistent per-URL scheme. */
+export function urlStem(): string {
   if (typeof location === 'undefined') return 'default';
   return location.origin + location.pathname;
 }
 
-function storageKeyFor(suffix: string, stem: string = urlStem()): string {
+/** Build a `gs:${stem}:${suffix}` storage key for the current (or a given)
+ *  document stem. */
+export function storageKeyFor(suffix: string, stem: string = urlStem()): string {
   return `gs:${stem}:${suffix}`;
 }
 
