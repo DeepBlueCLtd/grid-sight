@@ -91,3 +91,12 @@ contribution is ~5.4 KB gz on top of the post-012-virtual-columns 27.84 KB
 baseline — driven by the visible-rows pipeline, the two filter popups, the
 URL codec, and the chip + dim CSS. Constitution §I 10 KB target unchanged;
 the formal amendment / bundle-cut PR now owes ~23 KB of gap.
+
+## Ceiling bump for slider calculated-result panel (2026-05-26)
+
+Adding the calculated-result info panel to the slider corner readout (italic
+value + ⓘ button + dismissable details panel showing the equation, inputs,
+and result) brings the combined bundle to **~34.6 KB gzipped**, breaching the
+34 KB ceiling. Enforced ceiling bumped 34 → 35 KB in `scripts/bundle-size.js`.
+Contribution is ~1.4 KB gz: the `equation-panel` module + CSS and the readout
+rewiring. Constitution §I 10 KB target unchanged.

@@ -25,6 +25,19 @@ const HEADER_WITH_ICON_CLASS = 'gs-has-plus-icon';
 const LOZENGE_CLASS = 'gs-lozenge';
 const LOZENGE_ACTIVE_CLASS = 'gs-lozenge--active';
 
+/** Rows/cells the slider enrichment injects carry `data-gs-injected`. Lozenge
+ *  placement and column indexing must ignore them so that a column index always
+ *  means "position among the original cells" — the same coordinate system the
+ *  heatmap, sort, and filter consumers use. Without this, enabling a slider
+ *  shifts every header's cell index and the lozenges land on the wrong cells. */
+function nonInjectedRows(table: HTMLTableElement): HTMLTableRowElement[] {
+  return Array.from(table.rows).filter(r => !r.hasAttribute('data-gs-injected'));
+}
+
+function nonInjectedCells(row: HTMLTableRowElement): HTMLTableCellElement[] {
+  return Array.from(row.cells).filter(c => !c.hasAttribute('data-gs-injected'));
+}
+
 /** Inject the inline lozenge toggles (H/S/#) on every applicable header.
  *  Replaces the previous "+ → dropdown" UX. */
 export function injectPlusIcons(table: HTMLTableElement, columnTypes: ColumnType[]): void {
@@ -32,10 +45,11 @@ export function injectPlusIcons(table: HTMLTableElement, columnTypes: ColumnType
   ensureLozengeStyles();
   ensureRowVisibilityStyles();
 
-  const headerRow = table.rows[0];
+  const rows = nonInjectedRows(table);
+  const headerRow = rows[0];
   if (!headerRow) return;
 
-  Array.from(headerRow.cells).forEach((cell, colIndex) => {
+  nonInjectedCells(headerRow).forEach((cell, colIndex) => {
     const isTopLeftCell = colIndex === 0;
     const type = columnTypes[colIndex];
     if (type === 'numeric' || type === 'categorical') {
@@ -43,10 +57,10 @@ export function injectPlusIcons(table: HTMLTableElement, columnTypes: ColumnType
     }
   });
 
-  for (let i = 1; i < table.rows.length; i++) {
-    const row = table.rows[i];
-    if (!row.cells.length) continue;
-    addLozengesToHeader(table, row.cells[0], 'row', 0);
+  for (let i = 1; i < rows.length; i++) {
+    const cells = nonInjectedCells(rows[i]);
+    if (!cells.length) continue;
+    addLozengesToHeader(table, cells[0], 'row', 0);
   }
 }
 
@@ -84,7 +98,8 @@ function columnHasRowspanBodyCells(table: HTMLTableElement, columnIndex: number)
   const tbody = table.tBodies[0];
   if (!tbody) return false;
   for (const row of Array.from(tbody.rows)) {
-    const cell = row.cells[columnIndex];
+    if (row.hasAttribute('data-gs-injected')) continue;
+    const cell = nonInjectedCells(row)[columnIndex];
     if (cell && cell.rowSpan > 1) return true;
   }
   return false;
@@ -167,12 +182,11 @@ function addLozengesToHeader(
   //  - `data-gs-no-sort` / `data-gs-no-filter` is set on the header
   //  - any body cell in this column has rowspan > 1
   if (type === 'column' && !columnHasRowspanBodyCells(table, colIndex)) {
-    const columnKey = colKeyAt(table, colIndex);
     if (!header.hasAttribute('data-gs-no-sort')) {
-      specs.push(buildSortSpec(table, header, colIndex, columnKey));
+      specs.push(buildSortSpec(table, header, colIndex));
     }
     if (!header.hasAttribute('data-gs-no-filter')) {
-      specs.push(buildFilterSpec(table, header, colIndex, columnKey, columnType));
+      specs.push(buildFilterSpec(table, header, colIndex));
     }
   }
 
@@ -201,8 +215,7 @@ function addLozengesToHeader(
 function buildSortSpec(
   table: HTMLTableElement,
   _header: HTMLTableCellElement,
-  colIndex: number,
-  _columnKey: string
+  colIndex: number
 ): LozengeSpec {
   return {
     id: 'sort',
@@ -220,9 +233,7 @@ function buildSortSpec(
 function buildFilterSpec(
   table: HTMLTableElement,
   _header: HTMLTableCellElement,
-  colIndex: number,
-  _columnKey: string,
-  _columnType: ColumnType
+  colIndex: number
 ): LozengeSpec {
   return {
     id: 'filter',
@@ -321,10 +332,11 @@ function inferHeaderColumnType(
   if (type === 'column') {
     const headerRow = header.closest('tr');
     if (headerRow) {
-      const colIndex = Array.from(headerRow.cells).indexOf(header);
-      const firstDataRow = table.rows[1];
-      if (firstDataRow && firstDataRow.cells[colIndex]) {
-        const value = firstDataRow.cells[colIndex].textContent?.trim() ?? '';
+      const colIndex = nonInjectedCells(headerRow).indexOf(header);
+      const firstDataRow = nonInjectedRows(table)[1];
+      const dataCell = firstDataRow ? nonInjectedCells(firstDataRow)[colIndex] : undefined;
+      if (dataCell) {
+        const value = dataCell.textContent?.trim() ?? '';
         return cleanNumericCell(value) !== null ? 'numeric' : 'categorical';
       }
     }
@@ -333,7 +345,7 @@ function inferHeaderColumnType(
   if (type === 'row') {
     const row = header.closest('tr');
     if (row) {
-      const hasNumeric = Array.from(row.cells).slice(1).some(cell => {
+      const hasNumeric = nonInjectedCells(row).slice(1).some(cell => {
         const v = cell.textContent?.trim() ?? '';
         return cleanNumericCell(v) !== null;
       });
@@ -342,9 +354,9 @@ function inferHeaderColumnType(
     return 'categorical';
   }
   // type === 'table'
-  const rows = Array.from(table.rows).slice(1);
+  const rows = nonInjectedRows(table).slice(1);
   const hasNumeric = rows.some(row =>
-    Array.from(row.cells).some(cell => {
+    nonInjectedCells(row).some(cell => {
       const v = cell.textContent?.trim() ?? '';
       return cleanNumericCell(v) !== null;
     })
