@@ -14,6 +14,7 @@ import type {
   TableViewDirective,
 } from './visible-rows';
 import { decodeViewState } from './view-state-decode';
+import { headerRow, gridCells } from '../core/table-grid';
 export { decodeViewState };
 
 const URL_FRAGMENT_PARAM = 'gs.v';
@@ -30,10 +31,8 @@ export function colKey(header: HTMLTableCellElement, columnIndex: number): strin
  *  Slider-injected rows/cells (`data-gs-injected`) are skipped so `columnIndex`
  *  means the same thing whether or not a slider is active. */
 export function colKeyAt(table: HTMLTableElement, columnIndex: number): string {
-  const headerRow = Array.from(table.rows).find(r => !r.hasAttribute('data-gs-injected'));
-  const cells = headerRow
-    ? Array.from(headerRow.cells).filter(c => !c.hasAttribute('data-gs-injected'))
-    : [];
+  const head = headerRow(table);
+  const cells = head ? gridCells(head) : [];
   if (!cells[columnIndex]) return `c${columnIndex}`;
   return colKey(cells[columnIndex], columnIndex);
 }

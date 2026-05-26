@@ -6,6 +6,7 @@
 
 import { createSliderControl, formatNumber } from '../ui/slider-control';
 import { parseHeaderNumber } from '../utils/sync-key';
+import { bodyRows, gridCells, cellValue } from '../core/table-grid';
 import { resolveInitialPosition, persistPosition, pruneEntry } from '../utils/slider-persistence';
 import { isEnrichmentEnabled } from '../core/enabled-set-state';
 import type { GridSightSlider } from './slider';
@@ -22,11 +23,9 @@ const thresholdSliders: { table: HTMLTableElement; slider: GridSightSlider }[] =
 
 function readNumericValuesFromTable(table: HTMLTableElement): number[] {
   const out: number[] = [];
-  for (let i = 1; i < table.rows.length; i++) {
-    const row = table.rows[i];
-    for (let j = 1; j < row.cells.length; j++) {
-      const t = row.cells[j].textContent?.trim() ?? '';
-      const n = parseHeaderNumber(t);
+  for (const row of bodyRows(table)) {
+    for (const cell of gridCells(row).slice(1)) {
+      const n = parseHeaderNumber(cellValue(cell));
       if (n !== null && isFinite(n)) out.push(n);
     }
   }
@@ -53,13 +52,10 @@ export function addThresholdSlider(table: HTMLTableElement): GridSightSlider {
   // Tag every numeric cell with its data-value so we can fade in CSS.
   // Also mark the host container.
   const host = ensureThresholdHost(table);
-  for (let i = 1; i < table.rows.length; i++) {
-    const row = table.rows[i];
-    for (let j = 1; j < row.cells.length; j++) {
-      const cell = row.cells[j];
+  for (const row of bodyRows(table)) {
+    for (const cell of gridCells(row).slice(1)) {
       if (cell.hasAttribute('data-gs-cell-value')) continue;
-      const t = cell.textContent?.trim() ?? '';
-      const n = parseHeaderNumber(t);
+      const n = parseHeaderNumber(cellValue(cell));
       if (n !== null && isFinite(n)) {
         cell.setAttribute('data-gs-cell-value', String(n));
       }

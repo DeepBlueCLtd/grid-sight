@@ -11,11 +11,12 @@ import type {
 } from '../types/virtual-column';
 import { cleanNumericCell } from '../core/type-detection';
 import { registerRenderer, getSourceColumnIndex } from './virtual-column';
+import { sourceCells, headerCellFor, cellValue } from '../core/table-grid';
 
 function getRowValue(row: HTMLTableRowElement, colIndex: number): number | null {
-  if (colIndex < 0 || colIndex >= row.cells.length) return null;
-  const text = row.cells[colIndex]?.textContent ?? '';
-  return cleanNumericCell(text);
+  const cells = sourceCells(row);
+  if (colIndex < 0 || colIndex >= cells.length) return null;
+  return cleanNumericCell(cellValue(cells[colIndex]));
 }
 
 function getColIndex(directive: CumulativeDirective): number {
@@ -134,18 +135,10 @@ const cumulativeRenderer: Renderer<CumulativeDirective> = {
   kind: 'cumulative',
 
   headerText(directive) {
-    const head = directive.tableEl.tHead?.rows[0];
     const colIdx = getColIndex(directive);
-    const cell = head?.cells[colIdx];
-    // Use only text nodes (skip lozenge button text).
-    let sourceLabel = '';
-    if (cell) {
-      cell.childNodes.forEach((n) => {
-        if (n.nodeType === 3) sourceLabel += n.textContent;
-      });
-      sourceLabel = sourceLabel.trim();
-    }
-    if (!sourceLabel) sourceLabel = directive.sourceColKey;
+    const cell = headerCellFor(directive.tableEl, colIdx);
+    // cellValue strips injected lozenge/readout UI, leaving the author label.
+    const sourceLabel = (cell ? cellValue(cell) : '') || directive.sourceColKey;
     return `Σ ${sourceLabel}`;
   },
 

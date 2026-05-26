@@ -7,6 +7,7 @@
 
 import type { FilterDirective, FilterPredicate } from '../utils/visible-rows';
 import { readNumericCell, withinRange } from './filter-helpers';
+import { gridCells, columnCells, cellValue } from '../core/table-grid';
 
 /* ── Numeric range ──────────────────────────────────────────────────── */
 
@@ -53,8 +54,8 @@ export function categoricalInclusion(args: CategoricalArgs): FilterPredicate {
     columnIndex,
     columnKey,
     test(row: HTMLTableRowElement): boolean {
-      const cell = row.cells[columnIndex];
-      const raw = cell ? (cell.textContent ?? '').trim() : '';
+      const cell = gridCells(row)[columnIndex];
+      const raw = cell ? cellValue(cell) : '';
       if (raw === '') return !hideEmpty && allowedSet.has('');
       return allowedSet.has(raw);
     },
@@ -70,10 +71,8 @@ export function collectCategoricalValues(
   columnIndex: number
 ): Map<string, number> {
   const out = new Map<string, number>();
-  const tbody = table.tBodies[0];
-  if (!tbody) return out;
-  for (const row of Array.from(tbody.rows)) {
-    const v = (row.cells[columnIndex]?.textContent ?? '').trim();
+  for (const cell of columnCells(table, columnIndex)) {
+    const v = cellValue(cell);
     out.set(v, (out.get(v) ?? 0) + 1);
   }
   return out;

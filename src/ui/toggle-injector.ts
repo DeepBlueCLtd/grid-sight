@@ -8,6 +8,14 @@ import { addThresholdSlider } from '../enrichments/slider-threshold';
 import { calculateStatistics } from '../enrichments/statistics';
 import { analyzeFrequencies } from '../utils/frequency';
 import { cleanNumericCell } from '../core/type-detection';
+import {
+  columnCells,
+  gridCells,
+  bodyRows,
+  cellValue,
+  logicalColIndexOf,
+  logicalRowIndexOf,
+} from '../core/table-grid';
 import { StatisticsPopup } from './statistics-popup';
 import { FrequencyDialog } from './frequency-dialog';
 import { FrequencyChartDialog } from './frequency-chart-dialog';
@@ -127,17 +135,17 @@ function handleEnrichmentSelected(event: Event) {
   }
   if (enrichmentType === 'heatmap') {
     if (type === 'column') {
-      // Type assertion for table header cell
-      const th = header as HTMLTableCellElement;
-      const columnIndex = th.cellIndex;
+      // Logical column index via the addressing layer (not th.cellIndex, which
+      // shifts when a slider injects cells).
+      const columnIndex = logicalColIndexOf(header as HTMLTableCellElement);
       if (columnIndex >= 0) {
         toggleHeatmap(table, columnIndex, 'column');
       }
     } else if (type === 'row') {
-      // Get the row index (0-based) and add 1 to make it 1-based for CSS nth-child
-      const rowIndex = Array.from(header.closest('tr')?.parentElement?.children || []).indexOf(header.closest('tr') as HTMLTableRowElement);
+      // 1-based body-row position (matches heatmap.ts::collectRowCells).
+      const tr = header.closest('tr') as HTMLTableRowElement | null;
+      const rowIndex = tr ? bodyRows(table).indexOf(tr) : -1;
       if (rowIndex >= 0) {
-        // Add 1 to make the index 1-based for CSS nth-child selector
         toggleHeatmap(table, rowIndex + 1, 'row');
       }
     } else if (type === 'table') {
@@ -204,45 +212,37 @@ function handleEnrichmentSelected(event: Event) {
       if (type === 'column') {
         // Type assertion for table header cell
         const th = header as HTMLTableCellElement;
-        // `headerIndex` is the column's position among non-injected cells, so it
-        // stays aligned with the clicked column when a slider has injected cells.
+        // `headerIndex` is the logical column index (from header-utils), aligned
+        // with the clicked column regardless of slider injection.
         const columnIndex = headerIndex;
         if (columnIndex < 0) {
           throw new Error('Invalid column index');
         }
 
-        // Get all cell values from the column, excluding the header row and
-        // any slider-injected rows/cells.
-        const rows = Array.from(table.rows).filter(r => !r.hasAttribute('data-gs-injected'));
-        values = rows
-          .filter((_, rowIndex) => rowIndex > 0) // Skip the header row
-          .map(row => {
-            const cell = Array.from(row.cells).filter(c => !c.hasAttribute('data-gs-injected'))[columnIndex];
-            return cell ? cell.textContent || '' : '';
-          });
+        // Author values for the logical column, injected UI stripped.
+        values = columnCells(table, columnIndex).map(cellValue);
 
         // Get column name
-        itemName = th.textContent?.trim() || `Column ${columnIndex + 1}`;
+        itemName = cellValue(th) || `Column ${columnIndex + 1}`;
       } else if (type === 'row') {
         // Type assertion for table row
         const tr = header.closest('tr') as HTMLTableRowElement;
         if (!tr) {
           throw new Error('Could not find row');
         }
-        
-        // Get row index
-        const rowIndex = tr.rowIndex;
-        
-        // Get all cell values from the row, excluding the first cell if it's a header
-        const cells = Array.from(tr.cells);
+
+        // Logical row identity (stable across sort) for the label.
+        const rowIndex = logicalRowIndexOf(table, tr);
+
+        // Author values for the row, excluding the leading row-header cell.
+        const cells = gridCells(tr);
         const startIndex = cells.length > 0 && cells[0].tagName.toLowerCase() === 'th' ? 1 : 0;
-        
-        values = cells.slice(startIndex).map(cell => cell.textContent || '');
-        
+        values = cells.slice(startIndex).map(cellValue);
+
         // Get row name/identifier (typically first cell or row number)
-        itemName = cells.length > 0 ? 
-          (cells[0].textContent?.trim() || `Row ${rowIndex + 1}`) : 
-          `Row ${rowIndex + 1}`;
+        itemName = cells.length > 0
+          ? (cellValue(cells[0]) || `Row ${rowIndex + 1}`)
+          : `Row ${rowIndex + 1}`;
       } else {
         throw new Error('Unsupported enrichment target type');
       }
@@ -299,23 +299,10 @@ function handleEnrichmentSelected(event: Event) {
  */
 function extractNumericColumnValues(table: HTMLTableElement, columnIndex: number): number[] {
   const values: number[] = [];
-
-  // Get all rows in the tbody, skipping slider-injected rows/cells so that
-  // `columnIndex` refers to the column's position among the original cells.
-  const rows = table.tBodies[0]?.rows || [];
-
-  for (let i = 0; i < rows.length; i++) {
-    if (rows[i].hasAttribute('data-gs-injected')) continue;
-    const cells = Array.from(rows[i].cells).filter(c => !c.hasAttribute('data-gs-injected'));
-    const cell = cells[columnIndex];
-    if (!cell) continue;
-
-    const value = cleanNumericCell(cell.textContent || '');
-    if (value !== null) {
-      values.push(value);
-    }
+  for (const cell of columnCells(table, columnIndex)) {
+    const value = cleanNumericCell(cellValue(cell));
+    if (value !== null) values.push(value);
   }
-
   return values;
 }
 
@@ -324,58 +311,35 @@ function extractNumericColumnValues(table: HTMLTableElement, columnIndex: number
  */
 function extractNumericRowValues(row: HTMLTableRowElement): number[] {
   const values: number[] = [];
+  const cells = gridCells(row);
 
-  // Get all cells in the row, excluding slider-injected cells.
-  const cells = Array.from(row.cells).filter(c => !c.hasAttribute('data-gs-injected'));
-
-  // Skip the first cell if it's a header
+  // Skip the first cell if it's a row header.
   const startIndex = cells.length > 0 && cells[0].tagName.toLowerCase() === 'th' ? 1 : 0;
-  
+
   for (let i = startIndex; i < cells.length; i++) {
-    const value = cleanNumericCell(cells[i].textContent || '');
-    if (value !== null) {
-      values.push(value);
-    }
+    const value = cleanNumericCell(cellValue(cells[i]));
+    if (value !== null) values.push(value);
   }
-  
+
   return values;
 }
 
 /**
- * Extracts all numeric values from a table, excluding headers
+ * Extracts all numeric values from a table body, excluding headers
  */
 function extractNumericTableValues(table: HTMLTableElement): number[] {
   const values: number[] = [];
 
-  // Get all rows in the table, excluding slider-injected rows.
-  const rows = Array.from(table.rows).filter(r => !r.hasAttribute('data-gs-injected'));
-
-  // Skip the header row(s)
-  // If there's a thead, skip all (non-injected) rows in it
-  // Otherwise, skip the first row as it's likely a header
-  const startIndex = table.tHead
-    ? Array.from(table.tHead.rows).filter(r => !r.hasAttribute('data-gs-injected')).length
-    : 1;
-
-  // Process all non-header rows
-  for (let i = startIndex; i < rows.length; i++) {
-    const row = rows[i];
-
-    // Get all cells in the row, excluding slider-injected cells.
-    const cells = Array.from(row.cells).filter(c => !c.hasAttribute('data-gs-injected'));
-
-    // Skip the first cell if it's a header
+  for (const row of bodyRows(table)) {
+    const cells = gridCells(row);
+    // Skip the first cell if it's a row header.
     const cellStartIndex = cells.length > 0 && cells[0].tagName.toLowerCase() === 'th' ? 1 : 0;
-    
-    // Process all non-header cells
     for (let j = cellStartIndex; j < cells.length; j++) {
-      const value = cleanNumericCell(cells[j].textContent || '');
-      if (value !== null) {
-        values.push(value);
-      }
+      const value = cleanNumericCell(cellValue(cells[j]));
+      if (value !== null) values.push(value);
     }
   }
-  
+
   return values;
 }
 
