@@ -17,6 +17,7 @@ each re-deriving "where is column K" against the live DOM with different
 copy-pasted helpers.
 
 **Alternatives considered**:
+
 - *Stamp logical coords onto every cell* (extend the existing `data-gs-rc`
   scheme to all cells/headers). Rejected: it adds markers (violates the
   zero-new-DOM constraint / complicates byte-identical teardown) and must be
@@ -43,6 +44,7 @@ address virtual columns too (grid view). One marker is "skip always", the other
 is "keep, but classifiable".
 
 **Alternatives considered**:
+
 - *Treat virtual columns as scaffold too*. Rejected: users can sort by / run
   stats on a computed column; excluding them outright would break those flows.
 - *A single "is this a data cell" predicate*. Rejected: insufficient — the
@@ -97,6 +99,7 @@ header compared categorically) would silently corrupt the value. Centralising
 value bugs and is cheap.
 
 **Alternatives considered**:
+
 - *Stamp `data-gs-value` on every cell at enable time*. Rejected: a marker, and
   it goes stale if author content changes; reading live text is correct and
   marker-free.
