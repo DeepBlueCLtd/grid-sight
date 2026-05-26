@@ -26,11 +26,16 @@ export function colKey(header: HTMLTableCellElement, columnIndex: number): strin
   return slug || `c${columnIndex}`;
 }
 
-/** Resolve the colKey for column `i` on `table`, used by sort/filter modules. */
+/** Resolve the colKey for column `i` on `table`, used by sort/filter modules.
+ *  Slider-injected rows/cells (`data-gs-injected`) are skipped so `columnIndex`
+ *  means the same thing whether or not a slider is active. */
 export function colKeyAt(table: HTMLTableElement, columnIndex: number): string {
-  const headerRow = table.rows[0];
-  if (!headerRow || !headerRow.cells[columnIndex]) return `c${columnIndex}`;
-  return colKey(headerRow.cells[columnIndex], columnIndex);
+  const headerRow = Array.from(table.rows).find(r => !r.hasAttribute('data-gs-injected'));
+  const cells = headerRow
+    ? Array.from(headerRow.cells).filter(c => !c.hasAttribute('data-gs-injected'))
+    : [];
+  if (!cells[columnIndex]) return `c${columnIndex}`;
+  return colKey(cells[columnIndex], columnIndex);
 }
 
 /* ── Codec ──────────────────────────────────────────────────────────── */

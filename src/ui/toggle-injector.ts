@@ -145,9 +145,10 @@ function handleEnrichmentSelected(event: Event) {
     }
   } else if (enrichmentType === 'statistics') {
     if (type === 'column') {
-      // Type assertion for table header cell
-      const th = header as HTMLTableCellElement;
-      const columnIndex = th.cellIndex;
+      // `headerIndex` is the column's position among non-injected cells (set by
+      // dispatchEnrichmentEvent). Using it instead of `th.cellIndex` keeps the
+      // stats aligned with the clicked column when a slider has injected cells.
+      const columnIndex = headerIndex;
       if (columnIndex >= 0) {
         try {
           const values = extractNumericColumnValues(table, columnIndex);
@@ -202,20 +203,23 @@ function handleEnrichmentSelected(event: Event) {
       if (type === 'column') {
         // Type assertion for table header cell
         const th = header as HTMLTableCellElement;
-        const columnIndex = th.cellIndex;
+        // `headerIndex` is the column's position among non-injected cells, so it
+        // stays aligned with the clicked column when a slider has injected cells.
+        const columnIndex = headerIndex;
         if (columnIndex < 0) {
           throw new Error('Invalid column index');
         }
-        
-        // Get all cell values from the column, excluding the header row
-        const rows = Array.from(table.rows);
+
+        // Get all cell values from the column, excluding the header row and
+        // any slider-injected rows/cells.
+        const rows = Array.from(table.rows).filter(r => !r.hasAttribute('data-gs-injected'));
         values = rows
           .filter((_, rowIndex) => rowIndex > 0) // Skip the header row
           .map(row => {
-            const cell = row.cells[columnIndex];
+            const cell = Array.from(row.cells).filter(c => !c.hasAttribute('data-gs-injected'))[columnIndex];
             return cell ? cell.textContent || '' : '';
           });
-        
+
         // Get column name
         itemName = th.textContent?.trim() || `Column ${columnIndex + 1}`;
       } else if (type === 'row') {
@@ -294,20 +298,23 @@ function handleEnrichmentSelected(event: Event) {
  */
 function extractNumericColumnValues(table: HTMLTableElement, columnIndex: number): number[] {
   const values: number[] = [];
-  
-  // Get all rows in the tbody
+
+  // Get all rows in the tbody, skipping slider-injected rows/cells so that
+  // `columnIndex` refers to the column's position among the original cells.
   const rows = table.tBodies[0]?.rows || [];
-  
+
   for (let i = 0; i < rows.length; i++) {
-    const cell = rows[i].cells[columnIndex];
+    if (rows[i].hasAttribute('data-gs-injected')) continue;
+    const cells = Array.from(rows[i].cells).filter(c => !c.hasAttribute('data-gs-injected'));
+    const cell = cells[columnIndex];
     if (!cell) continue;
-    
+
     const value = cleanNumericCell(cell.textContent || '');
     if (value !== null) {
       values.push(value);
     }
   }
-  
+
   return values;
 }
 
@@ -316,10 +323,10 @@ function extractNumericColumnValues(table: HTMLTableElement, columnIndex: number
  */
 function extractNumericRowValues(row: HTMLTableRowElement): number[] {
   const values: number[] = [];
-  
-  // Get all cells in the row
-  const cells = Array.from(row.cells);
-  
+
+  // Get all cells in the row, excluding slider-injected cells.
+  const cells = Array.from(row.cells).filter(c => !c.hasAttribute('data-gs-injected'));
+
   // Skip the first cell if it's a header
   const startIndex = cells.length > 0 && cells[0].tagName.toLowerCase() === 'th' ? 1 : 0;
   
@@ -338,22 +345,24 @@ function extractNumericRowValues(row: HTMLTableRowElement): number[] {
  */
 function extractNumericTableValues(table: HTMLTableElement): number[] {
   const values: number[] = [];
-  
-  // Get all rows in the table
-  const rows = Array.from(table.rows);
-  
+
+  // Get all rows in the table, excluding slider-injected rows.
+  const rows = Array.from(table.rows).filter(r => !r.hasAttribute('data-gs-injected'));
+
   // Skip the header row(s)
-  // If there's a thead, skip all rows in it
+  // If there's a thead, skip all (non-injected) rows in it
   // Otherwise, skip the first row as it's likely a header
-  const startIndex = table.tHead ? table.tHead.rows.length : 1;
-  
+  const startIndex = table.tHead
+    ? Array.from(table.tHead.rows).filter(r => !r.hasAttribute('data-gs-injected')).length
+    : 1;
+
   // Process all non-header rows
   for (let i = startIndex; i < rows.length; i++) {
     const row = rows[i];
-    
-    // Get all cells in the row
-    const cells = Array.from(row.cells);
-    
+
+    // Get all cells in the row, excluding slider-injected cells.
+    const cells = Array.from(row.cells).filter(c => !c.hasAttribute('data-gs-injected'));
+
     // Skip the first cell if it's a header
     const cellStartIndex = cells.length > 0 && cells[0].tagName.toLowerCase() === 'th' ? 1 : 0;
     
