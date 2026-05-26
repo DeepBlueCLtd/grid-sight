@@ -178,7 +178,7 @@ function mountCompare(ctx: AffordanceContext): HTMLButtonElement | null {
       }
       return;
     }
-    const picked = await openComparePicker(table);
+    const picked = await openComparePicker(table, lozenge);
     if (!picked) return;
     const directive: CompareDirective = {
       id: `cmp-${picked.colKeyA}-${picked.colKeyB}`,
