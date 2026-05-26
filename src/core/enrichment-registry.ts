@@ -19,6 +19,12 @@
  * toggle panel keys off `shipped`; missing or stale flags here cause the
  * panel to either hide a working enrichment or surface a non-functional
  * one.
+ *
+ * The registry entry is only step 1. The full set of integration
+ * touch-points an enrichment must cover — apply/tearDown lifecycle, the
+ * enable→disable→enable round-trip, capability surfaces, a demo page, tests,
+ * and bundle budget — is in docs/adding-an-enrichment.md. Follow it; this
+ * comment alone is NOT the complete checklist.
  */
 
 import { removeHeatmap } from '../enrichments/heatmap';
