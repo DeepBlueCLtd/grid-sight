@@ -31,7 +31,7 @@ import { removeHeatmap } from '../enrichments/heatmap';
 import { removeAllSliders, getSliders } from '../enrichments/slider';
 import { setSort, clearFilters } from '../utils/visible-rows';
 import { unmountFilterChip } from '../enrichments/filter-chip';
-import { tearDownAnnotations } from '../enrichments/annotations';
+import { tearDownAnnotations, applyAnnotations } from '../enrichments/annotations';
 
 export type EnrichmentId = string;
 
@@ -46,6 +46,14 @@ export interface EnrichmentRegistryEntry {
    */
   readonly shipped: boolean;
   readonly tearDown?: (table: HTMLTableElement) => void;
+  /**
+   * Re-apply hook for enrichments that render state automatically (persisted
+   * markers, injected columns) rather than only on a user click. The toggle
+   * panel calls this when the enrichment is re-enabled so it restores without
+   * a page reload — the symmetric counterpart to `tearDown`. Click-triggered
+   * enrichments restore via lozenge rebuild and need not set this.
+   */
+  readonly apply?: (table: HTMLTableElement) => void;
 }
 
 const ID_PATTERN = /^[a-z][a-z0-9-]*$/;
@@ -99,7 +107,7 @@ const ENTRIES: EnrichmentRegistryEntry[] = [
   // ── Spec-only registrations (flip `shipped` when the impl PR lands) ──
   // When you ship one of these, also add its tearDown function above and
   // wire it into the entry on the same line.
-  { id: 'annotations',      label: 'Cell annotations',  defaultOn: true, shipped: true,  tearDown: tearDownAnnotations },  // spec 006
+  { id: 'annotations',      label: 'Cell annotations',  defaultOn: true, shipped: true,  tearDown: tearDownAnnotations, apply: applyAnnotations },  // spec 006
   { id: 'copy-as-csv',      label: 'Copy as CSV',       defaultOn: true, shipped: false },  // spec 009
   { id: 'cumulative',       label: 'Cumulative col.',   defaultOn: true, shipped: false },  // spec 008
   { id: 'diff-compare',     label: 'Diff / compare',    defaultOn: true, shipped: false },  // spec 010
@@ -127,6 +135,9 @@ const ENTRIES: EnrichmentRegistryEntry[] = [
     // current set (every shipped entry above has a tearDown), but spec-only
     // entries MUST NOT carry a tearDown — would point at code that does not
     // exist yet.
+    if (!e.shipped && e.apply) {
+      throw new Error(`[gridsight] enrichment-registry: id "${e.id}" is spec-only but declares apply`);
+    }
     if (!e.shipped && e.tearDown) {
       throw new Error(`[gridsight] enrichment-registry: id "${e.id}" is spec-only but declares tearDown`);
     }

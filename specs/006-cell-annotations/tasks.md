@@ -144,9 +144,12 @@ its marker pulsing.
 **Purpose**: Budget, accessibility, and end-to-end validation across stories.
 
 - [X] T031 Run `yarn build` and confirm via `scripts/bundle-size.js` that the IIFE net delta is ≤ 2 KB gzipped (SC-005) and the total stays ≤ 10 KB; trim (defer/slim the popup first) if over
+  - ⚠️ **SC-005 NOT met**: the feature adds **+4.4 KB gzipped** (≈2.2× the budget). Per user decision the enforced ceiling was raised 35 → 40 KB and the overrun recorded in `scripts/bundle-size.js` + `specs/012-capability-filtering/baseline-bundle-size.md`. The build/measure/record step is done; the budget target is not.
 - [X] T032 [P] Flesh out `src/stories/annotations.stories.ts` with affordance/popover/marker/popup stories for visual + interaction coverage
-- [X] T033 [P] Accessibility pass (constitution §III): keyboard-only operation of affordance, popover, and popup; marker distinguishable in a monochrome simulation; `aria-describedby` verified with a screen reader (FR-023,024,025)
-- [X] T034 Run `quickstart.md` end-to-end (all 7 sections), including toggle-off restoring byte-identical DOM with the `localStorage` envelope left intact
+- [ ] T033 [P] Accessibility pass (constitution §III): keyboard-only operation of affordance, popover, and popup; marker distinguishable in a monochrome simulation; `aria-describedby` verified with a screen reader (FR-023,024,025)
+  - **Partial — automated proxies only.** Keyboard operation and `aria-describedby` wiring are covered by jsdom interaction tests + Playwright e2e. The marker is a CSS clip-path **shape** (structurally distinguishable without colour), but a real grayscale/monochrome visual check was **not** performed, and **no screen reader was run**. Outstanding: a human AT pass + grayscale spot-check before this can be checked.
+- [ ] T034 Run `quickstart.md` end-to-end (all 7 sections), including toggle-off restoring byte-identical DOM with the `localStorage` envelope left intact
+  - **Partial — mechanized, not manually run.** Sections 1–2 (embed + annotate), 4 (reload-persist), 5 (sort/filter stability), 6 (cross-document popup), and 7 (opt-out) are exercised by Playwright e2e; byte-identical toggle-off is covered by the disable() + round-trip e2e. A full manual human walkthrough of all 7 sections was **not** performed.
 
 ---
 
