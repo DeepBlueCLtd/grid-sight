@@ -27,9 +27,9 @@ mandates them.
 **Purpose**: Establish the module's import surface and the test harness all
 later phases depend on.
 
-- [ ] T001 Create `src/core/table-grid.ts` with the marker constants (`SCAFFOLD_ATTR='data-gs-injected'`, `VIRTUAL_COL_ATTR='data-gs-virtual-column'`) and exported, typed function stubs for the full surface in `contracts/table-grid-api.md` (throwing `NotImplemented` bodies) so consumers and tests can import against a stable signature.
-- [ ] T002 [P] Create test files `src/core/__tests__/table-grid.test.ts` and `src/core/__tests__/table-grid.composition.test.ts` with imports + top-level `describe` blocks (placeholder `it.todo`s).
-- [ ] T003 [P] Create shared test harness `src/core/__tests__/helpers/grid-fixture.ts`: builders for the canonical numeric grid (row headers + numeric body), a helper to capture each author cell's identity, and activation helpers — `enableRowSlider`, `enableColSlider`, `addCumulativeColumn`, `addSparklineColumn`, `applySort` — plus an `activateInOrder(steps, order)` utility that runs a set of activations in a chosen sequence (for both-permutation testing).
+- [X] T001 Create `src/core/table-grid.ts` with the marker constants (`SCAFFOLD_ATTR='data-gs-injected'`, `VIRTUAL_COL_ATTR='data-gs-virtual-column'`) and exported, typed function stubs for the full surface in `contracts/table-grid-api.md` (throwing `NotImplemented` bodies) so consumers and tests can import against a stable signature.
+- [X] T002 [P] Create test files `src/core/__tests__/table-grid.test.ts` and `src/core/__tests__/table-grid.composition.test.ts` with imports + top-level `describe` blocks (placeholder `it.todo`s).
+- [X] T003 [P] Create shared test harness `src/core/__tests__/helpers/grid-fixture.ts`: builders for the canonical numeric grid (row headers + numeric body), a helper to capture each author cell's identity, and activation helpers — `enableRowSlider`, `enableColSlider`, `addCumulativeColumn`, `addSparklineColumn`, `applySort` — plus an `activateInOrder(steps, order)` utility that runs a set of activations in a chosen sequence (for both-permutation testing).
 
 ---
 
@@ -38,11 +38,11 @@ later phases depend on.
 **Purpose**: The classification + row/cell/value primitives every user story
 builds on. **No user story can begin until this phase is complete.**
 
-- [ ] T004 Implement `isScaffold` and `isVirtualColumn` in `src/core/table-grid.ts` (attribute reads only).
-- [ ] T005 Implement row access `gridRows`, `headerRow`, `bodyRows` in `src/core/table-grid.ts` — exclude scaffold rows, exclude `<tfoot>` rows from the body set, keep dimmed rows; reuse the header-detection rule from `src/utils/original-order.ts::getDataRows` (do not duplicate it — import or mirror its logic with a reference comment). (depends on T004)
-- [ ] T006 Implement cell views `gridCells`, `sourceCells` and counts `sourceColumnCount`, `gridColumnCount` in `src/core/table-grid.ts` — `gridCells` = non-scaffold cells (source then virtual, DOM order); `sourceCells` = also excludes `data-gs-virtual-column`. (depends on T004)
-- [ ] T007 Implement `cellValue(cell)` in `src/core/table-grid.ts` — return the cell's text excluding Grid-Sight-injected UI (`.gs-lozenge-cluster`, `[data-gs-slider-readout]`, and other GS-owned descendants), trimmed; identity (`textContent.trim()`) for a clean cell. (Foundational because US1/US3/US4 all read values through it.)
-- [ ] T008 [P] Unit tests in `src/core/__tests__/table-grid.test.ts` for the foundational primitives: classification, `gridRows`/`headerRow`/`bodyRows` (incl. `<thead>` vs implicit-header, `<tfoot>` exclusion, dimmed-kept), `gridCells`/`sourceCells`/counts (incl. virtual ordering), and `cellValue` purity + identity. Assert INV-1/INV-4/INV-6/INV-8.
+- [X] T004 Implement `isScaffold` and `isVirtualColumn` in `src/core/table-grid.ts` (attribute reads only).
+- [X] T005 Implement row access `gridRows`, `headerRow`, `bodyRows` in `src/core/table-grid.ts` — exclude scaffold rows, exclude `<tfoot>` rows from the body set, keep dimmed rows; reuse the header-detection rule from `src/utils/original-order.ts::getDataRows` (do not duplicate it — import or mirror its logic with a reference comment). (depends on T004)
+- [X] T006 Implement cell views `gridCells`, `sourceCells` and counts `sourceColumnCount`, `gridColumnCount` in `src/core/table-grid.ts` — `gridCells` = non-scaffold cells (source then virtual, DOM order); `sourceCells` = also excludes `data-gs-virtual-column`. (depends on T004)
+- [X] T007 Implement `cellValue(cell)` in `src/core/table-grid.ts` — return the cell's text excluding Grid-Sight-injected UI (`.gs-lozenge-cluster`, `[data-gs-slider-readout]`, and other GS-owned descendants), trimmed; identity (`textContent.trim()`) for a clean cell. (Foundational because US1/US3/US4 all read values through it.)
+- [X] T008 [P] Unit tests in `src/core/__tests__/table-grid.test.ts` for the foundational primitives: classification, `gridRows`/`headerRow`/`bodyRows` (incl. `<thead>` vs implicit-header, `<tfoot>` exclusion, dimmed-kept), `gridCells`/`sourceCells`/counts (incl. virtual ordering), and `cellValue` purity + identity. Assert INV-1/INV-4/INV-6/INV-8.
 
 **Checkpoint**: Primitives implemented and unit-green; translation + consumers can begin.
 
@@ -59,17 +59,17 @@ source K and `headerCellFor(K)` is the author header.
 
 ### Tests for User Story 1 ⚠️ (write first, ensure they FAIL)
 
-- [ ] T009 [P] [US1] Unit tests in `src/core/__tests__/table-grid.test.ts` for `cellAt`, `columnCells`, `headerCellFor`, `logicalColIndexOf`: rowspan safety under a row slider (INV-2), virtual columns addressable after source columns, and out-of-range → `null`/`[]`/`-1` (INV-7). Use the harness from T003.
+- [X] T009 [P] [US1] Unit tests in `src/core/__tests__/table-grid.test.ts` for `cellAt`, `columnCells`, `headerCellFor`, `logicalColIndexOf`: rowspan safety under a row slider (INV-2), virtual columns addressable after source columns, and out-of-range → `null`/`[]`/`-1` (INV-7). Use the harness from T003.
 
 ### Implementation for User Story 1
 
-- [ ] T010 [US1] Implement `cellAt`, `columnCells` (rowspan-safe, per-row scaffold filtering), `headerCellFor` (author-colspan rule per research R-6), and `logicalColIndexOf` in `src/core/table-grid.ts`. (depends on Phase 2)
-- [ ] T011 [US1] Migrate `src/ui/header-utils.ts`: replace its local `nonInjectedRows`/`nonInjectedCells` with imports from `table-grid`; `injectPlusIcons` uses `gridRows`/`gridCells`; `headerColIndex` → `logicalColIndexOf`; `columnHasRowspanBodyCells` and `inferHeaderColumnType` use `columnCells`/`sourceCells` + `cellValue`.
-- [ ] T012 [P] [US1] Migrate `src/ui/toggle-injector.ts` statistics + frequency **column** sites to the logical index already carried in the event + `columnCells`/`gridCells` + `cellValue` (remove `th.cellIndex` and the ad-hoc per-call injected filters added in the earlier hotfix).
-- [ ] T013 [P] [US1] Migrate `src/enrichments/sort.ts` comparison reads to `columnCells`/`cellAt` + `cellValue`.
-- [ ] T014 [P] [US1] Migrate `src/enrichments/filter.ts` and `src/enrichments/filter-helpers.ts` predicate reads to `columnCells`/`cellAt` + `cellValue`.
-- [ ] T015 [P] [US1] Migrate `src/enrichments/frequency.ts` column extraction to `columnCells` + `cellValue`.
-- [ ] T016 [P] [US1] Migrate `src/enrichments/heatmap.ts` row lookup (replace `tbody tr:nth-child(index)` in `collectRowCells`) to `bodyRows`/`cellAt`.
+- [X] T010 [US1] Implement `cellAt`, `columnCells` (rowspan-safe, per-row scaffold filtering), `headerCellFor` (author-colspan rule per research R-6), and `logicalColIndexOf` in `src/core/table-grid.ts`. (depends on Phase 2)
+- [X] T011 [US1] Migrate `src/ui/header-utils.ts`: replace its local `nonInjectedRows`/`nonInjectedCells` with imports from `table-grid`; `injectPlusIcons` uses `gridRows`/`gridCells`; `headerColIndex` → `logicalColIndexOf`; `columnHasRowspanBodyCells` and `inferHeaderColumnType` use `columnCells`/`sourceCells` + `cellValue`.
+- [X] T012 [P] [US1] Migrate `src/ui/toggle-injector.ts` statistics + frequency **column** sites to the logical index already carried in the event + `columnCells`/`gridCells` + `cellValue` (remove `th.cellIndex` and the ad-hoc per-call injected filters added in the earlier hotfix).
+- [X] T013 [P] [US1] Migrate `src/enrichments/sort.ts` comparison reads to `columnCells`/`cellAt` + `cellValue`.
+- [X] T014 [P] [US1] Migrate `src/enrichments/filter.ts` and `src/enrichments/filter-helpers.ts` predicate reads to `columnCells`/`cellAt` + `cellValue`.
+- [X] T015 [P] [US1] Migrate `src/enrichments/frequency.ts` column extraction to `columnCells` + `cellValue`.
+- [X] T016 [P] [US1] Migrate `src/enrichments/heatmap.ts` row lookup (replace `tbody tr:nth-child(index)` in `collectRowCells`) to `bodyRows`/`cellAt`.
 
 **Checkpoint**: Logical column K resolves to the same author cells under `{none, row, col, both}` slider injection; MVP demonstrable.
 
@@ -85,12 +85,12 @@ assert identical results.
 
 ### Tests for User Story 2 ⚠️ (write first, ensure they FAIL / drive the work)
 
-- [ ] T018 [US2] Composition matrix test in `src/core/__tests__/table-grid.composition.test.ts`: for every point in `{none,row,col,both} × {none,+cumulative,+sparkline} × {unsorted,sorted}`, assert `columnCells(K)` equals the captured author cells for each source K, `headerCellFor(K)` is the author header, and `cellValue` is unpolluted — executed under **both** activation orders via the T003 `activateInOrder` helper. Encodes SC-001/SC-002/SC-003.
-- [ ] T019 [US2] Placement assertion (extend `src/ui/__tests__/header-utils.slider-placement.test.ts`): statistics/heatmap/sort/filter lozenges sit only on author cells and address the correct column under **both** activation orders.
+- [X] T018 [US2] Composition matrix test in `src/core/__tests__/table-grid.composition.test.ts`: for every point in `{none,row,col,both} × {none,+cumulative,+sparkline} × {unsorted,sorted}`, assert `columnCells(K)` equals the captured author cells for each source K, `headerCellFor(K)` is the author header, and `cellValue` is unpolluted — executed under **both** activation orders via the T003 `activateInOrder` helper. Encodes SC-001/SC-002/SC-003.
+- [X] T019 [US2] Placement assertion (extend `src/ui/__tests__/header-utils.slider-placement.test.ts`): statistics/heatmap/sort/filter lozenges sit only on author cells and address the correct column under **both** activation orders.
 
 ### Implementation for User Story 2
 
-- [ ] T017 [US2] Make `src/enrichments/slider-injection.ts` delegate its `nonInjectedRows`/`nonInjectedCells` to `table-grid` (single source of truth; removes the last copy of the helper).
+- [X] T017 [US2] Make `src/enrichments/slider-injection.ts` delegate its `nonInjectedRows`/`nonInjectedCells` to `table-grid` (single source of truth; removes the last copy of the helper).
 
 **Checkpoint**: Both activation orders produce identical resolution and placement (SC-002).
 
@@ -106,12 +106,12 @@ even after sort reorders the DOM; dimmed rows stay addressable.
 
 ### Tests for User Story 3 ⚠️ (write first, ensure they FAIL)
 
-- [ ] T020 [P] [US3] Unit tests in `src/core/__tests__/table-grid.test.ts`: `logicalRowIndexOf` invariant under a sort that reverses visual order (INV-5), dimmed (filtered) rows present in `bodyRows` and addressable, and `-1` for a non-body row.
+- [X] T020 [P] [US3] Unit tests in `src/core/__tests__/table-grid.test.ts`: `logicalRowIndexOf` invariant under a sort that reverses visual order (INV-5), dimmed (filtered) rows present in `bodyRows` and addressable, and `-1` for a non-body row.
 
 ### Implementation for User Story 3
 
-- [ ] T021 [US3] Implement `logicalRowIndexOf(table, row)` in `src/core/table-grid.ts` — consult `original-order.ts::getRecord` when present, else index within `bodyRows`. (depends on Phase 2)
-- [ ] T022 [P] [US3] Migrate `src/ui/toggle-injector.ts` row statistics + row frequency sites (and any remaining `tr.rowIndex` usage) to `bodyRows`/`gridCells`/`logicalRowIndexOf` + `cellValue`.
+- [X] T021 [US3] Implement `logicalRowIndexOf(table, row)` in `src/core/table-grid.ts` — consult `original-order.ts::getRecord` when present, else index within `bodyRows`. (depends on Phase 2)
+- [X] T022 [P] [US3] Migrate `src/ui/toggle-injector.ts` row statistics + row frequency sites (and any remaining `tr.rowIndex` usage) to `bodyRows`/`gridCells`/`logicalRowIndexOf` + `cellValue`.
 
 **Checkpoint**: Row identity stable across sort; dimmed rows addressable.
 
@@ -127,14 +127,14 @@ consumer reads only the author text; sort/filter/type-detection unaffected.
 
 ### Tests for User Story 4 ⚠️ (write first, ensure they FAIL)
 
-- [ ] T023 [P] [US4] Tests in `src/core/__tests__/table-grid.test.ts` (+ a targeted case in the composition suite): with lozenge clusters and slider readouts injected, `cellValue` and the migrated readers return unpolluted values for numeric AND categorical columns. Asserts INV-8 broadly across consumers.
+- [X] T023 [P] [US4] Tests in `src/core/__tests__/table-grid.test.ts` (+ a targeted case in the composition suite): with lozenge clusters and slider readouts injected, `cellValue` and the migrated readers return unpolluted values for numeric AND categorical columns. Asserts INV-8 broadly across consumers.
 
 ### Implementation for User Story 4
 
-- [ ] T024 [P] [US4] Migrate `src/core/type-detection.ts` and `src/core/table-detection.ts` cell reads to `sourceCells` + `cellValue`.
-- [ ] T025 [P] [US4] Migrate `src/enrichments/sparkline-column.ts`, `src/enrichments/compare-column.ts`, and `src/enrichments/cumulative-column.ts` source reads to `columnCells`/`sourceCells` + `cellValue`.
-- [ ] T026 [P] [US4] Migrate `src/enrichments/slider-threshold.ts` cell reads to `gridCells` + `cellValue`.
-- [ ] T027 [US4] Verify/migrate `src/enrichments/slider-injection.ts` header/data parsing (`readRawAxisHeaders`, `parseCell`) to read via `cellValue` so axis binding is robust when lozenges are present at slider-activation time (the slider-before/after-buttons permutation).
+- [X] T024 [P] [US4] Migrate `src/core/type-detection.ts` and `src/core/table-detection.ts` cell reads to `sourceCells` + `cellValue`.
+- [X] T025 [P] [US4] Migrate `src/enrichments/sparkline-column.ts`, `src/enrichments/compare-column.ts`, and `src/enrichments/cumulative-column.ts` source reads to `columnCells`/`sourceCells` + `cellValue`.
+- [X] T026 [P] [US4] Migrate `src/enrichments/slider-threshold.ts` cell reads to `gridCells` + `cellValue`.
+- [X] T027 [US4] Verify/migrate `src/enrichments/slider-injection.ts` header/data parsing (`readRawAxisHeaders`, `parseCell`) to read via `cellValue` so axis binding is robust when lozenges are present at slider-activation time (the slider-before/after-buttons permutation).
 
 **Checkpoint**: All value readers immune to injected-UI pollution under any order.
 
@@ -142,11 +142,11 @@ consumer reads only the author text; sort/filter/type-detection unaffected.
 
 ## Phase 7: Polish & Cross-Cutting Concerns
 
-- [ ] T028 [P] Grep audit across migrated consumers — confirm no live-DOM physical access (`cellIndex`, `.cells[`, `.rows[`, `tr:nth-child`) remains where the layer should be used (SC-006); document any intentionally-retained internal use inside `table-grid.ts`.
-- [ ] T029 [P] Optionally delegate `src/utils/view-state-url.ts::colKeyAt` to `headerRow`/`gridCells` from `table-grid` (consolidation; behaviour already correct).
-- [ ] T030 Run `yarn build` + `node scripts/bundle-size.js` — confirm IIFE within the 10 KB ceiling and net delta ≤ 0.5 KB gzipped, no new runtime dependency (SC-007, constitution §I).
-- [ ] T031 Run `yarn test` (Vitest unit + Storybook) and `yarn test:e2e` (Playwright) — all green, no regressions (SC-005).
-- [ ] T032 [P] Run `quickstart.md` validation end-to-end; update `CLAUDE.md`/`README.md` references if the module surface shifted during implementation.
+- [X] T028 [P] Grep audit across migrated consumers — confirm no live-DOM physical access (`cellIndex`, `.cells[`, `.rows[`, `tr:nth-child`) remains where the layer should be used (SC-006); document any intentionally-retained internal use inside `table-grid.ts`.
+- [X] T029 [P] Optionally delegate `src/utils/view-state-url.ts::colKeyAt` to `headerRow`/`gridCells` from `table-grid` (consolidation; behaviour already correct).
+- [X] T030 Run `yarn build` + `node scripts/bundle-size.js` — confirm IIFE within the 10 KB ceiling and net delta ≤ 0.5 KB gzipped, no new runtime dependency (SC-007, constitution §I).
+- [X] T031 Run `yarn test` (Vitest unit + Storybook) and `yarn test:e2e` (Playwright) — all green, no regressions (SC-005).
+- [X] T032 [P] Run `quickstart.md` validation end-to-end; update `CLAUDE.md`/`README.md` references if the module surface shifted during implementation.
 
 ---
 

@@ -15,6 +15,14 @@ import { createFilterLozenge } from './filter-lozenge';
 import { detectSortColumnType } from '../enrichments/sort';
 import { getEffectiveEnabledSet } from '../core/enabled-set-state';
 import { ensureRowVisibilityStyles } from './row-visibility-styles';
+import {
+  gridRows,
+  gridCells,
+  bodyRows,
+  columnCells,
+  cellValue,
+  logicalColIndexOf,
+} from '../core/table-grid';
 
 export type HeaderType = 'row' | 'column' | 'table';
 
@@ -25,31 +33,20 @@ const HEADER_WITH_ICON_CLASS = 'gs-has-plus-icon';
 const LOZENGE_CLASS = 'gs-lozenge';
 const LOZENGE_ACTIVE_CLASS = 'gs-lozenge--active';
 
-/** Rows/cells the slider enrichment injects carry `data-gs-injected`. Lozenge
- *  placement and column indexing must ignore them so that a column index always
- *  means "position among the original cells" — the same coordinate system the
- *  heatmap, sort, and filter consumers use. Without this, enabling a slider
- *  shifts every header's cell index and the lozenges land on the wrong cells. */
-function nonInjectedRows(table: HTMLTableElement): HTMLTableRowElement[] {
-  return Array.from(table.rows).filter(r => !r.hasAttribute('data-gs-injected'));
-}
-
-function nonInjectedCells(row: HTMLTableRowElement): HTMLTableCellElement[] {
-  return Array.from(row.cells).filter(c => !c.hasAttribute('data-gs-injected'));
-}
-
 /** Inject the inline lozenge toggles (H/S/#) on every applicable header.
- *  Replaces the previous "+ → dropdown" UX. */
+ *  Replaces the previous "+ → dropdown" UX. Column/row indexing goes through
+ *  the canonical addressing layer so slider scaffolding never displaces a
+ *  lozenge (spec 013). */
 export function injectPlusIcons(table: HTMLTableElement, columnTypes: ColumnType[]): void {
   removePlusIcons(table);
   ensureLozengeStyles();
   ensureRowVisibilityStyles();
 
-  const rows = nonInjectedRows(table);
+  const rows = gridRows(table);
   const headerRow = rows[0];
   if (!headerRow) return;
 
-  nonInjectedCells(headerRow).forEach((cell, colIndex) => {
+  gridCells(headerRow).forEach((cell, colIndex) => {
     const isTopLeftCell = colIndex === 0;
     const type = columnTypes[colIndex];
     if (type === 'numeric' || type === 'categorical') {
@@ -58,7 +55,7 @@ export function injectPlusIcons(table: HTMLTableElement, columnTypes: ColumnType
   });
 
   for (let i = 1; i < rows.length; i++) {
-    const cells = nonInjectedCells(rows[i]);
+    const cells = gridCells(rows[i]);
     if (!cells.length) continue;
     addLozengesToHeader(table, cells[0], 'row', 0);
   }
@@ -95,14 +92,7 @@ interface LozengeSpec {
 /** Detect whether a body cell in this column spans more than one row — if so,
  *  sort and filter are suppressed (per spec edge cases). */
 function columnHasRowspanBodyCells(table: HTMLTableElement, columnIndex: number): boolean {
-  const tbody = table.tBodies[0];
-  if (!tbody) return false;
-  for (const row of Array.from(tbody.rows)) {
-    if (row.hasAttribute('data-gs-injected')) continue;
-    const cell = nonInjectedCells(row)[columnIndex];
-    if (cell && cell.rowSpan > 1) return true;
-  }
-  return false;
+  return columnCells(table, columnIndex).some(cell => cell.rowSpan > 1);
 }
 
 function addLozengesToHeader(
@@ -330,55 +320,46 @@ function inferHeaderColumnType(
   type: HeaderType
 ): ColumnType {
   if (type === 'column') {
-    const headerRow = header.closest('tr');
-    if (headerRow) {
-      const colIndex = nonInjectedCells(headerRow).indexOf(header);
-      const firstDataRow = nonInjectedRows(table)[1];
-      const dataCell = firstDataRow ? nonInjectedCells(firstDataRow)[colIndex] : undefined;
+    const colIndex = logicalColIndexOf(header);
+    if (colIndex >= 0) {
+      const dataCell = columnCells(table, colIndex)[0];
       if (dataCell) {
-        const value = dataCell.textContent?.trim() ?? '';
-        return cleanNumericCell(value) !== null ? 'numeric' : 'categorical';
+        return cleanNumericCell(cellValue(dataCell)) !== null ? 'numeric' : 'categorical';
       }
     }
     return 'categorical';
   }
   if (type === 'row') {
-    const row = header.closest('tr');
+    const row = header.closest('tr') as HTMLTableRowElement | null;
     if (row) {
-      const hasNumeric = nonInjectedCells(row).slice(1).some(cell => {
-        const v = cell.textContent?.trim() ?? '';
-        return cleanNumericCell(v) !== null;
-      });
+      const hasNumeric = gridCells(row).slice(1).some(cell =>
+        cleanNumericCell(cellValue(cell)) !== null
+      );
       return hasNumeric ? 'numeric' : 'categorical';
     }
     return 'categorical';
   }
   // type === 'table'
-  const rows = nonInjectedRows(table).slice(1);
-  const hasNumeric = rows.some(row =>
-    nonInjectedCells(row).some(cell => {
-      const v = cell.textContent?.trim() ?? '';
-      return cleanNumericCell(v) !== null;
-    })
+  const hasNumeric = bodyRows(table).some(row =>
+    gridCells(row).some(cell => cleanNumericCell(cellValue(cell)) !== null)
   );
   return hasNumeric ? 'numeric' : 'categorical';
 }
 
 function inferHeaderType(header: HTMLTableCellElement): HeaderType {
-  const row = header.closest('tr');
-  const tbl = header.closest('table');
+  const row = header.closest('tr') as HTMLTableRowElement | null;
+  const tbl = header.closest('table') as HTMLTableElement | null;
   if (!row || !tbl) return 'column';
-  const isFirstRow = row === tbl.rows[0];
-  const isFirstCell = header === row.cells[0];
+  const isFirstRow = row === gridRows(tbl)[0];
+  const isFirstCell = header === gridCells(row)[0];
   if (isFirstRow && isFirstCell) return 'table';
   if (isFirstRow) return 'column';
   return 'row';
 }
 
 function headerColIndex(header: HTMLTableCellElement): number {
-  const row = header.closest('tr');
-  if (!row) return 0;
-  return Array.from(row.cells).indexOf(header);
+  const idx = logicalColIndexOf(header);
+  return idx < 0 ? 0 : idx;
 }
 
 function heatmapTitle(type: HeaderType): string {
@@ -409,8 +390,7 @@ function isCurrentHeatmapActive(
   if (type === 'row') {
     const tr = header.closest('tr') as HTMLTableRowElement | null;
     if (!tr) return false;
-    const ri = Array.from(tr.parentElement?.children || []).indexOf(tr);
-    return isHeatmapActive(table, ri + 1, 'row');
+    return isHeatmapActive(table, heatmapRowIndex(table, tr), 'row');
   }
   return isHeatmapActive(table, -1, 'table');
 }
@@ -426,11 +406,17 @@ function applyHeatmapToggle(
   } else if (type === 'row') {
     const tr = header.closest('tr') as HTMLTableRowElement | null;
     if (!tr) return;
-    const ri = Array.from(tr.parentElement?.children || []).indexOf(tr);
-    toggleHeatmap(table, ri + 1, 'row');
+    toggleHeatmap(table, heatmapRowIndex(table, tr), 'row');
   } else {
     toggleHeatmap(table, -1, 'table');
   }
+}
+
+/** 1-based body-row position used as the heatmap "row" key. Derived from
+ *  bodyRows so slider scaffolding never shifts it; matches the index
+ *  `heatmap.ts::collectRowCells` resolves via `bodyRows[index - 1]`. */
+function heatmapRowIndex(table: HTMLTableElement, tr: HTMLTableRowElement): number {
+  return bodyRows(table).indexOf(tr) + 1;
 }
 
 function sliderApplicable(table: HTMLTableElement, type: HeaderType): boolean {
@@ -484,6 +470,7 @@ function dispatchEnrichmentEvent(
   enrichmentType: string,
   colIndex: number
 ): void {
+  const table = header.closest('table') as HTMLTableElement | null;
   const event = new CustomEvent('gridsight:enrichmentSelected', {
     bubbles: true,
     detail: {
@@ -492,8 +479,8 @@ function dispatchEnrichmentEvent(
       header,
       headerIndex: type === 'column'
         ? colIndex
-        : type === 'row'
-          ? Array.from(header.closest('tr')?.parentElement?.children ?? []).indexOf(header.closest('tr') as HTMLTableRowElement)
+        : type === 'row' && table
+          ? bodyRows(table).indexOf(header.closest('tr') as HTMLTableRowElement)
           : 0,
     },
   });

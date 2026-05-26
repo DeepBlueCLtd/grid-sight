@@ -1,4 +1,5 @@
 import { cleanNumericCell } from '../core/type-detection';
+import { columnCells, bodyRows, gridCells, cellValue } from '../core/table-grid';
 
 // Define heatmap type to include 'table' for table-wide heatmaps
 export type HeatmapType = 'row' | 'column' | 'table';
@@ -157,15 +158,9 @@ function pickColor(value: number, min: number, max: number, colorScale: string[]
 
 function collectColumnCells(table: HTMLTableElement, index: number): { cell: HTMLTableCellElement; value: number }[] {
   const out: { cell: HTMLTableCellElement; value: number }[] = [];
-  const rows = Array.from(table.rows).filter(
-    r => !r.hasAttribute('data-gs-injected') && !r.classList.contains('gs-header-row')
-  );
-  // rows[0] is the header row; data rows start at rows[1].
-  for (let i = 1; i < rows.length; i++) {
-    const cells = Array.from(rows[i].cells).filter(c => !c.hasAttribute('data-gs-injected'));
-    const cell = cells[index];
-    if (!cell || cell.tagName.toLowerCase() !== 'td') continue;
-    const v = cleanNumericCell(cell.textContent || '');
+  for (const cell of columnCells(table, index)) {
+    if (cell.tagName.toLowerCase() !== 'td') continue;
+    const v = cleanNumericCell(cellValue(cell));
     if (v !== null) out.push({ cell, value: v });
   }
   return out;
@@ -173,12 +168,14 @@ function collectColumnCells(table: HTMLTableElement, index: number): { cell: HTM
 
 function collectRowCells(table: HTMLTableElement, index: number): { cell: HTMLTableCellElement; value: number }[] {
   const out: { cell: HTMLTableCellElement; value: number }[] = [];
-  const row = table.querySelector<HTMLTableRowElement>(`tbody tr:nth-child(${index})`);
+  // `index` is the 1-based body-row position (matches the key the lozenge
+  // producers derive from bodyRows); resolve it through the addressing layer
+  // instead of `tbody tr:nth-child(index)` so slider scaffolding can't shift it.
+  const row = bodyRows(table)[index - 1];
   if (!row) return out;
-  const cells = Array.from(row.cells).filter(c => !c.hasAttribute('data-gs-injected'));
-  cells.forEach((cell, cellIndex) => {
+  gridCells(row).forEach((cell, cellIndex) => {
     if (cellIndex === 0 && cell.tagName.toLowerCase() === 'th') return;
-    const v = cleanNumericCell(cell.textContent || '');
+    const v = cleanNumericCell(cellValue(cell));
     if (v !== null) out.push({ cell, value: v });
   });
   return out;

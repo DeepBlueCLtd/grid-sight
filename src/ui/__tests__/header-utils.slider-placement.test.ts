@@ -12,6 +12,12 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { injectPlusIcons } from '../header-utils';
 import { addSlider, removeAllSliders } from '../../enrichments/slider';
 import { setPageConfig, setVisitorOverride } from '../../core/enabled-set-state';
+import { gridCells, headerCellFor, headerRow as gridHeaderRow } from '../../core/table-grid';
+import {
+  buildNumericGrid,
+  activateInOrder,
+  type ActivationStep,
+} from '../../core/__tests__/helpers/grid-fixture';
 
 beforeEach(() => {
   document.body.innerHTML = '';
@@ -84,4 +90,40 @@ describe('lozenge placement with an active slider', () => {
       expect(injected.querySelector('[data-gs-lozenge-id]')).toBeNull();
     }
   });
+});
+
+/**
+ * Spec 013 US2: lozenges address the correct logical column and sit only on
+ * author cells regardless of the order sliders + virtual columns were added.
+ */
+describe('lozenge placement is order-independent (spec 013)', () => {
+  const ORDERS: ActivationStep[][] = [
+    ['cumulative', 'row', 'col'], // enrichment-first
+    ['row', 'col', 'cumulative'], // slider-first
+  ];
+
+  for (const order of ORDERS) {
+    it(`addresses the correct column after [${order.join(', ')}]`, () => {
+      const { table, sourceCols } = buildNumericGrid();
+      activateInOrder(table, order);
+      injectPlusIcons(table, ['numeric', 'numeric', 'numeric', 'numeric']);
+
+      // Every lozenge lives on a non-injected (author or virtual) cell.
+      for (const loz of Array.from(table.querySelectorAll<HTMLElement>('[data-gs-lozenge-id]'))) {
+        const host = loz.closest('th, td');
+        expect(host).not.toBeNull();
+        expect(host!.hasAttribute('data-gs-injected')).toBe(false);
+      }
+
+      // The statistics (#) lozenge for each source column header sits on the
+      // author header cell that the addressing layer resolves for that column.
+      const head = gridHeaderRow(table)!;
+      const headerCells = gridCells(head);
+      for (let k = 1; k < sourceCols; k++) {
+        const authorHeader = headerCellFor(table, k)!;
+        expect(authorHeader).toBe(headerCells[k]);
+        expect(authorHeader.querySelector('[data-gs-lozenge-id="statistics"]')).not.toBeNull();
+      }
+    });
+  }
 });

@@ -13,6 +13,7 @@ import type {
 import { cleanNumericCell } from '../core/type-detection';
 import { registerRenderer, getNumericColumns, getColumnKeys } from './virtual-column';
 import { buildSparklineSvg, updateSparklineSvg } from './sparkline-svg';
+import { sourceCells, cellValue } from '../core/table-grid';
 
 function getNumericColumnIndices(directive: SparklineDirective): number[] {
   const keys = getColumnKeys(directive.tableEl);
@@ -25,9 +26,10 @@ function getNumericColumnIndices(directive: SparklineDirective): number[] {
 }
 
 function rowValues(row: HTMLTableRowElement, indices: number[]): Array<number | null> {
+  const cells = sourceCells(row);
   return indices.map((i) => {
-    if (i < 0 || i >= row.cells.length) return null;
-    return cleanNumericCell(row.cells[i]?.textContent ?? '');
+    if (i < 0 || i >= cells.length) return null;
+    return cleanNumericCell(cellValue(cells[i]));
   });
 }
 
@@ -42,9 +44,12 @@ function rowStats(values: Array<number | null>): { min: number | null; max: numb
 }
 
 function maxAbsAcross(rowEl: HTMLTableRowElement, indices: number[]): number {
+  const cells = sourceCells(rowEl);
   let max = 0;
   for (const i of indices) {
-    const v = cleanNumericCell(rowEl.cells[i]?.textContent ?? '');
+    const cell = cells[i];
+    if (!cell) continue;
+    const v = cleanNumericCell(cellValue(cell));
     if (v !== null && isFinite(v)) max = Math.max(max, Math.abs(v));
   }
   return max;
