@@ -37,6 +37,7 @@ import {
   removeAffordance,
 } from '../ui/annotation-affordance';
 import { openAnnotationPopover } from '../ui/annotation-popover';
+import { registerAnnotationsMenuEntry } from '../ui/annotation-popup';
 import { isEnrichmentEnabled } from '../core/enabled-set-state';
 import { onVisibleRowsChange } from '../utils/visible-rows';
 import { getDataRows } from '../utils/original-order';
@@ -179,6 +180,7 @@ export function saveAnnotation(
       s.delete(key);
       clearMarker(cell);
       persist();
+      refreshMenuEntry();
     }
     return { ok: true };
   }
@@ -193,6 +195,7 @@ export function saveAnnotation(
     return { ok: false, reason: 'quota' };
   }
   renderMarker(cell, value);
+  refreshMenuEntry();
   return { ok: true };
 }
 
@@ -205,6 +208,17 @@ export function deleteAnnotation(cell: HTMLTableCellElement): void {
   s.delete(key);
   clearMarker(cell);
   persist();
+  refreshMenuEntry();
+}
+
+// Keep the "Show annotations" entry in sync after the first save / last delete
+// so it appears/disappears live without a reload (FR-020).
+function refreshMenuEntry(): void {
+  try {
+    registerAnnotationsMenuEntry();
+  } catch {
+    /* ignore */
+  }
 }
 
 /** Current note text for a cell, or undefined. */
