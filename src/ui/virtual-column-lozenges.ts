@@ -17,6 +17,7 @@ import type {
   SparklineDirective,
 } from '../types/virtual-column';
 import { openComparePicker } from './compare-picker';
+import { isEnrichmentEnabled } from '../core/enabled-set-state';
 
 function findExistingDirective(
   table: HTMLTableElement,
@@ -40,6 +41,7 @@ function makeLozenge(glyph: string, label: string): HTMLButtonElement {
 }
 
 export function injectCumulativeLozenges(table: HTMLTableElement): void {
+  if (!isEnrichmentEnabled('cumulative')) return;
   if (table.hasAttribute('data-gs-ignore')) return;
   if (table.hasAttribute('data-gs-no-cumulative')) return;
   const head = table.tHead?.rows[0];
@@ -92,6 +94,7 @@ function getCornerCluster(table: HTMLTableElement): HTMLElement | null {
 }
 
 export function injectSparklineLozenge(table: HTMLTableElement): void {
+  if (!isEnrichmentEnabled('sparkline')) return;
   if (table.hasAttribute('data-gs-ignore')) return;
   if (table.hasAttribute('data-gs-no-sparkline')) return;
   const numeric = getNumericColumns(table);
@@ -128,6 +131,7 @@ export function injectSparklineLozenge(table: HTMLTableElement): void {
 }
 
 export function injectCompareLozenge(table: HTMLTableElement): void {
+  if (!isEnrichmentEnabled('diff-compare')) return;
   if (table.hasAttribute('data-gs-ignore')) return;
   if (table.hasAttribute('data-gs-no-compare')) return;
   const numeric = getNumericColumns(table);
@@ -185,4 +189,10 @@ export function injectAllVirtualColumnLozenges(table: HTMLTableElement): void {
   injectCumulativeLozenges(table);
   injectSparklineLozenge(table);
   injectCompareLozenge(table);
+}
+
+/** Remove every virtual-column lozenge affordance from `table` (the Σ/⌇/Δ
+ *  buttons). Does not remove activated virtual columns. */
+export function removeAllVirtualColumnLozenges(table: HTMLTableElement): void {
+  table.querySelectorAll('.gs-vc-lozenge').forEach((el) => el.remove());
 }

@@ -1,4 +1,5 @@
 import { injectPlusIcons, removePlusIcons, plusIconStyles } from './header-utils';
+import { injectAllVirtualColumnLozenges, removeAllVirtualColumnLozenges } from './virtual-column-lozenges';
 import type { HeaderType } from './header-utils';
 import { removeAllMenus } from './enrichment-menu';
 import { analyzeTable } from '../core/table-detection';
@@ -428,13 +429,18 @@ export function injectToggle(table: HTMLTableElement): boolean {
           setColumnTypes(table, columnTypes);
           // Inject plus icons
           injectPlusIcons(table, columnTypes);
-          
+          // Virtual-column lozenges (Σ/⌇/Δ) are column enrichment toggles, so
+          // they appear only while Grid-Sight is enabled — and only for kinds
+          // in the effective enabled set (gated inside the inject fns).
+          injectAllVirtualColumnLozenges(table);
+
           // Add click handler for enrichment selection
           table.addEventListener('gridsight:enrichmentSelected', handleEnrichmentSelected as EventListener);
         } else {
           table.classList.remove(TABLE_ENABLED_CLASS);
           // Remove plus icons, menus, and event listeners when toggling off
           removePlusIcons(table);
+          removeAllVirtualColumnLozenges(table);
           removeAllMenus();
           table.removeEventListener('gridsight:enrichmentSelected', handleEnrichmentSelected as EventListener);
         }

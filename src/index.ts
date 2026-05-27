@@ -62,7 +62,6 @@ import {
   removeAllDirectivesOnTable as vcRemoveAllOnTable,
   registerVirtualColumn,
 } from './enrichments/virtual-column';
-import { injectAllVirtualColumnLozenges } from './ui/virtual-column-lozenges';
 // Side-effect imports register renderers
 import './enrichments/cumulative-column';
 import './enrichments/sparkline-column';
@@ -186,9 +185,9 @@ const GridSight = {
           id: `table-${index}`,
           ...options,
         });
-        if (vcEnabled) {
-          try { injectAllVirtualColumnLozenges(table); } catch (e) { console.warn('virtual-column lozenge init failed', e); }
-        }
+        // Virtual-column lozenges are injected on GS-enable (see
+        // toggle-injector), not at load — they are column enrichment toggles
+        // and must not appear while Grid-Sight is off.
         processed.push(table);
       } catch (error) {
         console.error(`Failed to process table ${index}:`, error);
