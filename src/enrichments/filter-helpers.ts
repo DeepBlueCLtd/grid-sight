@@ -4,11 +4,12 @@
  */
 
 import { cleanNumericCell } from '../core/type-detection';
+import { gridCells, cellValue } from '../core/table-grid';
 
 export function readNumericCell(row: HTMLTableRowElement, columnIndex: number): number | null {
-  const cell = row.cells[columnIndex];
+  const cell = gridCells(row)[columnIndex];
   if (!cell) return null;
-  const raw = (cell.textContent ?? '').trim();
+  const raw = cellValue(cell);
   return raw === '' ? null : cleanNumericCell(raw);
 }
 

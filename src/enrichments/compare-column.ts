@@ -10,10 +10,12 @@ import type {
 } from '../types/virtual-column';
 import { cleanNumericCell } from '../core/type-detection';
 import { registerRenderer, getSourceColumnIndex } from './virtual-column';
+import { sourceCells, headerCellFor, cellValue } from '../core/table-grid';
 
 function getRowValue(row: HTMLTableRowElement, colIndex: number): number | null {
-  if (colIndex < 0 || colIndex >= row.cells.length) return null;
-  return cleanNumericCell(row.cells[colIndex]?.textContent ?? '');
+  const cells = sourceCells(row);
+  if (colIndex < 0 || colIndex >= cells.length) return null;
+  return cleanNumericCell(cellValue(cells[colIndex]));
 }
 
 export function computeDelta(
@@ -52,15 +54,9 @@ function format(value: number, mode: 'abs' | 'rel' | 'percent'): string {
 }
 
 function getHeaderLabel(table: HTMLTableElement, colIdx: number): string {
-  const head = table.tHead?.rows[0];
-  const cell = head?.cells[colIdx];
+  const cell = headerCellFor(table, colIdx);
   if (!cell) return `col-${colIdx}`;
-  let text = '';
-  cell.childNodes.forEach((n) => {
-    if (n.nodeType === 3) text += n.textContent;
-  });
-  text = text.trim();
-  return text || `col-${colIdx}`;
+  return cellValue(cell) || `col-${colIdx}`;
 }
 
 const compareRenderer: Renderer<CompareDirective> = {

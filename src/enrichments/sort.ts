@@ -7,14 +7,18 @@
 
 import { cleanNumericCell, type ColumnType } from '../core/type-detection';
 import { registerComparatorFactory, type SortDirective } from '../utils/visible-rows';
+import { gridCells, columnCells, cellValue } from '../core/table-grid';
 
 const collator = new Intl.Collator(undefined, { sensitivity: 'base', numeric: true });
 
 export type SortColumnType = 'numeric' | 'categorical';
 
+/** Read the logical column `columnIndex` of `row` as author data text — via the
+ *  canonical addressing layer, so a row slider's injected cell never shifts the
+ *  index and injected UI never pollutes the value (spec 013). */
 function readCellAt(row: HTMLTableRowElement, columnIndex: number): string {
-  const cell = row.cells[columnIndex];
-  return cell ? (cell.textContent ?? '').trim() : '';
+  const cell = gridCells(row)[columnIndex];
+  return cell ? cellValue(cell) : '';
 }
 
 /** Build a comparator for a (column, direction, columnType) tuple. */
@@ -55,13 +59,10 @@ export function detectSortColumnType(
   table: HTMLTableElement,
   columnIndex: number
 ): SortColumnType {
-  const tbody = table.tBodies[0];
-  if (!tbody) return 'categorical';
-  for (const row of Array.from(tbody.rows)) {
-    const v = (row.cells[columnIndex]?.textContent ?? '').trim();
+  for (const cell of columnCells(table, columnIndex)) {
+    const v = cellValue(cell);
     if (!v) continue;
-    if (cleanNumericCell(v) !== null) return 'numeric';
-    return 'categorical';
+    return cleanNumericCell(v) !== null ? 'numeric' : 'categorical';
   }
   return 'categorical';
 }
