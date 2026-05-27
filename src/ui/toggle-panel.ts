@@ -27,6 +27,10 @@ import {
 } from '../core/enabled-set-state';
 import { persistVisitorEnrichments } from '../utils/slider-persistence';
 import { injectPlusIcons } from './header-utils';
+import {
+  injectAllVirtualColumnLozenges,
+  removeAllVirtualColumnLozenges,
+} from './virtual-column-lozenges';
 import { getColumnTypes } from '../core/column-types-cache';
 import { analyzeTable } from '../core/table-detection';
 
@@ -205,6 +209,14 @@ function rebuildLozengesAcrossTables(tables: Iterable<HTMLTableElement>): void {
   for (const table of tables) {
     if (!table.classList.contains('grid-sight-enabled')) continue;
     injectPlusIcons(table, resolveColumnTypes(table));
+    // Plus-icons are CSS-gated (hidden until GS is active), but virtual-column
+    // lozenges are visible the moment they're injected — so only refresh them
+    // on tables whose GS toggle is actually on. remove+reinject reflects the
+    // new effective enabled set per kind (capability toggle takes effect live).
+    if (table.querySelector('.grid-sight-toggle[aria-expanded="true"]')) {
+      removeAllVirtualColumnLozenges(table);
+      injectAllVirtualColumnLozenges(table);
+    }
   }
 }
 
