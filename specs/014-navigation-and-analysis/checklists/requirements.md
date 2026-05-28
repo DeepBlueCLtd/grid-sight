@@ -27,8 +27,9 @@
 - [x] All functional requirements have clear acceptance criteria
 - [x] User scenarios cover primary flows
 - [x] Feature meets measurable outcomes defined in Success Criteria
-- [x] Each of the four features is independently toggleable (registry + toggle panel)
-- [x] Each of the four features specifies a dedicated demo page
+- [x] Each feature is independently toggleable (3 new registry ids + the existing `statistics`)
+- [x] P2 extends the existing `statistics` enrichment in place (no parallel id)
+- [x] Each new feature specifies a dedicated demo page; P2 updates the statistics demo
 - [x] Enable → disable → enable round-trip and global-disable gating are required
 
 ## Notes

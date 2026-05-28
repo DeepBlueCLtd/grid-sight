@@ -109,8 +109,11 @@ statistics/frequency code).
   orientation win on large tables and the cheapest — largely `position: sticky`
   plus the addressing layer to identify the key column. Best payoff per KB.
 - **Per-column EDA profile panel (E20, E21).** Scientists live here: missing %,
-  distinct count, quartiles, and a mini-histogram on demand. A natural extension
-  of the existing statistics popup + frequency machinery and numeric detector.
+  distinct count, quartiles, and a mini-histogram on demand. Best delivered by
+  **extending the existing `statistics` enrichment in place** (which already
+  shows count/sum/min/max/mean/median/σ/variance) rather than adding a parallel
+  enrichment — the delta is just missing %, distinct, Q1/Q3, histogram, and
+  visible-rows awareness. Categorical distribution stays with `frequency`.
 - **Column summary / footer row (B8).** Sum/avg/min/max/count over *visible*
   rows. An analyst staple that slots straight into the visible-rows pipeline so
   it stays correct under filter/sort.

@@ -5,22 +5,31 @@
 **Status**: Draft
 **Input**: User description: "Add the four Tier-1 capabilities identified in capability-research.md — frozen header/key column, per-column EDA profile, column summary row, and find-in-table — each matching the existing enrichment model (registry, on/off toggling, demo page)."
 
-This feature adds four independent, individually-toggleable enrichments that
-help analysts and scientists navigate and exploit large tables. They were
-selected in [`../../capability-research.md`](../../capability-research.md) as the
-highest value-per-byte additions that fit Grid-Sight's read-only,
-offline-first, progressive-enhancement posture. Each is its own enrichment with
-its own registry id, so it can ship, be demoed, and be toggled independently;
-they compose with each other and with every existing enrichment.
+This feature adds capabilities that help analysts and scientists navigate and
+exploit large tables. They were selected in
+[`../../capability-research.md`](../../capability-research.md) as the highest
+value-per-byte additions that fit Grid-Sight's read-only, offline-first,
+progressive-enhancement posture. Three are **new, independent,
+individually-toggleable enrichments**; the fourth (P2, EDA profiling) is
+delivered by **extending the existing `statistics` enrichment in place** rather
+than adding a parallel id, because the current statistics popup already covers
+~80% of a column profile. Each piece can ship, be demoed, and be toggled
+independently, and they compose with each other and with every existing
+enrichment.
 
-The four new enrichment ids introduced here are:
+| Story | Enrichment id | Label | Scope | New? |
+|-------|---------------|-------|-------|------|
+| US1 (P1) | `freeze-panes` | "Freeze panes" | Table-level | New |
+| US2 (P2) | `statistics` (existing) | "Statistics popup" | Column-level lozenge | Extended, not new |
+| US3 (P3) | `summary-row` | "Summary row" | Table/column-level | New |
+| US4 (P4) | `find-in-table` | "Find in table" | Table-level | New |
 
-| Story | Enrichment id | Label | Scope |
-|-------|---------------|-------|-------|
-| US1 (P1) | `freeze-panes` | "Freeze panes" | Table-level |
-| US2 (P2) | `column-profile` | "Column profile" | Column-level lozenge |
-| US3 (P3) | `summary-row` | "Summary row" | Table/column-level |
-| US4 (P4) | `find-in-table` | "Find in table" | Table-level |
+The current `statistics` popup already shows count, sum, min, max, mean, median,
+std dev, and variance over a numeric column. US2 grows that **same** enrichment
+(same id, same "Statistics popup" label, same lozenge) — it does not introduce a
+second lozenge. Categorical-column distribution remains owned by the existing
+`frequency` / `frequency-chart` enrichments; the statistics popup stays
+numeric-focused.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -70,49 +79,52 @@ Disable it and confirm the DOM returns to its pre-enrichment state.
 
 ---
 
-### User Story 2 - Per-column profile / quick EDA (Priority: P2)
+### User Story 2 - Richer column profile via the statistics popup (Priority: P2)
 
-An analyst evaluating an unfamiliar dataset wants a fast read on a single column
-before trusting it. They click a column-level "Column profile" lozenge
-(suggested glyph **▥** or **∿**) on a numeric column header. A popover shows:
-count of values, count and percentage of missing/blank cells, number of distinct
-values, and — for numeric columns — minimum, first quartile (Q1), median, third
-quartile (Q3), maximum, mean, and standard deviation, plus a compact mini
-histogram of the distribution. On a categorical column, the popover instead
-shows the count, missing %, distinct count, and the top values by frequency
-(reusing the existing frequency machinery). All figures are computed over the
-currently **visible** rows so the profile reflects any active filter/sort.
+An analyst evaluating an unfamiliar dataset wants a fast read on a single numeric
+column before trusting it. They click the **existing** statistics lozenge on a
+numeric column header. The popover — which today already shows count, sum, min,
+max, mean, median, std dev, and variance — now **also** shows the count and
+percentage of missing/blank cells, the number of distinct values, the first and
+third quartiles (Q1, Q3), and a compact mini histogram of the distribution. All
+figures are computed over the currently **visible** rows so the profile reflects
+any active filter/sort. This grows the same `statistics` enrichment in place; no
+second lozenge appears. Categorical columns are unchanged — their distribution
+continues to be served by the existing `frequency` / `frequency-chart`
+enrichments, which the statistics popup does not duplicate.
 
-**Why this priority**: This is the feature scientists value most for "do I
-believe this column?" exploratory work, and it extends the existing statistics
-popup, frequency code, and numeric detector rather than introducing new
-infrastructure. It is independent of the other stories.
+**Why this priority**: This is the read scientists value most for "do I believe
+this column?" exploratory work, and it is the lowest-cost of the four because it
+extends the existing statistics popup, simple-statistics usage, and numeric
+detector rather than introducing new infrastructure or a new enrichment id. It
+is independent of the other stories.
 
 **Independent Test**: Open a page with a numeric column containing some blank
-cells, click the column-profile lozenge, and confirm the popover reports the
-correct count, missing %, distinct count, quartiles, mean/σ, and a histogram.
-Apply a filter that hides some rows and reopen the popover; confirm the figures
-recompute over only the visible rows.
+cells, click the statistics lozenge, and confirm the popover reports the correct
+count, missing %, distinct count, Q1/Q3, mean/σ, and a mini histogram in addition
+to the figures it already shows. Apply a filter that hides some rows and reopen
+the popover; confirm the figures recompute over only the visible rows.
 
 **Acceptance Scenarios**:
 
 1. **Given** a numeric column with known values and some blanks, **When** the
-   user opens its profile, **Then** the popover shows count, missing count and
-   percentage, distinct count, min/Q1/median/Q3/max, mean, and standard
-   deviation, each matching a hand-computed reference, and a mini histogram of
-   the distribution.
-2. **Given** a categorical column, **When** the user opens its profile, **Then**
-   the popover shows count, missing %, distinct count, and the most frequent
-   values with their counts (no quartiles/histogram).
-3. **Given** an active filter hides half the rows, **When** the user opens (or
-   reopens) the profile, **Then** every figure is computed over only the visible
+   user opens the statistics popup, **Then** it shows — alongside the existing
+   count/sum/min/max/mean/median/stdDev/variance — the missing count and
+   percentage, distinct count, Q1 and Q3, and a mini histogram, each matching a
+   hand-computed reference.
+2. **Given** an active filter hides half the rows, **When** the user opens (or
+   reopens) the popup, **Then** every figure is computed over only the visible
    rows.
-4. **Given** the profile popover is open, **When** the user presses Escape or
-   clicks outside, **Then** the popover closes and focus returns to the lozenge;
-   no profile state persists in the DOM after close.
-5. **Given** `column-profile` is disabled via the toggle panel, **When**
-   teardown completes, **Then** the lozenge is removed and the table DOM is
-   byte-identical to its pre-enrichment state.
+3. **Given** a numeric column where every visible cell is blank/non-numeric,
+   **When** the user opens the popup, **Then** it shows an explicit zero-count
+   empty state (count 0, missing 100%) rather than throwing or showing `NaN`.
+4. **Given** the popup is open, **When** the user presses Escape or clicks
+   outside, **Then** it closes and focus returns to the lozenge; no profile
+   state persists in the DOM after close.
+5. **Given** the `statistics` enrichment is disabled via the toggle panel,
+   **When** teardown completes, **Then** the lozenge is removed and the table DOM
+   is byte-identical to its pre-enrichment state (unchanged from today's
+   `statistics` teardown contract).
 
 ---
 
@@ -209,10 +221,12 @@ confirm all highlighting is removed.
   (`data-gs-injected`) are never frozen, profiled, summed, or matched; virtual
   columns (`data-gs-virtual-column`) are real addressable columns and ARE
   eligible for profile/summary/find unless their source enrichment opts out.
-- **No numeric columns.** `column-profile` still works on categorical columns;
-  `summary-row` shows count-only footers and no numeric aggregates.
-- **All rows filtered out.** Profile and summary show an explicit empty state
-  (zero count) rather than `NaN`/blank; find reports "0 matches".
+- **No numeric columns.** The statistics lozenge appears only on numeric columns
+  (unchanged); categorical distribution stays with `frequency`. `summary-row`
+  shows count-only footers and no numeric aggregates.
+- **All rows filtered out.** The statistics popup and `summary-row` show an
+  explicit empty state (zero count) rather than `NaN`/blank; find reports
+  "0 matches".
 - **Table not in a scroll container.** Freezing degrades to a no-op (US1 #5).
 - **Composition order.** Enabling/disabling these in any order, and combining
   with sort/filter/sliders/virtual columns, yields the same result (the
@@ -232,13 +246,17 @@ confirm all highlighting is removed.
   scrolls horizontally, with the top-left corner pinned when both are active.
 - **FR-003** (`freeze-panes`): Freezing MUST be a no-op when the table has no
   scrollable overflow, and MUST not alter computed row/column alignment.
-- **FR-004** (`column-profile`): Users MUST be able to open a per-column profile
-  showing count, missing count + %, and distinct count for any column.
-- **FR-005** (`column-profile`): For numeric columns the profile MUST additionally
-  show min, Q1, median, Q3, max, mean, standard deviation, and a mini histogram;
-  for categorical columns it MUST show top values by frequency.
-- **FR-006** (`column-profile`): All profile figures MUST be computed over the
-  currently visible rows and recompute when the visible set changes.
+- **FR-004** (`statistics`, extended): The existing statistics popup MUST, in
+  addition to its current figures, show the missing count + %, distinct count,
+  Q1, Q3, and a mini histogram for a numeric column — within the same enrichment
+  id and lozenge (no second lozenge is added).
+- **FR-005** (`statistics`, extended): The statistics popup MUST remain
+  numeric-focused; categorical-column distribution stays owned by the existing
+  `frequency` / `frequency-chart` enrichments and MUST NOT be duplicated here.
+- **FR-006** (`statistics`, extended): All statistics figures MUST be computed
+  over the currently visible rows, MUST recompute when the visible set changes,
+  and MUST show an explicit zero-count empty state (rather than throwing) when no
+  visible cell is numeric.
 - **FR-007** (`summary-row`): The system MUST render a summary footer with a
   per-numeric-column aggregate computed over the currently visible rows.
 - **FR-008** (`summary-row`): Users MUST be able to choose the aggregate per
@@ -260,10 +278,12 @@ confirm all highlighting is removed.
 These ensure the four features match the existing enrichment model. Each maps to
 the checklist in [`docs/adding-an-enrichment.md`](../../docs/adding-an-enrichment.md).
 
-- **FR-013** (Registry): Each feature MUST add one entry to
+- **FR-013** (Registry): Each **new** feature MUST add one entry to
   `src/core/enrichment-registry.ts` with a unique lower-case-hyphen `id`
-  (`freeze-panes`, `column-profile`, `summary-row`, `find-in-table`), a `label`,
-  and `defaultOn`, and MUST set `shipped: true` in the PR that ships it.
+  (`freeze-panes`, `summary-row`, `find-in-table`), a `label`, and `defaultOn`,
+  and MUST set `shipped: true` in the PR that ships it. The P2 EDA work MUST
+  reuse the existing `statistics` entry (no new id, label unchanged) and MUST NOT
+  add a parallel id.
 - **FR-014** (Toggling on/off): Each feature MUST be independently toggleable via
   the spec-012 runtime toggle panel and via page-level
   `pageConfig.enrichments`. Disabling MUST run a `tearDown(table)` that restores
@@ -296,15 +316,18 @@ the checklist in [`docs/adding-an-enrichment.md`](../../docs/adding-an-enrichmen
 
 ### Demo & documentation requirements
 
-- **FR-020** (Demo pages): Each feature MUST ship a dedicated demo page under
-  `public/demo/<feature>/index.html` showcasing it on a **realistic, large**
-  table (US-relevant: e.g. a tall/wide scientific results table for
-  `freeze-panes`, a column with missing values and a skewed distribution for
-  `column-profile`, a filterable financial/measurement table for `summary-row`,
-  and a dense lookup table for `find-in-table`), with brief instructions, a nav
-  bar consistent with existing demos, and a `pageConfig.enrichments` that
-  includes the feature's id. A demo card linking each page MUST be added to the
-  landing page `public/index.html`. Each demo MUST be smoke-tested in a real
+- **FR-020** (Demo pages): Each **new** feature MUST ship a dedicated demo page
+  under `public/demo/<feature>/index.html` showcasing it on a **realistic, large**
+  table (US-relevant: a tall/wide scientific results table for `freeze-panes`, a
+  filterable financial/measurement table for `summary-row`, and a dense lookup
+  table for `find-in-table`), with brief instructions, a nav bar consistent with
+  existing demos, and a `pageConfig.enrichments` that includes the feature's id.
+  A demo card linking each new page MUST be added to the landing page
+  `public/index.html`. The P2 statistics extension MUST be demonstrated by
+  **updating the existing statistics demo** (or a statistics-bearing demo table)
+  to include a column with missing values and a skewed distribution that
+  exercises the new missing %, distinct, quartiles, and histogram — not a new
+  page for an existing enrichment. Each demo MUST be smoke-tested in a real
   browser.
 - **FR-021** (Docs): The `docs/adding-an-enrichment.md` checklist MUST be pasted
   into the PR for each feature with every item ticked or marked `N/A`; quickstart
@@ -312,9 +335,10 @@ the checklist in [`docs/adding-an-enrichment.md`](../../docs/adding-an-enrichmen
 
 ### Key Entities
 
-- **Column profile**: a derived, transient summary of one column over the visible
-  rows — {count, missing, distinct} plus, for numeric, {min, Q1, median, Q3, max,
-  mean, σ, histogram bins}. Not persisted; recomputed on open.
+- **Statistics result (extended)**: the existing `StatisticsResult` for a numeric
+  column over the visible rows, grown to add {missing count + %, distinct count,
+  Q1, Q3, histogram bins} alongside the current {count, sum, min, max, mean,
+  median, stdDev, variance}. Not persisted; recomputed on open.
 - **Summary aggregate selection**: a per-(table, column) choice of aggregate
   function; persisted per page via the `gs:` scheme.
 - **Find query state**: a transient search term, the ordered list of matched
@@ -330,34 +354,40 @@ the checklist in [`docs/adding-an-enrichment.md`](../../docs/adding-an-enrichmen
 - **SC-001**: On a 600×30 table in a scroll container, a user can scroll to any
   cell and still see both its column header and its row's key column, with no
   misalignment between frozen and scrolling regions.
-- **SC-002**: For any numeric column, the profile's count, missing %, distinct
-  count, min/Q1/median/Q3/max, mean, and σ match an independent reference within
-  display precision, computed over the visible rows.
+- **SC-002**: For any numeric column, the statistics popup's count, missing %,
+  distinct count, min/Q1/median/Q3/max, mean, and σ match an independent
+  reference within display precision, computed over the visible rows.
 - **SC-003**: After any filter/sort change, the summary footer and any open
-  profile reflect the new visible row set within one animation frame, with no
-  reload.
+  statistics popup reflect the new visible row set within one animation frame,
+  with no reload.
 - **SC-004**: Find highlights 100% of matching visible cells, the counter equals
   the true match count, and Next/Previous reaches every match with wrap-around.
-- **SC-005**: For each of the four enrichments, the **disable → enable**
-  round-trip via the toggle panel restores the feature without a reload, and the
-  disabled-state DOM is byte-identical to the pre-enrichment DOM (no leftover
-  nodes/classes/attributes).
-- **SC-006**: With Grid-Sight globally disabled, none of the four produce any
-  DOM, lozenge, footer, frozen styling, or highlight.
-- **SC-007**: Each feature has a dedicated demo page reachable from the landing
-  page whose golden path works in a real browser, and the combined bundle delta
-  stays within the recorded budget.
+- **SC-005**: For each of the three new enrichments (and the still-toggleable
+  `statistics`), the **disable → enable** round-trip via the toggle panel
+  restores the feature without a reload, and the disabled-state DOM is
+  byte-identical to the pre-enrichment DOM (no leftover nodes/classes/attributes).
+- **SC-006**: With Grid-Sight globally disabled, none of these features produce
+  any DOM, lozenge, footer, frozen styling, or highlight.
+- **SC-007**: Each new feature has a dedicated demo page reachable from the
+  landing page whose golden path works in a real browser, the statistics
+  extension is exercised by an updated statistics demo table, and the combined
+  bundle delta stays within the recorded budget.
 - **SC-008**: Full unit + Storybook + Playwright suites are green, including a
   test asserting the new shipped-enrichment ids/count and the demo
   `pageConfig.enrichments` subset relationship (drift fails CI).
 
 ## Assumptions
 
-- The four features are delivered as **four independent enrichments**, each its
-  own registry id and demo, so any subset can ship in priority order (P1→P4)
-  while still being individually testable and toggleable. They are grouped in
-  one spec because they share the "navigate/exploit a large table" goal and the
-  same integration surfaces.
+- The work is delivered as **three new independent enrichments** (`freeze-panes`,
+  `summary-row`, `find-in-table`), each its own registry id and demo, plus an
+  **in-place extension of the existing `statistics` enrichment** (P2). Any subset
+  can ship in priority order (P1→P4) while still being individually testable and
+  toggleable. They are grouped in one spec because they share the
+  "navigate/exploit a large table" goal and the same integration surfaces.
+- P2 deliberately does not introduce a `column-profile` id: the existing
+  statistics popup already covers most of a numeric column profile, so a second
+  lozenge would duplicate it and create the parallel-id drift that
+  `docs/adding-an-enrichment.md` §4 warns against.
 - The existing table-grid addressing layer (spec 013), visible-rows pipeline,
   numeric/categorical detector, statistics, frequency, and `gs:` persistence
   scheme are reused; no new runtime dependency is introduced.
