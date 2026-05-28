@@ -26,7 +26,7 @@ import {
   getVisitorOverride,
 } from '../core/enabled-set-state';
 import { persistVisitorEnrichments } from '../utils/slider-persistence';
-import { injectPlusIcons } from './header-utils';
+import { mountEnrichments } from './header-utils';
 import { getColumnTypes } from '../core/column-types-cache';
 import { analyzeTable } from '../core/table-detection';
 
@@ -184,7 +184,9 @@ function resolveColumnTypes(table: HTMLTableElement) {
 function rebuildLozengesAcrossTables(tables: Iterable<HTMLTableElement>): void {
   for (const table of tables) {
     if (!table.classList.contains('grid-sight-enabled')) continue;
-    injectPlusIcons(table, resolveColumnTypes(table));
+    // Single injection pass: classic + virtual-column affordances, all gated
+    // by the current effective enabled set.
+    mountEnrichments(table, resolveColumnTypes(table));
   }
 }
 

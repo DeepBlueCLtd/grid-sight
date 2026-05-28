@@ -1,6 +1,5 @@
 import { injectPlusIcons, removePlusIcons, plusIconStyles } from './header-utils';
 import type { HeaderType } from './header-utils';
-import { removeAllMenus } from './enrichment-menu';
 import { analyzeTable } from '../core/table-detection';
 import { setColumnTypes } from '../core/column-types-cache';
 import { toggleHeatmap } from '../enrichments/heatmap';
@@ -397,9 +396,8 @@ export function injectToggle(table: HTMLTableElement): boolean {
           table.addEventListener('gridsight:enrichmentSelected', handleEnrichmentSelected as EventListener);
         } else {
           table.classList.remove(TABLE_ENABLED_CLASS);
-          // Remove plus icons, menus, and event listeners when toggling off
+          // Remove plus icons and event listeners when toggling off.
           removePlusIcons(table);
-          removeAllMenus();
           table.removeEventListener('gridsight:enrichmentSelected', handleEnrichmentSelected as EventListener);
         }
       });

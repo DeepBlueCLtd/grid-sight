@@ -71,6 +71,11 @@ export interface Renderer<D extends VirtualColumnDirective> {
     sequence: VisibleRowEntry[],
     rowIndex: number,
   ): void;
+  /** Optional header-cell hook. Called once per first-row <th> after the
+   *  scaffold sets the header text, letting renderers append small controls
+   *  (e.g. the sparkline scale-toggle). The scaffold owns the text content;
+   *  renderers must only append new children. */
+  renderHeaderExtras?(directive: D, th: HTMLTableCellElement): void;
   onPipelineChange(
     directive: D,
     record: AppendedColumnRecord,

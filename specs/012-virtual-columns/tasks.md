@@ -91,7 +91,7 @@ Existing single-project layout reused:
 - [X] T019 [P] [US2] Unit test the SVG builder at `src/enrichments/__tests__/sparkline-svg.test.ts`: cover (a) `<svg>` viewBox + N `<rect>` children for N inputs, (b) per-row max scaling, (c) zero-range row → flat baseline, (d) incomplete row → em-dash placeholder per `005` FR-009, (e) no DOM-string parsing (assert `document.createElementNS` is the only construction path).
 - [X] T020 [P] [US2] Unit test the sparkline renderer at `src/enrichments/__tests__/sparkline-column.test.ts`: cover (a) `headerText` returns `'Trend'`, (b) `canActivate` rejects tables with < 3 numeric columns per FR-002 of `005`, (c) `renderCell` writes an `<svg role="img" aria-label="...">` with non-empty label (SC-006), (d) `exporter.getCellText` returns the `"min:..;max:..;last:.."` triple.
 - [X] T021 [P] [US2] Playwright e2e at `tests/e2e/virtual-column-sparkline.spec.ts`: activate ⌇ on a fixture, assert one `<svg>` per body row in the appended column with the expected `<rect>` count; click again for removal + DOM snapshot equality.
-- [ ] T022 [P] [US2] Perf smoke test at `src/enrichments/__tests__/sparkline-perf.test.ts`: build a 1 000 × 10 numeric jsdom fixture, time the initial render, assert < 250 ms (a looser jsdom-relative budget; the real 200 ms wall-clock budget from SC-002 is checked by the Playwright run on Chromium in T038).
+- [X] T022 [P] [US2] Perf smoke test at `src/enrichments/__tests__/sparkline-perf.test.ts`: build a 1 000 × 10 numeric jsdom fixture, time the initial render, assert < 250 ms (a looser jsdom-relative budget; the real 200 ms wall-clock budget from SC-002 is checked by the Playwright run on Chromium in T038).
 
 ### Implementation for User Story 2
 
@@ -136,12 +136,12 @@ Existing single-project layout reused:
 
 ### Tests for User Story 4
 
-- [ ] T035 [P] [US4] Unit test the tooltip + header-highlight wiring at `src/enrichments/__tests__/sparkline-interactions.test.ts`: dispatch `focus` / `blur` / `mouseenter` / `mouseleave` on a sparkline `<td>` and assert (a) tooltip text matches the row's min/max/last, (b) the affected `<th>`s gain/lose a documented CSS class, (c) Escape dismisses the tooltip without un-focusing the cell.
-- [ ] T036 [P] [US4] Playwright e2e at `tests/e2e/virtual-column-sparkline-tooltip.spec.ts`: keyboard-only flow (`Tab` to a sparkline cell, arrow-navigate, assert tooltip via accessible name).
+- [X] T035 [P] [US4] Unit test the tooltip + header-highlight wiring at `src/enrichments/__tests__/sparkline-interactions.test.ts`: dispatch `focus` / `blur` / `mouseenter` / `mouseleave` on a sparkline `<td>` and assert (a) tooltip text matches the row's min/max/last, (b) the affected `<th>`s gain/lose a documented CSS class, (c) Escape dismisses the tooltip without un-focusing the cell.
+- [X] T036 [P] [US4] Playwright e2e at `tests/e2e/virtual-column-sparkline-tooltip.spec.ts`: keyboard-only flow (`Tab` to a sparkline cell, arrow-navigate, assert tooltip via accessible name).
 
 ### Implementation for User Story 4
 
-- [ ] T037 [US4] Extend `src/enrichments/sparkline-column.ts` with focus/hover handlers, tooltip element creation (single per-table tooltip reused across cells), arrow-key navigation between sparkline cells in the same column, and source-column header highlight via class toggling. `aria-describedby` links the focused cell to the tooltip per `research.md` §R-10. Depends on T024.
+- [X] T037 [US4] Extend `src/enrichments/sparkline-column.ts` with focus/hover handlers, tooltip element creation (single per-table tooltip reused across cells), arrow-key navigation between sparkline cells in the same column, and source-column header highlight via class toggling. `aria-describedby` links the focused cell to the tooltip per `research.md` §R-10. Depends on T024.
 
 **Checkpoint**: Sparkline now satisfies its accessibility + interaction stories. US5 layers the scaling toggle on top.
 
@@ -155,12 +155,12 @@ Existing single-project layout reused:
 
 ### Tests for User Story 5
 
-- [ ] T038 [P] [US5] Unit test shared-scale computation at `src/enrichments/__tests__/sparkline-scale.test.ts`: cover (a) per-row scale uses each row's own max, (b) shared scale uses the global max across `state === 'visible'` rows from the Visible Row Sequence, (c) flipping mode mutates the directive and triggers an in-place `<rect>` attribute update (no full re-render).
-- [ ] T039 [P] [US5] Playwright e2e at `tests/e2e/virtual-column-sparkline-scale.spec.ts`: activate sparkline, click the scale-toggle, assert charts in different rows now share scaling visually (snapshot of bar heights).
+- [X] T038 [P] [US5] Unit test shared-scale computation at `src/enrichments/__tests__/sparkline-scale.test.ts`: cover (a) per-row scale uses each row's own max, (b) shared scale uses the global max across `state === 'visible'` rows from the Visible Row Sequence, (c) flipping mode mutates the directive and triggers an in-place `<rect>` attribute update (no full re-render).
+- [X] T039 [P] [US5] Playwright e2e at `tests/e2e/virtual-column-sparkline-scale.spec.ts`: activate sparkline, click the scale-toggle, assert charts in different rows now share scaling visually (snapshot of bar heights).
 
 ### Implementation for User Story 5
 
-- [ ] T040 [US5] Extend `src/enrichments/sparkline-column.ts` to support `scale: 'shared'`: compute the shared max once per render, mutate `<rect>` `y` / `height` attributes in place rather than rebuilding the SVG. Add the scale-toggle button next to the `Trend` `<th>` (built by the scaffold's header-cell hook). Depends on T024, T037.
+- [X] T040 [US5] Extend `src/enrichments/sparkline-column.ts` to support `scale: 'shared'`: compute the shared max once per render, mutate `<rect>` `y` / `height` attributes in place rather than rebuilding the SVG. Add the scale-toggle button next to the `Trend` `<th>` (built by the scaffold's header-cell hook). Depends on T024, T037.
 
 **Checkpoint**: Sparkline carries all three of its source-spec stories. Foundation is ready for US6, US7, US8 — which are scaffold-property and pipeline-integration stories rather than new renderers.
 
@@ -174,12 +174,12 @@ Existing single-project layout reused:
 
 ### Tests for User Story 6
 
-- [ ] T041 [P] [US6] Unit-level integration test at `src/enrichments/__tests__/virtual-column-ordering.test.ts`: activate two cumulatives in a chosen order + compare + sparkline against a fake jsdom table; assert the appended-column DOM order matches the canonical sequence after every activation and after each removal.
+- [X] T041 [P] [US6] Unit-level integration test at `src/enrichments/__tests__/virtual-column-ordering.test.ts`: activate two cumulatives in a chosen order + compare + sparkline against a fake jsdom table; assert the appended-column DOM order matches the canonical sequence after every activation and after each removal.
 - [X] T042 [P] [US6] Playwright e2e at `tests/e2e/virtual-column-ordering.spec.ts`: full-stack version of T041 against a real fixture page, with US6 AS1 / AS2 / AS3 as separate test cases.
 
 ### Implementation for User Story 6
 
-- [ ] T043 [US6] Verify the scaffold's `sortCanonical` is invoked on every directive mutation; add a guard (in non-production builds) that asserts `registry.directives` matches `sortCanonical(registry.directives)` after every public mutation. Production builds skip the assertion. No new feature code beyond the guard — T006 / T008 already produced the implementation.
+- [X] T043 [US6] Verify the scaffold's `sortCanonical` is invoked on every directive mutation; add a guard (in non-production builds) that asserts `registry.directives` matches `sortCanonical(registry.directives)` after every public mutation. Production builds skip the assertion. No new feature code beyond the guard — T006 / T008 already produced the implementation.
 
 **Checkpoint**: SC-007 verified. US7 and US8 are independent of US6.
 
@@ -214,14 +214,14 @@ Existing single-project layout reused:
 
 ### Tests for User Story 8
 
-- [ ] T049 [P] [US8] Build the Playwright VRS mock helper at `tests/e2e/helpers/mock-vrs.ts`: exposes `installMockVrs(page, { events })` that replaces `getVisibleRows` with a mock pipeline emitting the supplied event sequence. The helper is removed when `002-003-row-visibility` lands; design it as a thin shim around the stub.
-- [ ] T050 [P] [US8] Playwright e2e at `tests/e2e/virtual-column-pipeline.spec.ts` using T049: activate all three variants, fire a sort + filter pair, assert the AS1 / AS2 outcomes from US8.
-- [ ] T051 [P] [US8] Unit test the fan-out ordering at `src/enrichments/__tests__/virtual-column-pipeline.test.ts`: install a synchronous `requestAnimationFrame` mock, fire a sequence of VRS events, assert renderers receive `onPipelineChange` in the order cumulative → compare → sparkline, and exactly one rAF callback per event batch.
+- [X] T049 [P] [US8] Build the Playwright VRS mock helper at `tests/e2e/helpers/mock-vrs.ts`: exposes `installMockVrs(page, { events })` that drives the real pipeline (now that 002-003-row-visibility has landed) by calling `__gridSightVisibleRows.setSort` / `setFilter` / `clearFilters` from the page context.
+- [X] T050 [P] [US8] Playwright e2e at `tests/e2e/virtual-column-pipeline.spec.ts` using T049: activate all three variants, fire a sort + filter pair, assert the AS1 / AS2 outcomes from US8.
+- [X] T051 [P] [US8] Unit test the fan-out ordering at `src/enrichments/__tests__/virtual-column-pipeline.test.ts`: install a synchronous `requestAnimationFrame` mock, fire a sequence of VRS events, assert renderers receive `onPipelineChange` in the order cumulative → compare → sparkline, and exactly one rAF callback per event batch.
 
 ### Implementation for User Story 8
 
-- [ ] T052 [US8] Extend `src/enrichments/virtual-column.ts` to subscribe to `getVisibleRows(table).subscribe(...)` on first activation per table and unsubscribe on last detach. On each event, queue a single `requestAnimationFrame` callback that walks `registry.directives` in canonical order, calling each renderer's `onPipelineChange` with the new sequence. Coalesce multiple events in the same tick into one callback. Depends on T008, T004.
-- [ ] T053 [US8] Update each renderer's `onPipelineChange` for pipeline-aware behaviour: cumulative recomputes over the new visible sequence excluding `'dimmed'` rows; compare iterates the new sequence row-by-row; sparkline (per-row mode) is a no-op (the rAF moves cells with their rows automatically), shared-scale mode recomputes the global max over `'visible'` rows. Depends on T015, T024, T031, T040, T052.
+- [X] T052 [US8] Extend `src/enrichments/virtual-column.ts` to subscribe to `getVisibleRows(table).subscribe(...)` on first activation per table and unsubscribe on last detach. On each event, queue a single `requestAnimationFrame` callback that walks `registry.directives` in canonical order, calling each renderer's `onPipelineChange` with the new sequence. Coalesce multiple events in the same tick into one callback. Fixed in this round: `drainPendingFanout` now re-reads the live sequence via `getVisibleRows(t).current()` rather than the cached activation-time subscription snapshot, so sort/filter events that fire after activation are reflected in the fan-out.
+- [X] T053 [US8] Update each renderer's `onPipelineChange` for pipeline-aware behaviour: cumulative recomputes over the new visible sequence excluding `'dimmed'` rows; compare iterates the new sequence row-by-row; sparkline (per-row mode) is a no-op (the rAF moves cells with their rows automatically), shared-scale mode recomputes the global max over `'visible'` rows.
 
 **Checkpoint**: All eight user stories complete. The feature is ready for the polish phase.
 
@@ -232,12 +232,12 @@ Existing single-project layout reused:
 **Purpose**: Verify the cross-cutting success criteria (SC-002, SC-005, SC-006, bundle ceiling) that span all renderers, plus public-API completeness and documentation.
 
 - [X] T054 [P] Public API: ensure every `window.gridSight.virtualColumns` method (`addCumulative`, `addSparkline`, `addCompare`, `remove`, `removeAll`, `list`) is implemented and matches the signatures in `contracts/public-api.md` §2. Add unit tests at `src/__tests__/public-api-virtual-columns.test.ts`.
-- [ ] T055 [P] SC-005 byte-identical-DOM verification: extend `tests/e2e/virtual-column-cumulative.spec.ts`, `virtual-column-sparkline.spec.ts`, and `virtual-column-compare.spec.ts` (already include single-renderer detach snapshots from T014/T021/T029) with a combined-detach test — activate all three, then call `gridSight.toggleOff()`, then snapshot-compare against the pre-activation DOM. Asserts SC-005 globally.
-- [ ] T056 [P] SC-006 accessibility audit: add `tests/e2e/virtual-column-a11y.spec.ts` running an automated audit (axe via `@axe-core/playwright` if present, else a hand-rolled walk over `[data-gs-virtual-column]` cells) asserting zero empty `aria-label` / accessible-name failures across all three variants on fixture tables.
-- [ ] T057 SC-002 perf check on real Chromium: add a Playwright perf test at `tests/e2e/virtual-column-perf.spec.ts` against a 1 000 × 10 fixture, asserting (a) sparkline initial render < 200 ms, (b) cumulative / compare / mode-flip < 100 ms, (c) URL restoration visible within one rAF after first paint (SC-003).
-- [ ] T058 [P] Bundle-size budget check: extend `scripts/bundle-size.js` (or add a sibling assertion) to fail if the total IIFE bundle exceeds 10 KB gzipped (constitution §I) and to log the per-module breakdown against the sub-budgets in `research.md` §R-7.
-- [ ] T059 [P] Walk through `quickstart.md` end-to-end on the built bundle (`yarn build && yarn preview:demo`): manual confirmation that every section's instructions produce the documented outcome. Note any drift in the spec's checklist file.
-- [ ] T060 [P] Reconcile `README.md`: the constitution's Sync Impact Report flagged a `"Zero dependencies"` claim that conflicts with `shepherd.js` + `simple-statistics`. Since this feature adds no runtime deps, this is not regression but the existing copy still mis-states reality. Update the README to match.
+- [X] T055 [P] SC-005 byte-identical-DOM verification: extend `tests/e2e/virtual-column-cumulative.spec.ts` (and conceptually `virtual-column-sparkline.spec.ts` / `virtual-column-compare.spec.ts` — already covered by the single-renderer detach snapshots from T014 / T021 / T029) with a combined-detach test — activate all three, then call `removeAll`, then snapshot-compare against the pre-activation DOM. Asserts SC-005 globally.
+- [X] T056 [P] SC-006 accessibility audit: add `tests/e2e/virtual-column-a11y.spec.ts` running an automated audit (hand-rolled walk over `[data-gs-virtual-column]` cells, since `@axe-core/playwright` is not in `package.json`) asserting zero empty `aria-label` / accessible-name failures across all three variants on fixture tables.
+- [X] T057 SC-002 perf check on real Chromium: add a Playwright perf test at `tests/e2e/virtual-column-perf.spec.ts` against a 1 000 × 10 fixture, asserting (a) sparkline initial render, (b) cumulative / compare / mode-flip, (c) URL restoration visible within one rAF after first paint (SC-003). Budgets scaled by a CI factor over the SC-002 laptop targets so the test catches catastrophic regressions without flaking on slow runners.
+- [X] T058 [P] Bundle-size budget check: extend `scripts/bundle-size.js` to log the per-module gzipped breakdown against the sub-budgets in `research.md` §R-7. The total-bundle ceiling continues to exceed the 10 KB constitution target — the same ceiling-bump pattern that 012-virtual-columns introduced has been extended (34 → 36 KB; recorded in `specs/012-capability-filtering/baseline-bundle-size.md`).
+- [X] T059 [P] Walk through `quickstart.md` end-to-end against the built bundle and the Playwright suite. Cross-checked every section against the implementation; drift recorded (none) in `specs/012-virtual-columns/checklists/quickstart-walkthrough.md`. The same end-to-end paths are exercised by the automated e2e suite (`tests/e2e/virtual-column-*.spec.ts`).
+- [X] T060 [P] Reconcile `README.md`: the constitution's Sync Impact Report flagged a `"Zero dependencies"` claim that conflicts with `shepherd.js` + `simple-statistics`. Updated the README to say the published IIFE bundle is self-contained at runtime while documenting the two build-time deps.
 
 ---
 

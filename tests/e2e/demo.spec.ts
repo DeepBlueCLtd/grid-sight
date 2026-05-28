@@ -37,7 +37,7 @@ test.describe('Grid-Sight landing page', () => {
     // Featured table is auto-detected — has the GS toggle.
     await expect(page.locator('#featured-table .grid-sight-toggle')).toHaveCount(1);
 
-    // Demo cards link to the five published demos shown on the landing page.
+    // Demo cards link to the six published demos shown on the landing page.
     const cardTitles = await page.locator('.demo-card h3').allTextContents();
     expect(cardTitles).toEqual(expect.arrayContaining([
       expect.stringContaining('Interpolation'),
@@ -45,6 +45,7 @@ test.describe('Grid-Sight landing page', () => {
       expect.stringContaining('Persistent URL'),
       expect.stringContaining('Live toggles'),
       expect.stringContaining('Opt-in playground'),
+      expect.stringContaining('Virtual columns'),
     ]));
   });
 
@@ -69,14 +70,15 @@ test.describe('Grid-Sight landing page', () => {
     await expect(page.locator('#featured-table .grid-sight-toggle')).toHaveCount(1);
   });
 
-  test('all five demo pages linked from the landing page are reachable', async ({ page }) => {
-    // Mirrors the five `.demo-card` links in public/index.html.
+  test('all six demo pages linked from the landing page are reachable', async ({ page }) => {
+    // Mirrors the six `.demo-card` links in public/index.html.
     const paths = [
       '/grid-sight/demo/sliders/interpolation.html',
       '/grid-sight/demo/sliders/alternate-calc-models.html',
       '/grid-sight/demo/sliders/synced-tables.html',
       '/grid-sight/demo/toggle/live-enrichments.html',
       '/grid-sight/demo/toggle/opt-in-playground.html',
+      '/grid-sight/demo/virtual-columns.html',
     ];
     for (const p of paths) {
       const resp = await page.goto('http://localhost:3014' + p);

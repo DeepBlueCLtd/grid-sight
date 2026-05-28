@@ -1,9 +1,13 @@
 # Grid-Sight
 
 A lightweight library for enriching HTML tables with data visualization and analysis tools.
-The slider, heatmap, and core enrichment runtime add **no runtime dependencies** —
-everything ships in a single IIFE bundle that works offline (`file://` and
-air-gapped servers).
+The published IIFE bundle ships standalone — it works offline (`file://` and
+air-gapped servers) and reaches the page with no network requests at runtime.
+
+Two npm packages are pulled in at build time only: `simple-statistics` (used by
+the heatmap / outlier paths) and `shepherd.js` (used by the onboarding tour).
+Both are tree-shaken into the IIFE; the published artefact requires nothing
+from the network.
 
 ## Features
 
@@ -17,7 +21,10 @@ air-gapped servers).
 - Row sort (three-state asc / desc / off) and row filter (numeric range +
   categorical inclusion), with multi-column AND composition, a clear-all
   chip, and shareable URL state (see `specs/002-003-row-visibility/`)
-- No runtime dependencies (the published IIFE bundle ships standalone)
+- Virtual columns: cumulative running-sum (Σ), inline sparkline trend (⌇),
+  and pairwise column compare (Δ), with shareable URL state (see
+  `specs/012-virtual-columns/`)
+- Self-contained IIFE bundle — no network requests at runtime
 - Accessibility-focused design
 - Works with or without a build system
 

@@ -14,7 +14,13 @@ import { createSortLozenge } from './sort-lozenge';
 import { createFilterLozenge } from './filter-lozenge';
 import { detectSortColumnType } from '../enrichments/sort';
 import { getEffectiveEnabledSet } from '../core/enabled-set-state';
+import {
+  registerEnrichment,
+  listEnrichmentDescriptors,
+  type AffordanceContext,
+} from '../core/enrichment-registry';
 import { ensureRowVisibilityStyles } from './row-visibility-styles';
+import { ensureVirtualColumnStyles } from './virtual-column-styles';
 import {
   gridRows,
   gridCells,
@@ -41,6 +47,7 @@ export function injectPlusIcons(table: HTMLTableElement, columnTypes: ColumnType
   removePlusIcons(table);
   ensureLozengeStyles();
   ensureRowVisibilityStyles();
+  ensureVirtualColumnStyles();
 
   const rows = gridRows(table);
   const headerRow = rows[0];
@@ -60,6 +67,12 @@ export function injectPlusIcons(table: HTMLTableElement, columnTypes: ColumnType
     addLozengesToHeader(table, cells[0], 'row', 0);
   }
 }
+
+/** The single enrichment injection pass (docs/architecture/enrichments.md).
+ *  Mounts every shipped + enabled + applicable affordance — classic lozenges
+ *  and virtual-column lozenges alike — into the per-header cluster. Alias of
+ *  `injectPlusIcons`; prefer this name at call sites. */
+export const mountEnrichments = injectPlusIcons;
 
 export function removePlusIcons(table: HTMLTableElement): void {
   const icons = table.querySelectorAll(`.${PLUS_ICON_CLASS}, .${LOZENGE_CLASS}`);
@@ -104,166 +117,204 @@ function addLozengesToHeader(
   if (header.querySelector(`.${LOZENGE_CLASS}, .${PLUS_ICON_CLASS}`)) return;
 
   const columnType = inferHeaderColumnType(table, header, type);
-
-  const specs: LozengeSpec[] = [];
-
-  if (columnType === 'numeric') {
-    // H — heatmap toggle
-    specs.push({
-      id: 'heatmap',
-      label: 'H',
-      title: heatmapTitle(type),
-      isToggle: true,
-      isActive: () => isCurrentHeatmapActive(table, type, header, colIndex),
-      onClick: () => {
-        applyHeatmapToggle(table, type, header, colIndex);
-        refreshLozengeStates(table);
-      },
-    });
-
-    // S — slider toggle. Only relevant table-wide (sliders always come as a
-    // row+col pair), so it lives only on the top-left lozenge cluster.
-    if (type === 'table' && sliderApplicable(table, type)) {
-      specs.push({
-        id: 'sliders',
-        label: 'S',
-        title: sliderTitle(type),
-        isToggle: true,
-        isActive: () => sliderIsActive(table, type),
-        onClick: () => {
-          toggleSliders(table, type);
-          refreshLozengeStates(table);
-        },
-      });
-    }
-
-    // # — statistics command (popup)
-    specs.push({
-      id: 'statistics',
-      label: '#',
-      title: statisticsTitle(type),
-      isToggle: false,
-      isActive: () => false,
-      onClick: () => dispatchEnrichmentEvent(header, type, 'statistics', colIndex),
-    });
-  } else if (columnType === 'categorical' && type !== 'table') {
-    // Categorical headers: frequency lozenges only make sense for a single
-    // column or row — there is no table-wide "frequency" view to render.
-    specs.push({
-      id: 'frequency',
-      label: '#',
-      title: 'Frequency table',
-      isToggle: false,
-      isActive: () => false,
-      onClick: () => dispatchEnrichmentEvent(header, type, 'frequency', colIndex),
-    });
-    specs.push({
-      id: 'frequency-chart',
-      label: '⟋',
-      title: 'Frequency chart',
-      isToggle: false,
-      isActive: () => false,
-      onClick: () => dispatchEnrichmentEvent(header, type, 'frequency-chart', colIndex),
-    });
-  }
-
-  // Sort + filter lozenges live only on column headers (top row, non-table cell).
-  // They are suppressed when:
-  //  - `data-gs-no-sort` / `data-gs-no-filter` is set on the header
-  //  - any body cell in this column has rowspan > 1
-  if (type === 'column' && !columnHasRowspanBodyCells(table, colIndex)) {
-    if (!header.hasAttribute('data-gs-no-sort')) {
-      specs.push(buildSortSpec(table, header, colIndex));
-    }
-    if (!header.hasAttribute('data-gs-no-filter')) {
-      specs.push(buildFilterSpec(table, header, colIndex));
-    }
-  }
-
-  // Spec 012 (FR-009): drop specs whose id is not in the effective enabled set.
   const enabled = getEffectiveEnabledSet();
-  const filteredSpecs = specs.filter(s => enabled.has(s.id));
-  if (filteredSpecs.length === 0) return;
+
+  // One pass: every shipped + enabled + applicable enrichment descriptor
+  // (classic lozenges and virtual columns alike) contributes its affordance.
+  // See docs/architecture/enrichments.md.
+  const els = buildDescriptorAffordances(table, header, type, colIndex, columnType, enabled);
+  if (els.length === 0) return;
 
   const cluster = document.createElement('span');
   cluster.className = 'gs-lozenge-cluster';
   cluster.style.cssText = 'display:inline-flex; gap:2px; margin-left:6px; vertical-align:middle;';
-
-  for (const spec of filteredSpecs) {
-    if (spec.id === 'sort' || spec.id === 'filter') {
-      // These specs already carry their own concrete button via `onClick`.
-      cluster.appendChild(buildPrebuiltLozenge(spec, table, header, colIndex));
-    } else {
-      cluster.appendChild(buildLozenge(spec));
-    }
-  }
+  for (const el of els) cluster.appendChild(el);
 
   header.appendChild(cluster);
   header.classList.add(HEADER_WITH_ICON_CLASS);
 }
 
-function buildSortSpec(
+/** Build the affordance elements for every enrichment descriptor that is
+ *  shipped, enabled, and applies to this header context. This is the single
+ *  injection mechanism — classic lozenges and virtual columns both register
+ *  descriptors (docs/architecture/enrichments.md). */
+function buildDescriptorAffordances(
   table: HTMLTableElement,
-  _header: HTMLTableCellElement,
-  colIndex: number
-): LozengeSpec {
-  return {
-    id: 'sort',
-    label: '↕',
-    title: 'Sort column',
-    isToggle: true,
-    isActive: () => {
-      const cur = getVisibleRows(table).sort;
-      return !!(cur && cur.columnIndex === colIndex);
-    },
-    onClick: () => {/* handled in buildPrebuiltLozenge */},
+  header: HTMLTableCellElement,
+  headerType: HeaderType,
+  colIndex: number,
+  columnType: ColumnType,
+  enabled: ReadonlySet<string>,
+): HTMLElement[] {
+  if (table.hasAttribute('data-gs-ignore')) return [];
+  // The descriptor context only models numeric/categorical columns.
+  if (columnType !== 'numeric' && columnType !== 'categorical') return [];
+  const ctx: AffordanceContext = {
+    table,
+    header,
+    headerType,
+    colIndex,
+    columnType,
   };
+  const out: HTMLElement[] = [];
+  for (const descriptor of listEnrichmentDescriptors()) {
+    const behavior = descriptor.behavior;
+    if (!descriptor.shipped || !behavior) continue;
+    if (!enabled.has(descriptor.id)) continue;
+    if (!behavior.appliesTo(ctx)) continue;
+    const el = behavior.mount(ctx);
+    if (el) out.push(el);
+  }
+  return out;
 }
 
-function buildFilterSpec(
-  table: HTMLTableElement,
-  _header: HTMLTableCellElement,
-  colIndex: number
-): LozengeSpec {
-  return {
-    id: 'filter',
-    label: '▽',
-    title: 'Filter column',
-    isToggle: true,
-    isActive: () => getVisibleRows(table).filters.has(colIndex),
-    onClick: () => {/* handled in buildPrebuiltLozenge */},
-  };
-}
+/* ──────────────────────────────────────────────────────────────────────────
+ * Classic enrichment descriptors.
+ *
+ * These were previously an inline `LozengeSpec[]` literal inside
+ * `addLozengesToHeader` plus a parallel `ENRICHMENT_ITEMS` list in
+ * `enrichment-menu.ts`. They now register against the shared catalog so the
+ * single injection pass (and the toggle panel / capability gate) drive them
+ * uniformly with the virtual-column descriptors. See
+ * docs/architecture/enrichments.md.
+ * ────────────────────────────────────────────────────────────────────────── */
 
-function buildPrebuiltLozenge(
-  spec: LozengeSpec,
-  table: HTMLTableElement,
-  _header: HTMLTableCellElement,
-  colIndex: number
-): HTMLButtonElement {
-  const columnKey = colKeyAt(table, colIndex);
-  if (spec.id === 'sort') {
-    const type = detectSortColumnType(table, colIndex);
+registerEnrichment({
+  id: 'heatmap',
+  appliesTo: (ctx) => ctx.columnType === 'numeric',
+  isActive: (ctx) =>
+    isCurrentHeatmapActive(ctx.table, ctx.headerType, ctx.header, ctx.colIndex),
+  mount: (ctx) =>
+    buildLozenge({
+      id: 'heatmap',
+      label: 'H',
+      title: heatmapTitle(ctx.headerType),
+      isToggle: true,
+      isActive: () =>
+        isCurrentHeatmapActive(ctx.table, ctx.headerType, ctx.header, ctx.colIndex),
+      onClick: () => {
+        applyHeatmapToggle(ctx.table, ctx.headerType, ctx.header, ctx.colIndex);
+        refreshLozengeStates(ctx.table);
+      },
+    }),
+});
+
+registerEnrichment({
+  id: 'sliders',
+  // Sliders come as a row+col pair, so the toggle lives only on the table
+  // (top-left corner) cluster, and only when an axis qualifies.
+  appliesTo: (ctx) =>
+    ctx.columnType === 'numeric' &&
+    ctx.headerType === 'table' &&
+    sliderApplicable(ctx.table, 'table'),
+  isActive: (ctx) => sliderIsActive(ctx.table, ctx.headerType),
+  mount: (ctx) =>
+    buildLozenge({
+      id: 'sliders',
+      label: 'S',
+      title: sliderTitle(ctx.headerType),
+      isToggle: true,
+      isActive: () => sliderIsActive(ctx.table, ctx.headerType),
+      onClick: () => {
+        toggleSliders(ctx.table, ctx.headerType);
+        refreshLozengeStates(ctx.table);
+      },
+    }),
+});
+
+registerEnrichment({
+  id: 'statistics',
+  appliesTo: (ctx) => ctx.columnType === 'numeric',
+  mount: (ctx) =>
+    buildLozenge({
+      id: 'statistics',
+      label: '#',
+      title: statisticsTitle(ctx.headerType),
+      isToggle: false,
+      isActive: () => false,
+      onClick: () =>
+        dispatchEnrichmentEvent(ctx.header, ctx.headerType, 'statistics', ctx.colIndex),
+    }),
+});
+
+registerEnrichment({
+  id: 'frequency',
+  // Frequency views only make sense for a single column or row — there is no
+  // table-wide frequency.
+  appliesTo: (ctx) => ctx.columnType === 'categorical' && ctx.headerType !== 'table',
+  mount: (ctx) =>
+    buildLozenge({
+      id: 'frequency',
+      label: '#',
+      title: 'Frequency table',
+      isToggle: false,
+      isActive: () => false,
+      onClick: () =>
+        dispatchEnrichmentEvent(ctx.header, ctx.headerType, 'frequency', ctx.colIndex),
+    }),
+});
+
+registerEnrichment({
+  id: 'frequency-chart',
+  appliesTo: (ctx) => ctx.columnType === 'categorical' && ctx.headerType !== 'table',
+  mount: (ctx) =>
+    buildLozenge({
+      id: 'frequency-chart',
+      label: '⟋',
+      title: 'Frequency chart',
+      isToggle: false,
+      isActive: () => false,
+      onClick: () =>
+        dispatchEnrichmentEvent(ctx.header, ctx.headerType, 'frequency-chart', ctx.colIndex),
+    }),
+});
+
+registerEnrichment({
+  id: 'sort',
+  // Column headers only; suppressed by data-gs-no-sort or a rowspan body cell.
+  appliesTo: (ctx) =>
+    ctx.headerType === 'column' &&
+    !ctx.header.hasAttribute('data-gs-no-sort') &&
+    !columnHasRowspanBodyCells(ctx.table, ctx.colIndex),
+  isActive: (ctx) => {
+    const cur = getVisibleRows(ctx.table).sort;
+    return !!(cur && cur.columnIndex === ctx.colIndex);
+  },
+  mount: (ctx) => {
+    const columnKey = colKeyAt(ctx.table, ctx.colIndex);
+    const type = detectSortColumnType(ctx.table, ctx.colIndex);
     return createSortLozenge({
-      columnIndex: colIndex,
+      columnIndex: ctx.colIndex,
       columnKey,
       columnType: type,
-      getCurrentSort: () => getVisibleRows(table).sort as SortDirective | null,
-      onChange: (next) => setSort(table, next),
+      getCurrentSort: () => getVisibleRows(ctx.table).sort as SortDirective | null,
+      onChange: (next) => setSort(ctx.table, next),
     });
-  }
-  // filter
-  const colType: 'numeric' | 'categorical' =
-    detectSortColumnType(table, colIndex) === 'numeric' ? 'numeric' : 'categorical';
-  return createFilterLozenge({
-    table,
-    columnIndex: colIndex,
-    columnKey,
-    columnType: colType,
-    getCurrentFilter: () => (getVisibleRows(table).filters.get(colIndex) as FilterPredicate | undefined) ?? null,
-    onChange: (next) => setFilter(table, colIndex, next),
-  });
-}
+  },
+});
+
+registerEnrichment({
+  id: 'filter',
+  appliesTo: (ctx) =>
+    ctx.headerType === 'column' &&
+    !ctx.header.hasAttribute('data-gs-no-filter') &&
+    !columnHasRowspanBodyCells(ctx.table, ctx.colIndex),
+  isActive: (ctx) => getVisibleRows(ctx.table).filters.has(ctx.colIndex),
+  mount: (ctx) => {
+    const columnKey = colKeyAt(ctx.table, ctx.colIndex);
+    const colType: 'numeric' | 'categorical' =
+      detectSortColumnType(ctx.table, ctx.colIndex) === 'numeric' ? 'numeric' : 'categorical';
+    return createFilterLozenge({
+      table: ctx.table,
+      columnIndex: ctx.colIndex,
+      columnKey,
+      columnType: colType,
+      getCurrentFilter: () =>
+        (getVisibleRows(ctx.table).filters.get(ctx.colIndex) as FilterPredicate | undefined) ?? null,
+      onChange: (next) => setFilter(ctx.table, ctx.colIndex, next),
+    });
+  },
+});
 
 function buildLozenge(spec: LozengeSpec): HTMLButtonElement {
   const btn = document.createElement('button');

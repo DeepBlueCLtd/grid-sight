@@ -25,6 +25,7 @@ import { removeHeatmap } from '../enrichments/heatmap';
 import { removeAllSliders, getSliders } from '../enrichments/slider';
 import { setSort, clearFilters } from '../utils/visible-rows';
 import { unmountFilterChip } from '../enrichments/filter-chip';
+import { removeDirectivesByKind } from '../enrichments/virtual-column';
 
 export type EnrichmentId = string;
 
@@ -81,6 +82,18 @@ function clearTableFilters(table: HTMLTableElement): void {
   unmountFilterChip(table);
 }
 
+function removeCumulativeColumns(table: HTMLTableElement): void {
+  removeDirectivesByKind(table, 'cumulative');
+}
+
+function removeSparklineColumns(table: HTMLTableElement): void {
+  removeDirectivesByKind(table, 'sparkline');
+}
+
+function removeCompareColumns(table: HTMLTableElement): void {
+  removeDirectivesByKind(table, 'compare');
+}
+
 const ENTRIES: EnrichmentRegistryEntry[] = [
   // ── Shipped enrichments (real implementation in this build) ──────────
   { id: 'heatmap',          label: 'Heatmap',           defaultOn: true, shipped: true,  tearDown: removeAllHeatmaps },
@@ -94,12 +107,12 @@ const ENTRIES: EnrichmentRegistryEntry[] = [
   // wire it into the entry on the same line.
   { id: 'annotations',      label: 'Cell annotations',  defaultOn: true, shipped: false },  // spec 006
   { id: 'copy-as-csv',      label: 'Copy as CSV',       defaultOn: true, shipped: false },  // spec 009
-  { id: 'cumulative',       label: 'Cumulative col.',   defaultOn: true, shipped: false },  // spec 008
-  { id: 'diff-compare',     label: 'Diff / compare',    defaultOn: true, shipped: false },  // spec 010
+  { id: 'cumulative',       label: 'Cumulative col.',   defaultOn: true, shipped: true,  tearDown: removeCumulativeColumns },  // spec 008 (landed via 012-virtual-columns)
+  { id: 'diff-compare',     label: 'Diff / compare',    defaultOn: true, shipped: true,  tearDown: removeCompareColumns },  // spec 010 column-mode (landed via 012-virtual-columns)
   { id: 'filter',           label: 'Column filter',     defaultOn: true, shipped: true,  tearDown: clearTableFilters },  // spec 003 (landed via 002-003-row-visibility)
   { id: 'outlier',          label: 'Outlier marker',    defaultOn: true, shipped: false },  // spec 004
   { id: 'sort',             label: 'Column sort',       defaultOn: true, shipped: true,  tearDown: clearTableSort },  // spec 002 (landed via 002-003-row-visibility)
-  { id: 'sparkline',        label: 'Row sparkline',     defaultOn: true, shipped: false },  // spec 005
+  { id: 'sparkline',        label: 'Row sparkline',     defaultOn: true, shipped: true,  tearDown: removeSparklineColumns },  // spec 005 (landed via 012-virtual-columns)
   { id: 'units-toggle',     label: 'Units toggle',      defaultOn: true, shipped: false },  // spec 007
 ];
 
@@ -141,3 +154,71 @@ export const ENRICHMENT_IDS: readonly EnrichmentId[] = Object.freeze(
 export const SHIPPED_ENRICHMENTS: readonly EnrichmentRegistryEntry[] = Object.freeze(
   ENRICHMENT_REGISTRY.filter(e => e.shipped)
 );
+
+/* ──────────────────────────────────────────────────────────────────────────
+ * Descriptor model (docs/architecture/enrichments.md)
+ *
+ * The static catalog above declares identity + capability for every
+ * enrichment (including forward-compat spec-only stubs that have no module
+ * to self-register from). Behavior — how an enrichment mounts its affordance,
+ * whether it applies to a given header, its active-state probe — is attached
+ * per id by the enrichment's own module via `registerEnrichment`. The merged
+ * view is a `EnrichmentDescriptor`, the single object the injection pass,
+ * toggle panel, and menu all consume.
+ * ────────────────────────────────────────────────────────────────────────── */
+
+export type AffordanceHeaderType = 'row' | 'column' | 'table';
+
+export interface AffordanceContext {
+  table: HTMLTableElement;
+  header: HTMLTableCellElement;
+  headerType: AffordanceHeaderType;
+  colIndex: number;
+  columnType: 'numeric' | 'categorical';
+}
+
+/** Behavior an enrichment's module contributes for its catalog id. */
+export interface EnrichmentBehavior {
+  readonly id: EnrichmentId;
+  /** Is this affordance relevant for the given header context? */
+  appliesTo(ctx: AffordanceContext): boolean;
+  /** Build and return the affordance element (lozenge button), or null. */
+  mount(ctx: AffordanceContext): HTMLElement | null;
+  /** Toggle/menu active-state probe. Omit for one-shot commands. */
+  isActive?(ctx: AffordanceContext): boolean;
+}
+
+/** Merged identity + capability + behavior. */
+export interface EnrichmentDescriptor extends EnrichmentRegistryEntry {
+  readonly behavior?: EnrichmentBehavior;
+}
+
+const catalogById = new Map<EnrichmentId, EnrichmentRegistryEntry>(
+  ENRICHMENT_REGISTRY.map(e => [e.id, e]),
+);
+const behaviorById = new Map<EnrichmentId, EnrichmentBehavior>();
+
+/** Register an enrichment's affordance behavior against its catalog id.
+ *  Called at module load from each shipped enrichment. Idempotent (last
+ *  registration wins, which keeps test re-imports stable). */
+export function registerEnrichment(behavior: EnrichmentBehavior): void {
+  if (!catalogById.has(behavior.id)) {
+    throw new Error(
+      `[gridsight] registerEnrichment: "${behavior.id}" is not in the catalog. ` +
+        `Add a static entry (id/label/defaultOn/shipped) first.`,
+    );
+  }
+  behaviorById.set(behavior.id, behavior);
+}
+
+/** Merged descriptor for one id, or undefined if the id is unknown. */
+export function getEnrichmentDescriptor(id: EnrichmentId): EnrichmentDescriptor | undefined {
+  const entry = catalogById.get(id);
+  if (!entry) return undefined;
+  return { ...entry, behavior: behaviorById.get(id) };
+}
+
+/** Every descriptor in catalog order. */
+export function listEnrichmentDescriptors(): EnrichmentDescriptor[] {
+  return ENRICHMENT_REGISTRY.map(e => ({ ...e, behavior: behaviorById.get(e.id) }));
+}
