@@ -63,8 +63,12 @@ describe('sparkline perf smoke (jsdom)', () => {
     // SVG construction; the spec-level budget (SC-002, < 200 ms) is enforced
     // by the Playwright run on Chromium in T057. This smoke ceiling is here
     // to catch catastrophic regressions (e.g. O(n²) growth) without flaking
-    // on slow runners.
-    expect(elapsed).toBeLessThan(3000);
+    // on slow runners. NOTE: `elapsed` is wall-clock around a synchronous
+    // render, so it absorbs CPU contention from sibling vitest workers + the
+    // concurrent Storybook browser project. The isolated render is ~2.4 s; the
+    // ceiling carries generous headroom over that so a busy full-suite run
+    // does not flake while a true O(n²) blow-up (seconds→minutes) still trips.
+    expect(elapsed).toBeLessThan(5000);
     // Confirm the work actually happened.
     expect(table.querySelectorAll('td[data-gs-virtual-column="sparkline"] svg').length).toBe(1000);
   });

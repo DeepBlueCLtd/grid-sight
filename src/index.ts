@@ -105,6 +105,9 @@ import { mountTogglePanel } from './ui/toggle-panel';
 import { applyAnnotations, tearDownAnnotations, consumeNavigationHint } from './enrichments/annotations';
 import { registerAnnotationsMenuEntry } from './ui/annotation-popup';
 
+// Navigation & analysis tier 1 (spec 014-navigation-and-analysis)
+import { applyFreezePanes, removeFreezePanes } from './enrichments/freeze-panes';
+
 // Internal InitOptions type. Not exported — see ⚠ note above and
 // specs/012-virtual-columns/research.md §R-13.
 interface InitOptions extends TableProcessorOptions {
@@ -239,6 +242,7 @@ const GridSight = {
       if (toggle) toggle.remove();
       try { unmountFilterChip(table); } catch (e) { /* ignore */ void e; }
       try { tearDownAnnotations(table); } catch (e) { /* ignore */ void e; }
+      try { removeFreezePanes(table); } catch (e) { /* ignore */ void e; }
       try { teardownVisibleRows(table); } catch (e) { /* ignore */ void e; }
       removePlusIcons(table);
       // Remove any virtual-column lozenges that were appended.
@@ -321,6 +325,12 @@ const GridSight = {
     // Cell annotations — gated internally on the `annotations` enrichment
     // being in the effective enabled set (spec 006).
     try { applyAnnotations(table); } catch (e) { void e; }
+
+    // Freeze panes (spec 014) — auto-rendered; gated on the enabled set so it
+    // stays dark when Grid-Sight is globally off (FR-015).
+    if (isEnrichmentEnabled('freeze-panes')) {
+      try { applyFreezePanes(table); } catch (e) { void e; }
+    }
 
     return processedTable;
   },

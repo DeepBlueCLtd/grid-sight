@@ -36,10 +36,14 @@ a self-contained enrichment increment; US1 alone is a viable MVP.
 
 ## Phase 1: Setup (Shared)
 
-- [ ] T001 Confirm a green baseline and record the bundle delta origin: run
+- [X] T001 Confirm a green baseline and record the bundle delta origin: run
   `yarn test` and `yarn test:e2e` (must be green) and
   `node scripts/bundle-size.js --soft`; note the current gzipped size in the PR
   as the baseline for the ≤ 4 KB combined budget.
+  <!-- BASELINE 2026-05-28: yarn test = 510 pass (66 files); e2e = 77 pass;
+       bundle = 41.24 KB gzipped (enforced ceiling 42 KB → only ~0.76 KB
+       headroom, so the combined ≤4 KB delta will require raising the ceiling
+       per T045). -->
 
 ---
 
@@ -64,37 +68,37 @@ aligned; disable → DOM byte-identical.
 
 ### Tests for US1 (write first, must fail)
 
-- [ ] T002 [P] [US1] Unit test in `src/enrichments/__tests__/freeze-panes.test.ts`:
+- [X] T002 [P] [US1] Unit test in `src/enrichments/__tests__/freeze-panes.test.ts`:
   `applyFreezePanes` tags `headerRow` cells + `gridCells(row)[0]` per row (NOT
   `:first-child` when a slider scaffold is present); corner carries both classes;
   `removeFreezePanes` leaves byte-identical DOM; no-op when no grid rows.
-- [ ] T003 [P] [US1] Storybook story `src/stories/freeze-panes.stories.ts` with a
+- [X] T003 [P] [US1] Storybook story `src/stories/freeze-panes.stories.ts` with a
   `play` asserting the sticky classes/`position` on a scrollable fixture.
-- [ ] T004 [P] [US1] Playwright in `e2e/navigation-and-analysis.spec.ts` (freeze
+- [X] T004 [P] [US1] Playwright in `e2e/navigation-and-analysis.spec.ts` (freeze
   section): header pinned on vertical scroll, key column pinned on horizontal
   scroll, and the disable→enable toggle-panel round-trip restores without reload.
 
 ### Implementation for US1
 
-- [ ] T005 [US1] Implement `src/ui/freeze-panes-styles.ts` `ensureFreezeStyles()`
+- [X] T005 [US1] Implement `src/ui/freeze-panes-styles.ts` `ensureFreezeStyles()`
   — pre-minified injected `<style id=gs-freeze-styles>` scoped under `.gs-freeze`
   (sticky header `top:0`, key `left:0`, corner z-index, opaque backgrounds).
-- [ ] T006 [US1] Implement `src/enrichments/freeze-panes.ts`
+- [X] T006 [US1] Implement `src/enrichments/freeze-panes.ts`
   `applyFreezePanes`/`removeFreezePanes` per `contracts/freeze-panes.md` (key
   column via addressing layer; idempotent; byte-identical teardown). Depends: T005.
-- [ ] T007 [US1] Add the `freeze-panes` entry (`apply`/`tearDown`) to
+- [X] T007 [US1] Add the `freeze-panes` entry (`apply`/`tearDown`) to
   `src/core/enrichment-registry.ts`. Depends: T006. *(shared file)*
-- [ ] T008 [US1] Wire `applyFreezePanes(table)` in `src/index.ts` `processTable`,
+- [X] T008 [US1] Wire `applyFreezePanes(table)` in `src/index.ts` `processTable`,
   gated on `isEnrichmentEnabled('freeze-panes')`. Depends: T006, T007. *(shared file)*
-- [ ] T009 [US1] Update the shipped-id/count assertions in
+- [X] T009 [US1] Update the shipped-id/count assertions in
   `enrichment-registry.test.ts` and `capability-filtering-toggle.spec.ts`.
   Depends: T007. *(shared files)*
-- [ ] T010 [P] [US1] Demo `public/demo/freeze-panes/index.html` — a tall/wide
+- [X] T010 [P] [US1] Demo `public/demo/freeze-panes/index.html` — a tall/wide
   scientific results table in a scroll container, nav bar consistent with
   siblings, `pageConfig.enrichments` includes `freeze-panes`.
-- [ ] T011 [US1] Add a demo card linking the freeze-panes page to
+- [X] T011 [US1] Add a demo card linking the freeze-panes page to
   `public/index.html`. *(shared file)*
-- [ ] T012 [US1] `node scripts/bundle-size.js --soft` (≤ 0.6 KB delta) + a11y
+- [X] T012 [US1] `node scripts/bundle-size.js --soft` (≤ 0.6 KB delta) + a11y
   monochrome check (frozen edge legible without colour; no keyboard regressions).
 
 **Checkpoint**: `freeze-panes` works and toggles independently — shippable MVP.
