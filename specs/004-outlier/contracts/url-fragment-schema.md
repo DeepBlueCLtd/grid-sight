@@ -13,7 +13,7 @@ back preserving the others (same rule as `slider-persistence.ts` and
 
 ## Grammar
 
-```
+```text
 fragment-param := "gs.o" "=" table-list
 table-list     := table-entry ( "," table-entry )*
 table-entry    := tableId "(" column-list ")"
@@ -36,13 +36,13 @@ threshold      := "1" | "2" | "3"
 Two tables — `sales` with column `latency` at 1σ and `error-rate` at 3σ; `inventory`
 with `qty` at 2σ:
 
-```
+```text
 #gs.o=sales(latency:1;error-rate:3;),inventory(qty:2;)
 ```
 
 Co-existing with a slider and a sort, write-back preserves all three:
 
-```
+```text
 #gs.s=axis-x:0.42&gs.v=sales(s:latency:asc)&gs.o=sales(latency:1;)
 ```
 

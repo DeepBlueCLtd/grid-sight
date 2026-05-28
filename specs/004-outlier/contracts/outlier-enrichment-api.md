@@ -40,6 +40,7 @@ export function populationStdDev(values: number[], mean?: number): number;
 ```
 
 **Contract**
+
 - `computeColumnStatistics` reads cells via `columnCells` + `cellValue`
   (`table-grid.ts`) and parses with `cleanNumericCell` (`type-detection.ts`).
 - `stdDev` is population (`÷ numericCount`); `numericCount` excludes non-numeric and
@@ -75,6 +76,7 @@ export function formatOutlierTooltip(mark: OutlierMark, mean: number): string;
 ```
 
 **Contract**
+
 - `computeMarks` is pure and DOM-free apart from holding cell references; fully
   unit-testable (FR-005, FR-009, SC-002 hot path).
 - Strict `>` comparison (FR-005, "more than N standard deviations").
@@ -113,6 +115,7 @@ export function getOutlierMarks(
 ```
 
 **Contract**
+
 - `applyOutliers` is idempotent and re-runnable after `tearDownOutliers` (enable→
   disable→enable round-trip; `docs/adding-an-enrichment.md` §3).
 - `setOutlierThreshold`: updates per-table state → writes `gs.o`
@@ -146,6 +149,7 @@ export function createOutlierLozenge(args: OutlierLozengeArgs): HTMLElement;
 ```
 
 **Contract (mirrors `createSortLozenge`)**
+
 - Glyph: `!` idle; `!2` / `!1` / `!3` active (FR-003). `data-gs-lozenge-id="outlier"`.
 - `aria-pressed`: `true` when a threshold is active, else `false`/absent (FR-004/FR-018).
 - `aria-label` + `title`: current threshold + next action, e.g.
@@ -177,6 +181,7 @@ export function openOutlierPopup(args: OutlierPopupArgs): () => void;
 ```
 
 **Contract (built on `popup-chrome.ts`)**
+
 - `role="dialog"`, `aria-label` `"Outliers in column 'X' at Nσ"` (FR-020).
 - Lists `row label — value — σ distance`, descending `|σ|`, doc-order tie-break
   (FR-012). Each entry is a focusable button.
@@ -203,6 +208,7 @@ export function resolveInitialOutliers(): PersistedOutlierState;      // URL > L
 ```
 
 **Contract**
+
 - Reuses `urlStem()` / `storageKeyFor('outliers')` from `slider-persistence.ts`;
   writes preserve all other `&` fragment params (like `gs.s`/`gs.v`).
 - `decode*` never throw; malformed input → empty state (FR-017 robustness).

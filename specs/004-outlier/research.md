@@ -48,6 +48,7 @@ given the same column, the value the statistics popup formats and the value the
 outlier tooltip formats derive from one call — satisfying SC-006 structurally.
 
 **Alternatives considered.**
+
 - *Outliers use sample σ to match the current popup.* Rejected: contradicts FR-008
   and the spec's worked acceptance numbers, and sample σ is the wrong "distance from
   this column's mean" semantics.
@@ -72,7 +73,7 @@ other `&`-separated parameters when writing.
 **Decision.** Add a third, independent fragment parameter **`gs.o`** with a
 per-table directive grammar modelled on `gs.v`:
 
-```
+```text
 gs.o = <tableId>(<colKey>:<threshold>;<colKey>:<threshold>; …) , <tableId>( … )
 ```
 
@@ -94,6 +95,7 @@ schemes the spec points at. Using `colKeyAt` guarantees a missing-column directi
 detectable (no matching header → skip), satisfying FR-017.
 
 **Alternatives considered.**
+
 - *Reuse `gs.v` and extend its grammar with an `o:` directive.* Rejected: couples a
   new feature to the frozen 002-003 contract (`url-fragment-schema.md`) and bloats a
   module other enrichments share; a parallel `gs.o` is cleaner and independently
@@ -130,6 +132,7 @@ pipeline sort/filter use, with no new event surface. Recomputing only active col
 keeps within the SC-002 budget.
 
 **Alternatives considered.**
+
 - *MutationObserver on the tbody.* Rejected: coarser, fires on unrelated DOM churn,
   and duplicates what `visible-rows` already centralises.
 - *Always compute over the full unfiltered population.* Rejected by the spec
@@ -160,6 +163,7 @@ accessible pattern; the project already injects CSS per enrichment
 dedicated `outlier-styles.ts` fits convention and is removable for clean teardown.
 
 **Alternatives considered.**
+
 - *Background-colour only.* Rejected by FR-006 (colour as sole channel).
 - *Native `title` attribute for the tooltip.* Rejected: not focus-reachable, not
   stylable, and inconsistent across browsers; a managed tooltip element matches
@@ -245,6 +249,7 @@ convention consistency.
 (`enrichment-registry.ts:128`).
 
 **Decision.**
+
 - **Registry**: flip `outlier` to `shipped: true`; add `tearDown(table)` that removes
   all markers/tooltips/popups and unsubscribes the filter listener (byte-identical
   DOM, FR-021/SC-005); add `apply(table)` (the enrichment renders persisted marks
@@ -286,6 +291,7 @@ shipping "half-wired" (the doc's stated failure mode).
 ## Open questions
 
 None. All spec `NEEDS CLARIFICATION` items resolved:
+
 - **`!` glyph collision** (spec Assumption) → resolved in R-5: no collision with
   `H`, `#`, `▽`, `↕`, or any registered id.
 - **Population vs sample σ / agreement** (FR-008 vs FR-024/SC-006) → resolved in R-1:
