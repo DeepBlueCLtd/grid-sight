@@ -84,6 +84,7 @@ node scripts/bundle-size.js --soft   # stay within the ≤4 KB combined budget, 
 ---
 
 **Per-piece pointers**:
+
 - `freeze-panes` — same spine minus persistence; CSS in an injected `<style>`
   string (pre-minified). See `contracts/freeze-panes.md`.
 - `find-in-table` — table-level **lozenge** via `registerEnrichment`

@@ -41,7 +41,7 @@ export function mountAggregateControl(
 
 ## Persistence (reuse `src/utils/slider-persistence.ts`)
 
-```
+```text
 key:   gs:<url-stem>:summary:<table-key>      (via storageKeyFor)
 value: { version: 1, choices: { [logicalColIndex]: Aggregate } }
 ```

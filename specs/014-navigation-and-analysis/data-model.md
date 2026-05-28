@@ -22,6 +22,7 @@ Grows the existing `StatisticsResult` (`src/enrichments/statistics.ts`).
 | **histogram** | number[] | NEW. 10 equal-width bin counts over [min, max]; `[]` when count 0. |
 
 **Validation / state**:
+
 - `count === 0` ⇒ empty state: numerics render `N/A`, `missingPct` 100% if any
   cells existed, `histogram` empty. **Never throws** (replaces current throw).
 - Computed over `getVisibleRows(table).current()`; `missing` counted at the
@@ -57,7 +58,7 @@ No persisted state (on/off derives from the enabled set).
 
 **Persisted entity — SummaryChoiceEnvelope** (localStorage, `gs:` scheme):
 
-```
+```text
 key:   gs:<url-stem>:summary:<table-key>
 value: { version: 1, choices: { [logicalColIndex: number]: Aggregate } }
 ```
@@ -89,8 +90,8 @@ Transient, in-memory per table while the find box is open. Not persisted.
 `currentIndex+1` of `matches.length` (or "0 matches").
 
 **State transitions**: type/debounce ⇒ rebuild `matches` over current visible
-rows, reset `currentIndex` to first match; Next/Prev ⇒ advance/retreat with wrap
-+ `scrollIntoView`; clear/close/`tearDown` ⇒ drop state + remove both classes
+rows, reset `currentIndex` to first match; Next/Prev ⇒ advance/retreat (wrapping)
+and `scrollIntoView`; clear/close/`tearDown` ⇒ drop state and remove both classes
 (byte-identical).
 
 ---

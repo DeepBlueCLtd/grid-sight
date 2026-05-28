@@ -27,6 +27,7 @@ container — without us inventing a viewport. Cheapest possible bundle cost
 (mostly CSS).
 
 **Alternatives considered**:
+
 - *Wrap the table in a `gs-freeze-scroll` div with `max-height`/`overflow:auto`*:
   gives a guaranteed scroll region but mutates structure (teardown must unwrap,
   risks disturbing author layout/CSS) and forces a height policy we shouldn't

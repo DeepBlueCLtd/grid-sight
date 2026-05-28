@@ -45,51 +45,62 @@ Support data-bars/color-scales/freeze-panes/find-replace articles.
 
 ## 2. Full gap list — features Grid-Sight does not yet have
 
+Each item carries a stable ID (category letter + number) used in the value
+ranking below.
+
 ### A. Navigation & orientation in a large table
-1. **Sticky / frozen header row** — header stays visible while scrolling a tall table.
-2. **Frozen / pinned columns** — keep the row-label / key column(s) visible while scrolling horizontally.
-3. **Pinned rows** — keep a total/summary or reference row visible regardless of scroll/sort/filter.
-4. **Find-in-table** — quick search box, highlight all matches, jump between hits.
-5. **Go-to-cell / jump-to-row** — surface the internal table-grid addressing layer as a navigation control.
-6. **Column resize**, **column reorder (drag)**, **column show/hide chooser**, **column menu**.
-7. **Minimap / scroll overview** of a long table.
+
+- **A1. Sticky / frozen header row** — header stays visible while scrolling a tall table.
+- **A2. Frozen / pinned columns** — keep the row-label / key column(s) visible while scrolling horizontally.
+- **A3. Pinned rows** — keep a total/summary or reference row visible regardless of scroll/sort/filter.
+- **A4. Find-in-table** — quick search box, highlight all matches, jump between hits.
+- **A5. Go-to-cell / jump-to-row** — surface the internal table-grid addressing layer as a navigation control.
+- **A6. Column resize**, **column reorder (drag)**, **column show/hide chooser**, **column menu**.
+- **A7. Minimap / scroll overview** of a long table.
 
 ### B. Aggregation & summarization
-8. **Column summary / footer row** — sum, avg, min, max, count over *visible* rows.
-9. **Row grouping** — collapse rows sharing a column value into collapsible groups.
-10. **Group subtotals** — per-group aggregates inside group headers.
-11. **Pivot table** — rows × columns × aggregate.
+
+- **B8. Column summary / footer row** — sum, avg, min, max, count over *visible* rows.
+- **B9. Row grouping** — collapse rows sharing a column value into collapsible groups.
+- **B10. Group subtotals** — per-group aggregates inside group headers.
+- **B11. Pivot table** — rows × columns × aggregate.
 
 ### C. Filtering & faceting (we have per-column filter + frequency dialog, not these)
-12. **Global / quick filter** across all columns at once.
-13. **Interactive faceted browse** — facet counts that act as click-to-filter.
-14. **Text-condition filters** — contains / starts-with / regex / blank / not-blank.
-15. **Top-N / bottom-N filter**.
+
+- **C12. Global / quick filter** across all columns at once.
+- **C13. Interactive faceted browse** — facet counts that act as click-to-filter.
+- **C14. Text-condition filters** — contains / starts-with / regex / blank / not-blank.
+- **C15. Top-N / bottom-N filter**.
 
 ### D. Conditional formatting & in-cell visualization (we have heatmap + outlier marks)
-16. **User-defined conditional formatting rules** — highlight cells matching a value/range/text rule.
-17. **Data bars** — in-cell proportional bars (distinct from background heatmap).
-18. **Color-scale presets + icon sets** (arrows / traffic-lights) beyond the single heatmap gradient.
-19. **Duplicate-value highlighting**.
+
+- **D16. User-defined conditional formatting rules** — highlight cells matching a value/range/text rule.
+- **D17. Data bars** — in-cell proportional bars (distinct from background heatmap).
+- **D18. Color-scale presets + icon sets** (arrows / traffic-lights) beyond the single heatmap gradient.
+- **D19. Duplicate-value highlighting**.
 
 ### E. Exploratory data analysis (high scientist value)
-20. **Per-column profile panel** — count, missing %, distinct count, min/Q1/median/Q3/max, and a mini-histogram.
-21. **Missing / blank-cell highlighting & completeness indicator** per column.
-22. **Correlation view** between two numeric columns (scatterplot facet).
-23. **Value clustering** — surface near-duplicate categorical values for inspection (read-only).
+
+- **E20. Per-column profile panel** — count, missing %, distinct count, min/Q1/median/Q3/max, and a mini-histogram.
+- **E21. Missing / blank-cell highlighting & completeness indicator** per column.
+- **E22. Correlation view** between two numeric columns (scatterplot facet).
+- **E23. Value clustering** — surface near-duplicate categorical values for inspection (read-only).
 
 ### F. Cross-table — directly serves "large numbers of tables"
-24. **Table navigator / index** — a floating table-of-contents listing every enriched table on the page with jump links.
-25. **Cross-table search** — find a value across all tables on the page at once.
-26. **Cross-table column comparison** — extend the existing cross-table slider sync to align/compare columns.
+
+- **F24. Table navigator / index** — a floating table-of-contents listing every enriched table on the page with jump links.
+- **F25. Cross-table search** — find a value across all tables on the page at once.
+- **F26. Cross-table column comparison** — extend the existing cross-table slider sync to align/compare columns.
 
 ### G. Selection & richer export (we copy whole table as CSV/TSV/Markdown)
-27. **Cell / range selection** + copy selected range.
-28. **Row selection** (checkboxes) and copy/export of selection only.
-29. **Keyboard cell navigation** (arrow keys move an active cell).
-30. **Export to Excel (.xlsx) / JSON** and a **print-friendly view**.
+
+- **G27. Cell / range selection** + copy selected range.
+- **G28. Row selection** (checkboxes) and copy/export of selection only.
+- **G29. Keyboard cell navigation** (arrow keys move an active cell).
+- **G30. Export to Excel (.xlsx) / JSON** and a **print-friendly view**.
 
 ### Out of philosophy (noted, not recommended)
+
 Cell editing, data validation, formula/expression engines, server-side/streaming
 row models, virtual scrolling — they either mutate the source or pull in
 weight/network, conflicting with the offline, read-only, progressive-enhancement
