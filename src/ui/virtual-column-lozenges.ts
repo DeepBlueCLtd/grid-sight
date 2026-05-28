@@ -7,6 +7,7 @@ import {
   activateDirective,
   mutateDirective,
   removeDirective,
+  listDirectives,
   getColumnKeys,
   getNumericColumns,
   _internalGetContext,
@@ -195,4 +196,54 @@ export function injectAllVirtualColumnLozenges(table: HTMLTableElement): void {
  *  buttons). Does not remove activated virtual columns. */
 export function removeAllVirtualColumnLozenges(table: HTMLTableElement): void {
   table.querySelectorAll('.gs-vc-lozenge').forEach((el) => el.remove());
+}
+
+/* ── Registry apply/tearDown hooks (spec 012 enrichments now shipped) ──────
+ * Each virtual-column kind is a first-class enrichment in the toggle panel.
+ * apply re-injects its lozenge when the kind is (re-)enabled while Grid-Sight
+ * is on; tearDown removes its activated columns AND its lozenge when disabled.
+ * The inject* fns already gate on isEnrichmentEnabled, so apply only adds the
+ * "Grid-Sight must be on for this table" policy.
+ */
+
+type VcKind = 'cumulative' | 'sparkline' | 'compare';
+
+function isGsActive(table: HTMLTableElement): boolean {
+  return !!table.querySelector('.grid-sight-toggle[aria-expanded="true"]');
+}
+
+function removeVcLozenge(table: HTMLTableElement, kind: VcKind): void {
+  table
+    .querySelectorAll(`.gs-vc-lozenge[data-gs-vc-kind="${kind}"]`)
+    .forEach((el) => el.remove());
+}
+
+function removeVcColumns(table: HTMLTableElement, kind: VcKind): void {
+  for (const d of listDirectives(table)) {
+    if (d.kind === kind) removeDirective(d.id);
+  }
+}
+
+export function applyCumulativeColumn(table: HTMLTableElement): void {
+  if (isGsActive(table)) injectCumulativeLozenges(table);
+}
+export function tearDownCumulativeColumn(table: HTMLTableElement): void {
+  removeVcColumns(table, 'cumulative');
+  removeVcLozenge(table, 'cumulative');
+}
+
+export function applySparklineColumn(table: HTMLTableElement): void {
+  if (isGsActive(table)) injectSparklineLozenge(table);
+}
+export function tearDownSparklineColumn(table: HTMLTableElement): void {
+  removeVcColumns(table, 'sparkline');
+  removeVcLozenge(table, 'sparkline');
+}
+
+export function applyCompareColumn(table: HTMLTableElement): void {
+  if (isGsActive(table)) injectCompareLozenge(table);
+}
+export function tearDownCompareColumn(table: HTMLTableElement): void {
+  removeVcColumns(table, 'compare');
+  removeVcLozenge(table, 'compare');
 }

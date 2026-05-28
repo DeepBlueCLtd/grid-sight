@@ -146,11 +146,13 @@ These are real misses from shipped enrichments. Keep adding to it.
 
 - **006 cell-annotations**: shipped with no demo (§9); the "Show annotations"
   entry only registered at page init so it didn't appear after the first note
-  until reload (§3); toggle OFF→ON did not restore markers because there is no
-  re-apply hook (§3); the `EnrichmentType` union / demo allow-lists were not
-  reconciled (§4); the bundle overran its ≤2 KB budget and was only caught when
-  the build failed (§7); the a11y and manual-quickstart tasks were marked done
-  without being performed (§6, §10).
-- **`EnrichmentType` union** in `enrichment-menu.ts` has been missing `sort` and
-  `filter` since they shipped — evidence that §4 drift is the default failure
-  mode, not a one-off.
+  until reload (§3); toggle OFF→ON did not restore markers because there was no
+  re-apply hook (§3, since added); the demo allow-lists were not reconciled
+  (§4); the bundle overran its ≤2 KB budget and was only caught when the build
+  failed (§7); the a11y and manual-quickstart tasks were marked done without
+  being performed (§6, §10).
+- **012 virtual-columns**: the Σ/⌇/Δ lozenges were injected at page load,
+  gated by neither the GS toggle nor the enabled set, so they showed with
+  Grid-Sight off (§3); the kinds were registered `shipped:false` despite having
+  full implementations, so they weren't panel-toggleable and got dropped from
+  the visitor override on any panel interaction (§1, §4). Both since fixed.

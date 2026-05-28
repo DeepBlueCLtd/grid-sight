@@ -52,7 +52,7 @@ describe('enrichment-registry', () => {
   });
 
   it('shipped enrichments have tearDown hooks', () => {
-    const shipped = ['heatmap', 'sliders', 'slider-threshold', 'statistics', 'frequency', 'frequency-chart', 'sort', 'filter', 'annotations'];
+    const shipped = ['heatmap', 'sliders', 'slider-threshold', 'statistics', 'frequency', 'frequency-chart', 'sort', 'filter', 'annotations', 'cumulative', 'diff-compare', 'sparkline'];
     for (const id of shipped) {
       const e = ENRICHMENT_REGISTRY.find(x => x.id === id);
       expect(e?.tearDown, `shipped enrichment "${id}" must have tearDown`).toBeDefined();
@@ -60,7 +60,7 @@ describe('enrichment-registry', () => {
   });
 
   it('spec-only enrichments have no tearDown hooks', () => {
-    const specOnly = ['copy-as-csv', 'cumulative', 'diff-compare', 'outlier', 'sparkline', 'units-toggle'];
+    const specOnly = ['copy-as-csv', 'outlier', 'units-toggle'];
     for (const id of specOnly) {
       const e = ENRICHMENT_REGISTRY.find(x => x.id === id);
       expect(e?.tearDown, `spec-only enrichment "${id}" must not have tearDown`).toBeUndefined();

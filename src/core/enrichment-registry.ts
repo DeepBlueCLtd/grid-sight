@@ -32,6 +32,14 @@ import { removeAllSliders, getSliders } from '../enrichments/slider';
 import { setSort, clearFilters } from '../utils/visible-rows';
 import { unmountFilterChip } from '../enrichments/filter-chip';
 import { tearDownAnnotations, applyAnnotations } from '../enrichments/annotations';
+import {
+  applyCumulativeColumn,
+  tearDownCumulativeColumn,
+  applySparklineColumn,
+  tearDownSparklineColumn,
+  applyCompareColumn,
+  tearDownCompareColumn,
+} from '../ui/virtual-column-lozenges';
 
 export type EnrichmentId = string;
 
@@ -109,12 +117,12 @@ const ENTRIES: EnrichmentRegistryEntry[] = [
   // wire it into the entry on the same line.
   { id: 'annotations',      label: 'Cell annotations',  defaultOn: true, shipped: true,  tearDown: tearDownAnnotations, apply: applyAnnotations },  // spec 006
   { id: 'copy-as-csv',      label: 'Copy as CSV',       defaultOn: true, shipped: false },  // spec 009
-  { id: 'cumulative',       label: 'Cumulative col.',   defaultOn: true, shipped: false },  // spec 008
-  { id: 'diff-compare',     label: 'Diff / compare',    defaultOn: true, shipped: false },  // spec 010
+  { id: 'cumulative',       label: 'Cumulative col.',   defaultOn: true, shipped: true,  tearDown: tearDownCumulativeColumn, apply: applyCumulativeColumn },  // spec 008 / 012-virtual-columns
+  { id: 'diff-compare',     label: 'Diff / compare',    defaultOn: true, shipped: true,  tearDown: tearDownCompareColumn,    apply: applyCompareColumn },     // spec 010 / 012-virtual-columns
   { id: 'filter',           label: 'Column filter',     defaultOn: true, shipped: true,  tearDown: clearTableFilters },  // spec 003 (landed via 002-003-row-visibility)
   { id: 'outlier',          label: 'Outlier marker',    defaultOn: true, shipped: false },  // spec 004
   { id: 'sort',             label: 'Column sort',       defaultOn: true, shipped: true,  tearDown: clearTableSort },  // spec 002 (landed via 002-003-row-visibility)
-  { id: 'sparkline',        label: 'Row sparkline',     defaultOn: true, shipped: false },  // spec 005
+  { id: 'sparkline',        label: 'Row sparkline',     defaultOn: true, shipped: true,  tearDown: tearDownSparklineColumn,  apply: applySparklineColumn },   // spec 005 / 012-virtual-columns
   { id: 'units-toggle',     label: 'Units toggle',      defaultOn: true, shipped: false },  // spec 007
 ];
 

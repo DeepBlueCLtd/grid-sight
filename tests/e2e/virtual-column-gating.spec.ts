@@ -54,19 +54,25 @@ test('VC lozenges stay hidden when the kind is not in the page allow-list', asyn
   await expect(page.locator('#tbl-revenue .gs-vc-lozenge')).toHaveCount(0);
 });
 
-test('capability-panel changes refresh VC lozenges live on a GS-on table', async ({ page }) => {
+test('a virtual-column kind toggles live from the panel on a GS-on table', async ({ page }) => {
   await page.goto(PANEL_URL);
   await page.waitForFunction(() => !!(window as any).gridSight);
 
-  // Enable GS → VC lozenges appear (defaults enable every kind).
+  // Enable GS → VC lozenges appear (defaults enable every kind). cumulative is
+  // a first-class panel checkbox now.
   await page.locator('#vc-table .grid-sight-toggle').first().click();
-  await expect(page.locator('#vc-table .gs-vc-lozenge').first()).toBeVisible();
+  const cumulative = page.locator('#vc-table .gs-vc-lozenge[data-gs-vc-kind="cumulative"]');
+  const sparkline = page.locator('#vc-table .gs-vc-lozenge[data-gs-vc-kind="sparkline"]');
+  await expect(cumulative.first()).toBeVisible();
+  await expect(sparkline.first()).toBeVisible();
 
-  // A panel interaction re-derives the visitor override from the shipped
-  // checkboxes — which don't include the virtual-column kinds — so those leave
-  // the enabled set. The lozenges must update to match (previously they went
-  // stale until the GS toggle was cycled).
-  await page.locator('[data-gs-toggle-panel-root] input[value="heatmap"]').uncheck();
-  await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => r(null))));
-  await expect(page.locator('#vc-table .gs-vc-lozenge')).toHaveCount(0);
+  // Untick "cumulative" in the panel → its Σ lozenges go (tearDown hook), but
+  // the sibling kinds stay (only this capability changed).
+  await page.locator('[data-gs-toggle-panel-root] input[value="cumulative"]').uncheck();
+  await expect(cumulative).toHaveCount(0);
+  await expect(sparkline.first()).toBeVisible();
+
+  // Re-tick → the Σ lozenges come back live (apply hook), no reload.
+  await page.locator('[data-gs-toggle-panel-root] input[value="cumulative"]').check();
+  await expect(cumulative.first()).toBeVisible();
 });

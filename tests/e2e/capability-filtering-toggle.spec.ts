@@ -48,6 +48,9 @@ test.describe('US2: live enrichment toggle panel', () => {
       'sort',
       'filter',
       'annotations',
+      'cumulative',
+      'diff-compare',
+      'sparkline',
     ];
     for (const id of shippedIds) {
       await expect(
