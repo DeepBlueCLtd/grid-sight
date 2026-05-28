@@ -1,4 +1,7 @@
 import type { StatisticsResult } from '../enrichments/statistics';
+import { formatNumber } from '../enrichments/statistics';
+
+const SVG_NS = 'http://www.w3.org/2000/svg';
 
 const POPUP_CLASS = 'gs-statistics-popup';
 const POPUP_VISIBLE_CLASS = 'gs-statistics-popup--visible';
@@ -9,6 +12,53 @@ const POPUP_CONTENT_CLASS = 'gs-statistics-popup__content';
 const STAT_ITEM_CLASS = 'gs-statistics-popup__stat';
 const STAT_LABEL_CLASS = 'gs-statistics-popup__stat-label';
 const STAT_VALUE_CLASS = 'gs-statistics-popup__stat-value';
+const HISTOGRAM_CLASS = 'gs-statistics-popup__histogram';
+const EMPTY_CLASS = 'gs-statistics-popup__empty';
+
+/** Inline-SVG mini histogram. Bars scale to the tallest bin; each bar carries
+ *  a <title> (value range + count) so the shape is legible without colour and
+ *  to a screen reader (spec 014 §R-4). */
+function buildHistogramSvg(histogram: number[], minV: number, maxV: number): SVGElement {
+  const width = 256;
+  const height = 56;
+  const gap = 1;
+  const svg = document.createElementNS(SVG_NS, 'svg');
+  svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
+  svg.setAttribute('width', String(width));
+  svg.setAttribute('height', String(height));
+  svg.setAttribute('role', 'img');
+  svg.setAttribute('aria-label', 'Value distribution histogram');
+
+  const n = histogram.length;
+  if (n === 0) return svg;
+  const maxCount = Math.max(...histogram, 1);
+  const barW = Math.max(1, (width - gap * (n - 1)) / n);
+  const range = maxV - minV;
+
+  for (let i = 0; i < n; i++) {
+    const c = histogram[i];
+    const x = i * (barW + gap);
+    const h = c === 0 ? 0 : Math.max(1, (c / maxCount) * height);
+    const rect = document.createElementNS(SVG_NS, 'rect');
+    rect.setAttribute('x', String(x));
+    rect.setAttribute('y', String(height - h));
+    rect.setAttribute('width', String(barW));
+    rect.setAttribute('height', String(h));
+    rect.setAttribute('fill', '#4a90e2');
+
+    const title = document.createElementNS(SVG_NS, 'title');
+    if (n === 1) {
+      title.textContent = `${formatNumber(minV)}: ${c}`;
+    } else {
+      const lo = minV + (range * i) / n;
+      const hi = minV + (range * (i + 1)) / n;
+      title.textContent = `${formatNumber(lo)}–${formatNumber(hi)}: ${c}`;
+    }
+    rect.appendChild(title);
+    svg.appendChild(rect);
+  }
+  return svg;
+}
 
 // CSS styles for the popup
 const POPUP_STYLES = `
@@ -94,6 +144,19 @@ const POPUP_STYLES = `
   color: #333;
   text-align: right;
   flex: 1;
+}
+
+.${HISTOGRAM_CLASS} {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid #f0f0f0;
+}
+.${HISTOGRAM_CLASS} svg { display: block; width: 100%; height: auto; }
+
+.${EMPTY_CLASS} {
+  padding: 4px 0;
+  color: #777;
+  font-style: italic;
 }
 `;
 
@@ -200,26 +263,51 @@ export class StatisticsPopup {
     });
   }
 
-  show(stats: StatisticsResult, anchor: HTMLElement): void {   
+  show(stats: StatisticsResult, anchor: HTMLElement): void {
     // Clear previous content
     this.contentElement.innerHTML = '';
-    
-    // Add statistics items
-    this.contentElement.appendChild(this.createStatItem('Count', stats.count.toString()));
-    this.contentElement.appendChild(this.createStatItem('Sum', this.formatNumber(stats.sum)));
-    this.contentElement.appendChild(this.createStatItem('Min', this.formatNumber(stats.min)));
-    this.contentElement.appendChild(this.createStatItem('Max', this.formatNumber(stats.max)));
-    this.contentElement.appendChild(this.createStatItem('Mean', this.formatNumber(stats.mean)));
-    this.contentElement.appendChild(this.createStatItem('Median', this.formatNumber(stats.median)));
-    this.contentElement.appendChild(this.createStatItem('Std Dev', this.formatNumber(stats.stdDev)));
-    this.contentElement.appendChild(this.createStatItem('Variance', this.formatNumber(stats.variance)));
-    
+
+    const missingValue = `${stats.missing} (${this.formatNumber(stats.missingPct, 1)}%)`;
+
+    if (stats.count === 0) {
+      // Empty state — no numeric values to profile. Never a NaN row.
+      const empty = document.createElement('div');
+      empty.className = EMPTY_CLASS;
+      empty.textContent = 'No numeric values';
+      this.contentElement.appendChild(empty);
+      if (stats.missing > 0) {
+        this.contentElement.appendChild(this.createStatItem('Missing', missingValue));
+      }
+    } else {
+      // Profile rows. Q1/Q3 sit either side of the median; the new Missing /
+      // Distinct figures lead so the data-quality read is immediate.
+      this.contentElement.appendChild(this.createStatItem('Count', stats.count.toString()));
+      this.contentElement.appendChild(this.createStatItem('Missing', missingValue));
+      this.contentElement.appendChild(this.createStatItem('Distinct', stats.distinct.toString()));
+      this.contentElement.appendChild(this.createStatItem('Sum', this.formatNumber(stats.sum)));
+      this.contentElement.appendChild(this.createStatItem('Min', this.formatNumber(stats.min)));
+      this.contentElement.appendChild(this.createStatItem('Q1', this.formatNumber(stats.q1)));
+      this.contentElement.appendChild(this.createStatItem('Median', this.formatNumber(stats.median)));
+      this.contentElement.appendChild(this.createStatItem('Q3', this.formatNumber(stats.q3)));
+      this.contentElement.appendChild(this.createStatItem('Max', this.formatNumber(stats.max)));
+      this.contentElement.appendChild(this.createStatItem('Mean', this.formatNumber(stats.mean)));
+      this.contentElement.appendChild(this.createStatItem('Std Dev', this.formatNumber(stats.stdDev)));
+      this.contentElement.appendChild(this.createStatItem('Variance', this.formatNumber(stats.variance)));
+
+      if (stats.histogram.length > 0) {
+        const histWrap = document.createElement('div');
+        histWrap.className = HISTOGRAM_CLASS;
+        histWrap.appendChild(buildHistogramSvg(stats.histogram, stats.min, stats.max));
+        this.contentElement.appendChild(histWrap);
+      }
+    }
+
     // Position the popup
     this.positionPopup(anchor);
-    
+
     // Show the popup
     this.element.classList.add(POPUP_VISIBLE_CLASS);
-    
+
     // Focus the close button for keyboard navigation
     this.closeButton.focus();
   }

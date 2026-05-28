@@ -117,34 +117,34 @@ recompute over only visible rows.
 
 ### Tests for US2 (write first, must fail)
 
-- [ ] T013 [P] [US2] Extend `src/enrichments/__tests__/statistics.test.ts`:
+- [X] T013 [P] [US2] Extend `src/enrichments/__tests__/statistics.test.ts`:
   `missing`/`missingPct`/`distinct`/`q1`/`q3`/`histogram` correctness; empty
   input returns a zero-count result (no throw); 10-bin edges incl. all-equal
   collapse.
-- [ ] T014 [P] [US2] jsdom popup test: new rows render, inline SVG histogram with
+- [X] T014 [P] [US2] jsdom popup test: new rows render, inline SVG histogram with
   `<title>` per bar, empty-state copy when count 0.
-- [ ] T015 [P] [US2] Playwright (statistics section of
+- [X] T015 [P] [US2] Playwright (statistics section of
   `e2e/navigation-and-analysis.spec.ts`): figures computed over visible rows and
   recompute live when a filter is applied while the popup is open.
 
 ### Implementation for US2
 
-- [ ] T016 [US2] Extend `StatisticsResult` + `calculateStatistics(values,
+- [X] T016 [US2] Extend `StatisticsResult` + `calculateStatistics(values,
   missing?)` in `src/enrichments/statistics.ts` (quantile Q1/Q3 via
   `simple-statistics`, distinct set, 10-bin histogram, no-throw empty result).
-- [ ] T017 [US2] Render the new figures + inline SVG mini histogram + empty state
+- [X] T017 [US2] Render the new figures + inline SVG mini histogram + empty state
   in `src/ui/statistics-popup.ts` (reuse `sparkline-svg` approach; `show`/
   `onClose` signatures unchanged). Depends: T016.
-- [ ] T018 [US2] Switch `extractNumericColumnValues`/`…RowValues`/`…TableValues`
+- [X] T018 [US2] Switch `extractNumericColumnValues`/`…RowValues`/`…TableValues`
   in `src/ui/toggle-injector.ts` to read `getVisibleRows(table).current()` and
   return the missing count; subscribe via `onVisibleRowsChange` while the popup
   is open and unsubscribe in `onClose`. Depends: T016. *(shared file)*
-- [ ] T019 [P] [US2] Demo `public/demo/statistics/index.html` — a numeric table
+- [X] T019 [P] [US2] Demo `public/demo/statistics/index.html` — a numeric table
   with blank cells and a skewed distribution; nav bar; `pageConfig.enrichments`
   includes `statistics`.
-- [ ] T020 [US2] Add a demo card for the statistics page to `public/index.html`.
+- [X] T020 [US2] Add a demo card for the statistics page to `public/index.html`.
   *(shared file)*
-- [ ] T021 [US2] `node scripts/bundle-size.js --soft` (≤ 0.8 KB delta) + a11y
+- [X] T021 [US2] `node scripts/bundle-size.js --soft` (≤ 0.8 KB delta) + a11y
   (histogram `<title>`s, keyboard reach unchanged). *(No id/count test change —
   `statistics` is already a shipped id.)*
 

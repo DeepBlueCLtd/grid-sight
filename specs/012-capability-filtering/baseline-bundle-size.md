@@ -153,3 +153,28 @@ Cheapest follow-up cuts (not done in-PR):
   the envelope-decode path.
 - drop the test-only `__reset*` exports from the production build via a
   build-time `define` flag terser can strip.
+
+## Ceiling bump for 014-navigation-and-analysis (2026-05-28)
+
+Spec 014 adds four tier-1 pieces — `freeze-panes`, an in-place `statistics`
+extension (missing %, distinct, Q1/Q3, mini histogram, visible-rows scope),
+`summary-row`, and `find-in-table` — budgeted at a **combined ≤ 4 KB gzipped**
+delta (per-piece soft sub-budgets in `research.md` §R-9: freeze ≤ 0.6, stats
+≤ 0.8, summary ≤ 1.4, find ≤ 1.2). The pre-feature baseline measured **41.24 KB
+gzipped**, leaving only ~0.76 KB under the standing 42 KB ceiling, so the
+combined delta cannot fit without a raise.
+
+**Decision (2026-05-28)**: bump the enforced ceiling **42 → 46 KB gzipped** in
+`scripts/bundle-size.js` (baseline 41.24 KB + the ≤4 KB feature budget, plus a
+little headroom). Same posture as every prior overage: an explicit, recorded
+constitution violation pending the standing constitution-amendment / bundle-cut
+PR. Constitution §I 10 KB target unchanged.
+
+| Stage                                   | Gzipped KB | Δ from previous |
+|-----------------------------------------|------------|-----------------|
+| Baseline (pre-014)                      | 41.24      | —               |
+| + freeze-panes (US1)                    | 41.51      | **+0.27 KB**    |
+| + statistics extension (US2)            | 42.24      | **+0.73 KB**    |
+
+The final combined delta is confirmed against the 46 KB ceiling by the hard
+bundle gate in spec 014 task T045.

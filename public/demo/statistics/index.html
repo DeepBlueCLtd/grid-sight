@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Grid-Sight · Statistics popup (spec 014)</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 880px; margin: 24px auto; padding: 0 16px 80px; color: #222; line-height: 1.5; }
+    h1 { margin-top: 0; }
+    h2 { margin: 32px 0 8px; }
+    .lede { color: #555; max-width: 72ch; }
+    nav { margin-bottom: 16px; padding: 8px 0; border-bottom: 1px solid #ddd; font-size: 14px; }
+    nav strong { margin-right: 8px; }
+    ol.steps { max-width: 70ch; }
+    ol.steps code { background: #f5f7fa; padding: 1px 5px; border-radius: 3px; font-size: 13px; }
+    table { border-collapse: collapse; margin: 16px 0; }
+    th, td { border: 1px solid #ccc; padding: 6px 12px; text-align: right; font-variant-numeric: tabular-nums; }
+    thead th { background: #f4f4f4; }
+    tbody th { text-align: left; font-weight: 600; }
+    td.cat { text-align: left; }
+    footer { margin-top: 56px; padding-top: 16px; border-top: 1px solid #eee; color: #888; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <nav>
+    <strong>Grid-Sight demos:</strong>
+    <a href="../../">Home</a> ·
+    <a href="../freeze-panes/index.html">Freeze panes</a> ·
+    <a href="index.html">Statistics</a> ·
+    <a href="../summary-row/index.html">Summary row</a> ·
+    <a href="../find-in-table/index.html">Find in table</a>
+  </nav>
+
+  <h1>Statistics popup</h1>
+  <p class="lede">
+    The numeric statistics popup now reports the full column profile — missing
+    count &amp; %, distinct values, the quartiles (Q1 / median / Q3), and a mini
+    histogram of the distribution — all computed over the <strong>visible</strong>
+    rows. Apply a filter and the open popup recomputes live; a column with no
+    numeric values shows a tidy empty state instead of an error.
+  </p>
+
+  <script>
+    window.gridSight = { pageConfig: {
+      enrichments: ['statistics', 'filter', 'sort']
+    } };
+  </script>
+
+  <h2>Try it</h2>
+  <ol class="steps">
+    <li>Click <strong>GS</strong>, then the <code>#</code> lozenge on the
+      <em>Reading</em> column header. The popup shows the new figures and a
+      histogram of a right-skewed distribution (a handful of large readings).</li>
+    <li>Note <em>Missing</em> — three readings are blank. The percentage is over
+      every cell seen, blanks included.</li>
+    <li>Filter <em>Reading</em> (the ▽ lozenge) to a sub-range and reopen the
+      popup: every figure recomputes over just the matching rows.</li>
+  </ol>
+
+  <h2>Reaction readings</h2>
+  <table id="measurements">
+    <thead>
+      <tr><th>Sample</th><th>Reading</th><th>Batch</th></tr>
+    </thead>
+    <tbody>
+      <tr><th>S-01</th><td>12</td><td class="cat">A</td></tr>
+      <tr><th>S-02</th><td>14</td><td class="cat">A</td></tr>
+      <tr><th>S-03</th><td>11</td><td class="cat">B</td></tr>
+      <tr><th>S-04</th><td>15</td><td class="cat">A</td></tr>
+      <tr><th>S-05</th><td></td><td class="cat">B</td></tr>
+      <tr><th>S-06</th><td>13</td><td class="cat">A</td></tr>
+      <tr><th>S-07</th><td>88</td><td class="cat">C</td></tr>
+      <tr><th>S-08</th><td>16</td><td class="cat">B</td></tr>
+      <tr><th>S-09</th><td>12</td><td class="cat">A</td></tr>
+      <tr><th>S-10</th><td></td><td class="cat">C</td></tr>
+      <tr><th>S-11</th><td>14</td><td class="cat">B</td></tr>
+      <tr><th>S-12</th><td>95</td><td class="cat">C</td></tr>
+      <tr><th>S-13</th><td>13</td><td class="cat">A</td></tr>
+      <tr><th>S-14</th><td></td><td class="cat">B</td></tr>
+    </tbody>
+  </table>
+
+  <footer>
+    Spec: <code>specs/014-navigation-and-analysis/</code> · No runtime dependencies · Works offline (file://).
+  </footer>
+
+  <script src="../../grid-sight.iife.js"></script>
+</body>
+</html>

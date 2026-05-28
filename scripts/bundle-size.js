@@ -21,6 +21,9 @@
  *            toggle (US5) + mock-VRS test globals merged on top of the slider
  *            panel.
  *   - 42 KB: raised when 006-cell-annotations merged on top (+~4.4 KB).
+ *   - 46 KB: raised for 014-navigation-and-analysis (freeze-panes + statistics
+ *            extension + summary-row + find-in-table; combined budget ≤4 KB on
+ *            top of the ~41.2 KB baseline).
  *
  * Flags:
  *   --soft   warn-only (does not exit non-zero on overage); use for local
@@ -47,9 +50,11 @@ const BUNDLE = path.resolve(__dirname, '..', 'dist', 'grid-sight.iife.js');
 // the slider calculated-result info panel (combined gz ~34.6 KB), then
 // 35 → 37 KB when the spec-012 sparkline interactions (US4) + scale toggle
 // (US5) + mock-VRS test globals merged on top of the slider panel, then
-// 37 → 42 KB when 006-cell-annotations merged on top (+~4.4 KB gz).
-// Constitution §I 10 KB target unchanged.
-const MAX_GZ_KB = 42;
+// 37 → 42 KB when 006-cell-annotations merged on top (+~4.4 KB gz), then
+// 42 → 46 KB for 014-navigation-and-analysis (combined ≤4 KB budget over the
+// ~41.2 KB baseline: freeze-panes + statistics extension + summary-row +
+// find-in-table). Constitution §I 10 KB target unchanged.
+const MAX_GZ_KB = 46;
 const CONSTITUTION_TARGET_KB = 10;
 
 const soft = process.argv.includes('--soft');
