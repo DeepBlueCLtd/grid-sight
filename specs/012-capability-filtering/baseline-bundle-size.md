@@ -175,6 +175,12 @@ PR. Constitution §I 10 KB target unchanged.
 | Baseline (pre-014)                      | 41.24      | —               |
 | + freeze-panes (US1)                    | 41.51      | **+0.27 KB**    |
 | + statistics extension (US2)            | 42.24      | **+0.73 KB**    |
+| + summary-row (US3)                     | 43.63      | **+1.39 KB**    |
+| + find-in-table (US4)                   | 44.75      | **+1.12 KB**    |
+| + shared visible-rows helper (T049)     | 44.71      | **−0.04 KB**    |
 
-The final combined delta is confirmed against the 46 KB ceiling by the hard
-bundle gate in spec 014 task T045.
+**Final combined delta: +3.47 KB gz (41.24 → 44.71)** — within the ≤4 KB
+feature budget and comfortably under the raised 46 KB enforced ceiling. Each
+per-piece sub-budget (§R-9: freeze ≤0.6, stats ≤0.8, summary ≤1.4, find ≤1.2)
+was met. Confirmed by the hard bundle gate (`node scripts/bundle-size.js`) in
+spec 014 task T045.

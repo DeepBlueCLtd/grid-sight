@@ -14,8 +14,8 @@
  * in `find-in-table-box.ts`. `removeFindUi` is the registry teardown hook.
  */
 
-import { gridCells, bodyRows, cellValue } from '../core/table-grid';
-import { getVisibleRows } from '../utils/visible-rows';
+import { gridCells, cellValue } from '../core/table-grid';
+import { visibleBodyRows } from '../utils/visible-rows';
 
 const MATCH_CLASS = 'gs-find-match';
 const CURRENT_CLASS = 'gs-find-current';
@@ -51,16 +51,6 @@ export function clearFindSession(table: HTMLTableElement): void {
 function dropClass(el: Element, cls: string): void {
   el.classList.remove(cls);
   if (el.getAttribute('class') === '') el.removeAttribute('class');
-}
-
-/** Body rows currently visible (passed every filter); falls back to all body
- *  rows for a table the pipeline never saw. */
-function visibleRows(table: HTMLTableElement): HTMLTableRowElement[] {
-  const entries = getVisibleRows(table).current();
-  if (entries.length > 0) {
-    return entries.filter((e) => e.state === 'visible').map((e) => e.rowEl);
-  }
-  return bodyRows(table);
 }
 
 /** Remove every match/current class from the table (byte-identical). */
@@ -100,7 +90,7 @@ export function createFindController(table: HTMLTableElement): FindController {
       currentIndex = -1;
       const needle = term.trim().toLowerCase();
       if (!needle) return;
-      for (const row of visibleRows(table)) {
+      for (const row of visibleBodyRows(table)) {
         for (const cell of gridCells(row)) {
           if (cellValue(cell).toLowerCase().includes(needle)) {
             cell.classList.add(MATCH_CLASS);

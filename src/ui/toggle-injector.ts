@@ -15,7 +15,7 @@ import {
   logicalColIndexOf,
   logicalRowIndexOf,
 } from '../core/table-grid';
-import { getVisibleRows, onVisibleRowsChange } from '../utils/visible-rows';
+import { onVisibleRowsChange, visibleBodyRows } from '../utils/visible-rows';
 import { StatisticsPopup } from './statistics-popup';
 import { FrequencyDialog } from './frequency-dialog';
 import { FrequencyChartDialog } from './frequency-chart-dialog';
@@ -297,17 +297,6 @@ function handleEnrichmentSelected(event: Event) {
  * @param table The HTMLTableElement to inject the toggle into.
  * @returns True if the toggle was injected, false otherwise.
  */
-/** Body rows currently VISIBLE (passed every filter) per the row-visibility
- *  pipeline; falls back to all body rows for a table the pipeline never saw.
- *  Statistics are profiled over this set so an applied filter narrows them. */
-function visibleBodyRows(table: HTMLTableElement): HTMLTableRowElement[] {
-  const entries = getVisibleRows(table).current();
-  if (entries.length > 0) {
-    return entries.filter((e) => e.state === 'visible').map((e) => e.rowEl);
-  }
-  return bodyRows(table);
-}
-
 /**
  * Extracts numeric values from a logical column over the VISIBLE rows, plus the
  * count of visible cells in that column that were blank / non-numeric.

@@ -12,9 +12,9 @@
  * `tearDown` so the toggle-panel off→on round-trip restores it without a reload.
  */
 
-import { headerRow, gridCells, columnCells, bodyRows, cellValue } from '../core/table-grid';
+import { headerRow, gridCells, columnCells, cellValue } from '../core/table-grid';
 import { cleanNumericCell } from '../core/type-detection';
-import { getVisibleRows, onVisibleRowsChange } from '../utils/visible-rows';
+import { onVisibleRowsChange, visibleBodyRows } from '../utils/visible-rows';
 import { storageKeyFor } from '../utils/slider-persistence';
 import { formatNumber } from './statistics';
 import { mountAggregateControl, ensureSummaryStyles } from '../ui/summary-row-control';
@@ -156,20 +156,12 @@ function writeChoices(table: HTMLTableElement, choices: Map<number, Aggregate>):
 
 /* ── Visible rows + column reads ────────────────────────────────────── */
 
-function visibleRows(table: HTMLTableElement): HTMLTableRowElement[] {
-  const entries = getVisibleRows(table).current();
-  if (entries.length > 0) {
-    return entries.filter((e) => e.state === 'visible').map((e) => e.rowEl);
-  }
-  return bodyRows(table);
-}
-
 function columnIsNumeric(table: HTMLTableElement, colIndex: number): boolean {
   return columnCells(table, colIndex).some((c) => cleanNumericCell(cellValue(c)) !== null);
 }
 
 function visibleColumnTexts(table: HTMLTableElement, colIndex: number): string[] {
-  return visibleRows(table).map((row) => {
+  return visibleBodyRows(table).map((row) => {
     const cell = gridCells(row)[colIndex];
     return cell ? cellValue(cell) : '';
   });

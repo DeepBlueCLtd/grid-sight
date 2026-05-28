@@ -246,18 +246,18 @@ removes highlighting.
 
 ## Phase 7: Polish & Cross-Cutting
 
-- [ ] T045 Combined bundle gate: `node scripts/bundle-size.js` (hard) — confirm
+- [X] T045 Combined bundle gate: `node scripts/bundle-size.js` (hard) — confirm
   the total delta is ≤ 4 KB and under the enforced 42 KB ceiling. If it would
   breach 42 KB, raise the ceiling explicitly in `scripts/bundle-size.js` +
   `specs/012-capability-filtering/baseline-bundle-size.md` and call it out in
   the PR (constitution §I).
-- [ ] T046 [P] Full suite green: `yarn test` (Vitest + Storybook) and
+- [X] T046 [P] Full suite green: `yarn test` (Vitest + Storybook) and
   `yarn test:e2e` (Playwright).
-- [ ] T047 [P] Run the `quickstart.md` wire-up sanity for one new enrichment to
+- [X] T047 [P] Run the `quickstart.md` wire-up sanity for one new enrichment to
   confirm the integration spine matches reality.
-- [ ] T048 Paste the `docs/adding-an-enrichment.md` checklist into the PR with
+- [X] T048 Paste the `docs/adding-an-enrichment.md` checklist into the PR with
   every item ticked or marked `N/A` for each of the four pieces.
-- [ ] T049 [P] (Optional refactor) If extraction duplication emerged across
+- [X] T049 [P] (Optional refactor) If extraction duplication emerged across
   statistics/summary/find, extract a shared visible-column value+missing reader;
   keep all story suites green.
 
