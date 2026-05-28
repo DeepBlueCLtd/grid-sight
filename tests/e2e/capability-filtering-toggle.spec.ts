@@ -57,6 +57,7 @@ test.describe('US2: live enrichment toggle panel', () => {
       // Shipped via 014-navigation-and-analysis.
       'freeze-panes',
       'summary-row',
+      'find-in-table',
     ];
     for (const id of shippedIds) {
       await expect(

@@ -244,3 +244,57 @@ test.describe('US3: summary-row', () => {
     await expect(page.locator(UNITS_VALUE)).toHaveText('26.67');
   });
 });
+
+/* ── US4: find-in-table ─────────────────────────────────────────────── */
+
+test.describe('US4: find-in-table', () => {
+  const URL = `${BASE}/find-in-table/index.html`;
+  const LOZENGE = '#lookup [data-gs-lozenge-id="find-in-table"]';
+
+  async function openBoxAndSearch(page: import('@playwright/test').Page, term: string) {
+    await page.goto(URL);
+    await page.waitForFunction(() => !!(window as any).gridSight);
+    await page.locator('#lookup .grid-sight-toggle').first().click();
+    await page.locator(LOZENGE).click();
+    await expect(page.locator('.gs-find-box')).toBeVisible();
+    await page.locator('.gs-find-box input').fill(term);
+  }
+
+  test('highlights every visible match, steps with Next/Prev (wrap), and clears on close', async ({ page }) => {
+    await openBoxAndSearch(page, 'EU'); // EU appears in 5 region cells
+
+    await expect(page.locator('#lookup .gs-find-match')).toHaveCount(5);
+    await expect(page.locator('.gs-find-count')).toHaveText('1 of 5');
+    await expect(page.locator('#lookup .gs-find-current')).toHaveCount(1);
+
+    await page.locator('.gs-find-box [aria-label="Next match"]').click();
+    await expect(page.locator('.gs-find-count')).toHaveText('2 of 5');
+
+    await page.locator('.gs-find-box [aria-label="Previous match"]').click();
+    await expect(page.locator('.gs-find-count')).toHaveText('1 of 5');
+    await page.locator('.gs-find-box [aria-label="Previous match"]').click();
+    await expect(page.locator('.gs-find-count')).toHaveText('5 of 5'); // wrap
+
+    // Close → box gone, every highlight removed.
+    await page.locator('.gs-find-box [aria-label="Close find"]').click();
+    await expect(page.locator('.gs-find-box')).toHaveCount(0);
+    await expect(page.locator('#lookup .gs-find-match')).toHaveCount(0);
+    await expect(page.locator('#lookup .gs-find-current')).toHaveCount(0);
+  });
+
+  test('disable→enable round-trip restores the corner lozenge without reload', async ({ page }) => {
+    await page.goto(URL);
+    await page.waitForFunction(() => !!(window as any).gridSight);
+    await page.locator('#lookup .grid-sight-toggle').first().click();
+    await expect(page.locator(LOZENGE)).toHaveCount(1);
+
+    const cb = page.locator('[data-gs-toggle-panel-root] input[value="find-in-table"]');
+    await cb.uncheck();
+    await raf(page);
+    await expect(page.locator(LOZENGE)).toHaveCount(0);
+
+    await cb.check();
+    await raf(page);
+    await expect(page.locator(LOZENGE)).toHaveCount(1);
+  });
+});

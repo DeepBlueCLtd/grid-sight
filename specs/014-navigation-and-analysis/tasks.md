@@ -210,34 +210,34 @@ removes highlighting.
 
 ### Tests for US4 (write first, must fail)
 
-- [ ] T034 [P] [US4] Unit `src/enrichments/__tests__/find-in-table.test.ts`:
+- [X] T034 [P] [US4] Unit `src/enrichments/__tests__/find-in-table.test.ts`:
   `search` builds an ordered match list over visible-row `cellValue`s
   (case-insensitive); `next`/`prev` wrap; matches exclude scaffolding; `clear`
   removes `gs-find-match`/`gs-find-current` (byte-identical).
-- [ ] T035 [P] [US4] jsdom: box keyboard contract via `installPopupChrome`
+- [X] T035 [P] [US4] jsdom: box keyboard contract via `installPopupChrome`
   (focus-trap, Escape closes, focus returns); counter renders "N of M" / "0
   matches".
-- [ ] T036 [P] [US4] Storybook story `src/stories/find-in-table.stories.ts`.
-- [ ] T037 [P] [US4] Playwright (find section): highlight all + Next/Prev cycle
+- [X] T036 [P] [US4] Storybook story `src/stories/find-in-table.stories.ts`.
+- [X] T037 [P] [US4] Playwright (find section): highlight all + Next/Prev cycle
   with `scrollIntoView` + clear + disable→enable round-trip.
 
 ### Implementation for US4
 
-- [ ] T038 [US4] Implement `src/enrichments/find-in-table.ts`
+- [X] T038 [US4] Implement `src/enrichments/find-in-table.ts`
   `createFindController`/`removeFindUi` per `contracts/find-in-table.md`
   (cell-level highlight; no `<mark>` surgery).
-- [ ] T039 [US4] Implement `src/ui/find-in-table-box.ts` `openFindBox(...)`
+- [X] T039 [US4] Implement `src/ui/find-in-table-box.ts` `openFindBox(...)`
   (search box + counter + prev/next + close via `installPopupChrome`; input
   debounced ~120 ms). Depends: T038.
-- [ ] T040 [US4] Add the `find-in-table` registry entry (`tearDown`) AND a
+- [X] T040 [US4] Add the `find-in-table` registry entry (`tearDown`) AND a
   `registerEnrichment` behavior mounting a table-level (`headerType==='table'`)
   corner lozenge that calls `openFindBox`. Depends: T038, T039. *(shared registry file)*
-- [ ] T041 [US4] Update id/count assertions in `enrichment-registry.test.ts` and
+- [X] T041 [US4] Update id/count assertions in `enrichment-registry.test.ts` and
   `capability-filtering-toggle.spec.ts`. Depends: T040. *(shared files)*
-- [ ] T042 [P] [US4] Demo `public/demo/find-in-table/index.html` — a dense lookup
+- [X] T042 [P] [US4] Demo `public/demo/find-in-table/index.html` — a dense lookup
   table; nav; `pageConfig.enrichments` includes `find-in-table`.
-- [ ] T043 [US4] Add a demo card to `public/index.html`. *(shared file)*
-- [ ] T044 [US4] `node scripts/bundle-size.js --soft` (≤ 1.2 KB delta) + a11y
+- [X] T043 [US4] Add a demo card to `public/index.html`. *(shared file)*
+- [X] T044 [US4] `node scripts/bundle-size.js --soft` (≤ 1.2 KB delta) + a11y
   (current-match non-colour signal, keyboard end-to-end).
 
 **Checkpoint**: all four pieces functional and independently toggleable.

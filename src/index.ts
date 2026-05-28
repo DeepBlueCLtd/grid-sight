@@ -108,6 +108,9 @@ import { registerAnnotationsMenuEntry } from './ui/annotation-popup';
 // Navigation & analysis tier 1 (spec 014-navigation-and-analysis)
 import { applyFreezePanes, removeFreezePanes } from './enrichments/freeze-panes';
 import { applySummaryRow, removeSummaryRow } from './enrichments/summary-row';
+// Side-effect: registers the find-in-table corner-lozenge behavior.
+import './ui/find-in-table-box';
+import { removeFindUi } from './enrichments/find-in-table';
 
 // Internal InitOptions type. Not exported — see ⚠ note above and
 // specs/012-virtual-columns/research.md §R-13.
@@ -245,6 +248,7 @@ const GridSight = {
       try { tearDownAnnotations(table); } catch (e) { /* ignore */ void e; }
       try { removeFreezePanes(table); } catch (e) { /* ignore */ void e; }
       try { removeSummaryRow(table); } catch (e) { /* ignore */ void e; }
+      try { removeFindUi(table); } catch (e) { /* ignore */ void e; }
       try { teardownVisibleRows(table); } catch (e) { /* ignore */ void e; }
       removePlusIcons(table);
       // Remove any virtual-column lozenges that were appended.
