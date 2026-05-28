@@ -105,6 +105,9 @@ import { mountTogglePanel } from './ui/toggle-panel';
 import { applyAnnotations, tearDownAnnotations, consumeNavigationHint } from './enrichments/annotations';
 import { registerAnnotationsMenuEntry } from './ui/annotation-popup';
 
+// Outlier marker enrichment (spec 004-outlier)
+import { applyOutliers, tearDownOutliers } from './enrichments/outlier';
+
 // Internal InitOptions type. Not exported — see ⚠ note above and
 // specs/012-virtual-columns/research.md §R-13.
 interface InitOptions extends TableProcessorOptions {
@@ -239,6 +242,7 @@ const GridSight = {
       if (toggle) toggle.remove();
       try { unmountFilterChip(table); } catch (e) { /* ignore */ void e; }
       try { tearDownAnnotations(table); } catch (e) { /* ignore */ void e; }
+      try { tearDownOutliers(table); } catch (e) { /* ignore */ void e; }
       try { teardownVisibleRows(table); } catch (e) { /* ignore */ void e; }
       removePlusIcons(table);
       // Remove any virtual-column lozenges that were appended.
@@ -321,6 +325,11 @@ const GridSight = {
     // Cell annotations — gated internally on the `annotations` enrichment
     // being in the effective enabled set (spec 006).
     try { applyAnnotations(table); } catch (e) { void e; }
+
+    // Outlier markers — restore any persisted `gs.o` directives before the
+    // table content settles (spec 004, SC-003). Gated on the enrichment being
+    // in the effective enabled set.
+    try { if (isEnrichmentEnabled('outlier')) applyOutliers(table); } catch (e) { void e; }
 
     return processedTable;
   },

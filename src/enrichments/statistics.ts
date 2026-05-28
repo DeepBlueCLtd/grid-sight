@@ -1,12 +1,11 @@
-import { 
-  mean, 
-  median, 
-  min, 
-  max, 
-  standardDeviation, 
-  variance as sampleVariance,
+import {
+  mean,
+  median,
+  min,
+  max,
   sum
 } from 'simple-statistics';
+import { populationStdDev } from '../core/column-statistics';
 
 export interface StatisticsResult {
   count: number;
@@ -36,15 +35,23 @@ export function calculateStatistics(values: number[]): StatisticsResult {
     throw new Error('No valid numeric values provided');
   }
 
+  // σ is the POPULATION standard deviation (÷ n), derived from the single
+  // shared authority in core/column-statistics so the statistics popup and the
+  // outlier tooltip can never disagree (spec 004-outlier FR-024/SC-006,
+  // research R-1). variance is reported as population variance (σ²) to stay
+  // consistent with the reported σ.
+  const m = mean(validValues);
+  const stdDev = populationStdDev(validValues, m);
+
   return {
     count: validValues.length,
     sum: sum(validValues),
     min: min(validValues),
     max: max(validValues),
-    mean: mean(validValues),
+    mean: m,
     median: median(validValues),
-    stdDev: standardDeviation(validValues),
-    variance: sampleVariance(validValues)
+    stdDev,
+    variance: stdDev * stdDev
   };
 }
 
