@@ -5,18 +5,75 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Grid-Sight — Virtual Columns Demo</title>
   <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; padding: 24px; }
+    body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; max-width: 960px; margin: 24px auto; padding: 0 16px; color: #222; line-height: 1.5; }
+    h1 { margin-top: 0; }
+    h2 { margin-top: 28px; font-size: 16px; color: #444; }
     table { border-collapse: collapse; margin: 16px 0; }
     th, td { border: 1px solid #ddd; padding: 4px 8px; text-align: right; }
     th:first-child, td:first-child { text-align: left; }
+    nav { margin-bottom: 16px; padding: 8px 0; border-bottom: 1px solid #ddd; font-size: 14px; }
+    .intro { color: #333; }
+    .steps { background: #f7f9fc; border: 1px solid #e3e8ef; border-radius: 6px; padding: 12px 16px 12px 8px; }
+    .steps li { margin: 6px 0; }
+    .glyph { display: inline-block; min-width: 1.4em; text-align: center; font-weight: 600;
+             border: 1px solid #bbb; border-radius: 3px; padding: 0 4px; background: #fff; }
+    code { background: #eef1f5; padding: 1px 4px; border-radius: 3px; font-size: 0.9em; }
+    .note { color: #555; font-size: 13px; }
   </style>
 </head>
 <body>
-  <h1>Virtual Columns Demo</h1>
-  <p>Click the <strong>GS</strong> toggle in the table's top-left corner to
-     enable Grid-Sight, then use the <strong>Σ</strong> (cumulative),
-     <strong>⌇</strong> (sparkline), and <strong>Δ</strong> (compare) lozenges
-     that appear on the headers.</p>
+  <nav><a href="../">← Grid-Sight demo home</a></nav>
+
+  <h1>Virtual Columns</h1>
+  <p class="intro">
+    Virtual columns append <strong>derived columns</strong> to the right edge of a
+    table without touching your source data. Toggle Grid-Sight off and the table
+    returns byte-for-byte to its original markup.
+  </p>
+
+  <h2>How to use this demo</h2>
+  <ol class="steps">
+    <li>
+      Click the <strong><code>GS</code></strong> toggle that Grid-Sight injected
+      into the top-left corner of the table below. This reveals the lozenge
+      buttons on the headers.
+    </li>
+    <li>
+      <span class="glyph">Σ</span> <strong>Cumulative</strong> — appears on every
+      numeric column header. Click it on <strong>Weight</strong> to add a running-sum
+      column. Click again to switch it to <strong>percent of total</strong>; a third
+      click removes it.
+    </li>
+    <li>
+      <span class="glyph">⌇</span> <strong>Sparkline</strong> — appears in the
+      top-left corner cluster (needs ≥ 3 numeric columns). Click it to add a
+      <strong>Trend</strong> column with an inline mini bar-chart per row. Use the
+      small <span class="glyph">↔</span> button next to the “Trend” heading to flip
+      between <em>per-row</em> and <em>shared</em> scaling, and hover or keyboard-focus
+      a sparkline cell to see a min / max / last tooltip (arrow keys move between
+      rows).
+    </li>
+    <li>
+      <span class="glyph">Δ</span> <strong>Compare</strong> — also in the corner
+      cluster. Click it and its colours <strong>reverse</strong> to show compare mode is
+      armed; the numeric column headers become clickable targets. Click two of them (e.g.
+      <strong>Q1</strong> then <strong>Q4</strong>) — each highlights in reversed colours
+      as you pick it — to add a <code>Δ Q4 − Q1</code> column; the highlight clears once
+      the column appears. Clicking anywhere other than a column header cancels the pick.
+      Re-clicking the Δ lozenge then cycles the delta mode (absolute → relative → percent)
+      and finally removes it.
+    </li>
+    <li>
+      <strong>Share it</strong> — every column you add is encoded in the page’s URL
+      fragment (<code>#gs.vc=…</code>). Copy the URL and open it in a new tab; the same
+      columns reappear automatically.
+    </li>
+  </ol>
+  <p class="note">
+    Ordering is fixed regardless of the order you activate them: cumulative columns
+    first (in activation order), then the compare column, then the Trend sparkline on
+    the far right.
+  </p>
 
   <h2>Sales by region</h2>
   <table id="sales-table">

@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest';
 import { ENRICHMENT_REGISTRY, ENRICHMENT_IDS } from '../enrichment-registry';
-import { ENRICHMENT_ITEMS } from '../../ui/enrichment-menu';
 
 describe('enrichment-registry', () => {
   it('every id matches /^[a-z][a-z0-9-]*$/', () => {
@@ -52,9 +51,17 @@ describe('enrichment-registry', () => {
   });
 
   it('shipped enrichments have tearDown hooks', () => {
-    const shipped = ['heatmap', 'sliders', 'slider-threshold', 'statistics', 'frequency', 'frequency-chart', 'sort', 'filter', 'annotations', 'cumulative', 'diff-compare', 'sparkline'];
+    const shipped = [
+      'heatmap', 'sliders', 'slider-threshold', 'statistics', 'frequency',
+      'frequency-chart', 'sort', 'filter',
+      // Cell annotations landed via 006-cell-annotations.
+      'annotations',
+      // Virtual columns landed via 012-virtual-columns.
+      'cumulative', 'sparkline', 'diff-compare',
+    ];
     for (const id of shipped) {
       const e = ENRICHMENT_REGISTRY.find(x => x.id === id);
+      expect(e?.shipped, `enrichment "${id}" must be shipped`).toBe(true);
       expect(e?.tearDown, `shipped enrichment "${id}" must have tearDown`).toBeDefined();
     }
   });
@@ -63,6 +70,7 @@ describe('enrichment-registry', () => {
     const specOnly = ['copy-as-csv', 'outlier', 'units-toggle'];
     for (const id of specOnly) {
       const e = ENRICHMENT_REGISTRY.find(x => x.id === id);
+      expect(e?.shipped, `enrichment "${id}" must be spec-only`).toBe(false);
       expect(e?.tearDown, `spec-only enrichment "${id}" must not have tearDown`).toBeUndefined();
     }
   });
@@ -71,16 +79,6 @@ describe('enrichment-registry', () => {
     for (const e of ENRICHMENT_REGISTRY) {
       if (e.shipped) continue;
       expect(e.apply, `spec-only enrichment "${e.id}" must not have apply`).toBeUndefined();
-    }
-  });
-
-  // Drift guard (docs/adding-an-enrichment.md §4): the per-column enrichment
-  // menu must not reference an enrichment id that isn't a shipped registry
-  // entry. Catches the "parallel id lists fell out of sync" failure mode.
-  it('every ENRICHMENT_ITEMS id is a shipped registry enrichment', () => {
-    const shipped = new Set(ENRICHMENT_REGISTRY.filter(e => e.shipped).map(e => e.id));
-    for (const item of ENRICHMENT_ITEMS) {
-      expect(shipped.has(item.id), `menu item "${item.id}" is not a shipped registry enrichment`).toBe(true);
     }
   });
 });

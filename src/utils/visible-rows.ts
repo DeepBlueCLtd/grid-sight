@@ -332,6 +332,23 @@ export function hydrateTable(
   }
 }
 
+/* ── Test hooks ──────────────────────────────────────────────────────── */
+// Exposed under a namespaced global so Playwright e2e tests (spec
+// 012-virtual-columns T049 / T050) can drive pipeline events from the page
+// context. Kept in production builds too — the surface area is tiny and
+// removing the conditional guard avoids having to drive sort/filter via
+// the lozenge UI in every cooperation test. Not advertised in the public
+// API; the double-underscore prefix signals "internal".
+if (typeof globalThis !== 'undefined') {
+  (globalThis as Record<string, unknown>).__gridSightVisibleRows = {
+    setSort,
+    setFilter,
+    clearFilters,
+    onVisibleRowsChange,
+    getVisibleRows,
+  };
+}
+
 function resolveColumnIndexByKey(table: HTMLTableElement, key: string): number {
   const headerRow = table.rows[0];
   if (!headerRow) return -1;

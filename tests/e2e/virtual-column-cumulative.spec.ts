@@ -62,4 +62,28 @@ test.describe('Virtual columns — cumulative', () => {
     const after = await table.evaluate((t) => t.outerHTML);
     expect(after).toBe(before);
   });
+
+  test('SC-005: combined detach (cum + spark + compare → removeAll) is byte-identical', async ({ page }) => {
+    await page.goto(`http://localhost:${port}/grid-sight/demo/virtual-columns.html`);
+    await page.waitForFunction(() => !!(window as any).gridSight);
+
+    const table = page.locator('#sales-table');
+    const before = await table.evaluate((t) => t.outerHTML);
+
+    await page.evaluate(() => {
+      const t = document.getElementById('sales-table') as HTMLTableElement;
+      const vc = (window as any).gridSight.virtualColumns;
+      vc.addCumulative(t, 'weight', 'sum');
+      vc.addCompare(t, 'q1', 'q4', 'abs');
+      vc.addSparkline(t);
+    });
+
+    await page.evaluate(() => {
+      const t = document.getElementById('sales-table') as HTMLTableElement;
+      (window as any).gridSight.virtualColumns.removeAll(t);
+      history.replaceState(null, '', location.pathname);
+    });
+    const after = await table.evaluate((t) => t.outerHTML);
+    expect(after).toBe(before);
+  });
 });

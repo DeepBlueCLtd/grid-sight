@@ -1,6 +1,6 @@
 /**
  * Module-scoped holder for the effective enabled set, plus the resolver call
- * that updates it. Read by `header-utils`, `enrichment-menu`, and slider
+ * that updates it. Read by `header-utils` (the injection pass) and slider
  * URL-state loaders; mutated only by `init()` and the runtime toggle panel.
  *
  * The initial set is computed lazily on first access to avoid a circular

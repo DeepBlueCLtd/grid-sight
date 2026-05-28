@@ -36,7 +36,9 @@ test.describe('Virtual columns — sparkline', () => {
     expect(id).toBe('spark');
 
     // Header
-    await expect(table.locator('th[data-gs-virtual-column="sparkline"]')).toHaveText('Trend');
+    // textContent includes the appended scale-toggle button's glyph, so use
+    // toContainText rather than toHaveText.
+    await expect(table.locator('th[data-gs-virtual-column="sparkline"]')).toContainText('Trend');
 
     // One svg per body row (5 rows)
     const svgs = table.locator('td[data-gs-virtual-column="sparkline"] svg');

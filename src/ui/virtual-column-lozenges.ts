@@ -1,13 +1,22 @@
 /**
- * Lozenge factories for virtual columns (spec 012-virtual-columns).
- * Σ on numeric headers (cumulative), ⌇ + Δ in the corner cluster.
+ * Virtual-column affordances (spec 012-virtual-columns) as enrichment
+ * descriptors. Each of the three virtual columns registers a descriptor whose
+ * `mount(ctx)` returns its lozenge for the matching header context:
+ *
+ *   - cumulative (Σ) — one per numeric column header
+ *   - sparkline (⌇)  — corner cluster (table header), needs ≥ 3 numeric cols
+ *   - compare (Δ)    — corner cluster (table header), needs ≥ 2 numeric cols
+ *
+ * The generic injection pass (`mountEnrichments` in header-utils) places the
+ * returned element into the same lozenge cluster as the classic lozenges and
+ * gates it by the effective enabled set — so virtual columns are no longer a
+ * parallel, ungated injection path. See docs/architecture/enrichments.md.
  */
 
 import {
   activateDirective,
   mutateDirective,
   removeDirective,
-  listDirectives,
   getColumnKeys,
   getNumericColumns,
   _internalGetContext,
@@ -18,95 +27,95 @@ import type {
   SparklineDirective,
 } from '../types/virtual-column';
 import { openComparePicker } from './compare-picker';
-import { isEnrichmentEnabled } from '../core/enabled-set-state';
+import {
+  registerEnrichment,
+  type AffordanceContext,
+} from '../core/enrichment-registry';
 
-function findExistingDirective(
-  table: HTMLTableElement,
-  predicate: (id: string) => boolean,
-): string | null {
-  const ctx = _internalGetContext(table);
-  for (const d of ctx.directives) {
-    if (predicate(d.id)) return d.id;
-  }
-  return null;
-}
-
-function makeLozenge(glyph: string, label: string): HTMLButtonElement {
+function makeLozenge(glyph: string, label: string, kind: string): HTMLButtonElement {
   const btn = document.createElement('button');
   btn.type = 'button';
   btn.className = 'gs-vc-lozenge';
   btn.textContent = glyph;
   btn.setAttribute('aria-label', label);
   btn.setAttribute('aria-pressed', 'false');
+  btn.dataset.gsVcKind = kind;
   return btn;
 }
 
-export function injectCumulativeLozenges(table: HTMLTableElement): void {
-  if (!isEnrichmentEnabled('cumulative')) return;
-  if (table.hasAttribute('data-gs-ignore')) return;
-  if (table.hasAttribute('data-gs-no-cumulative')) return;
-  const head = table.tHead?.rows[0];
-  if (!head) return;
-  const numeric = getNumericColumns(table);
-  const columnKeys = getColumnKeys(table);
-  Array.from(head.cells).forEach((cell, i) => {
-    const colKey = columnKeys[i];
-    if (!numeric.has(colKey)) return;
-    if (cell.querySelector('.gs-vc-lozenge[data-gs-vc-kind="cumulative"]')) return;
-    const sigma = makeLozenge('Σ', `Toggle cumulative for ${cell.textContent?.trim() || colKey}`);
-    sigma.dataset.gsVcKind = 'cumulative';
+function activeDirectiveMode(table: HTMLTableElement, directiveId: string): string | null {
+  const ctx = _internalGetContext(table);
+  const d = ctx.directives.find((x) => x.id === directiveId);
+  if (!d) return null;
+  if (d.kind === 'cumulative' || d.kind === 'compare') return d.mode;
+  return 'on';
+}
 
-    let mode: 'sum' | 'percent' | null = null;
+/* ── Cumulative (Σ) ──────────────────────────────────────────────────── */
 
-    sigma.addEventListener('click', (ev) => {
-      ev.stopPropagation();
-      const directiveId = `cum-${colKey}`;
-      const existing = findExistingDirective(table, (id) => id === directiveId);
-      if (mode === null && !existing) {
-        mode = 'sum';
-        const directive: CumulativeDirective = {
-          id: directiveId,
-          kind: 'cumulative',
-          tableEl: table,
-          sourceColKey: colKey,
-          mode: 'sum',
-          activationIndex: 0,
-        };
-        const r = activateDirective(directive);
-        if (!r) { mode = null; return; }
-        sigma.setAttribute('aria-pressed', 'true');
-      } else if (mode === 'sum') {
-        mode = 'percent';
-        mutateDirective(directiveId, { mode: 'percent' } as Partial<CumulativeDirective>);
-      } else {
-        mode = null;
-        removeDirective(directiveId);
-        sigma.setAttribute('aria-pressed', 'false');
-      }
-    });
+function mountCumulative(ctx: AffordanceContext): HTMLButtonElement | null {
+  const { table, colIndex } = ctx;
+  const colKey = getColumnKeys(table)[colIndex];
+  if (!colKey) return null;
+  const directiveId = `cum-${colKey}`;
+  const sigma = makeLozenge(
+    'Σ',
+    `Toggle cumulative for ${ctx.header.textContent?.trim() || colKey}`,
+    'cumulative',
+  );
 
-    cell.appendChild(sigma);
+  // Initialise state from any directive already active (survives cluster
+  // rebuilds triggered by the toggle panel or the GS toggle).
+  let mode: 'sum' | 'percent' | null =
+    (activeDirectiveMode(table, directiveId) as 'sum' | 'percent' | null) ?? null;
+  if (mode) sigma.setAttribute('aria-pressed', 'true');
+
+  sigma.addEventListener('click', (ev) => {
+    ev.stopPropagation();
+    if (mode === null) {
+      const directive: CumulativeDirective = {
+        id: directiveId,
+        kind: 'cumulative',
+        tableEl: table,
+        sourceColKey: colKey,
+        mode: 'sum',
+        activationIndex: 0,
+      };
+      if (!activateDirective(directive)) return;
+      mode = 'sum';
+      sigma.setAttribute('aria-pressed', 'true');
+    } else if (mode === 'sum') {
+      mode = 'percent';
+      mutateDirective(directiveId, { mode: 'percent' } as Partial<CumulativeDirective>);
+    } else {
+      mode = null;
+      removeDirective(directiveId);
+      sigma.setAttribute('aria-pressed', 'false');
+    }
   });
+  return sigma;
 }
 
-function getCornerCluster(table: HTMLTableElement): HTMLElement | null {
-  const head = table.tHead?.rows[0];
-  return (head?.cells[0] as HTMLElement) || null;
-}
+registerEnrichment({
+  id: 'cumulative',
+  appliesTo: (ctx) =>
+    ctx.headerType === 'column' &&
+    ctx.columnType === 'numeric' &&
+    !ctx.table.hasAttribute('data-gs-no-cumulative') &&
+    getNumericColumns(ctx.table).has(getColumnKeys(ctx.table)[ctx.colIndex]),
+  mount: mountCumulative,
+  isActive: (ctx) =>
+    activeDirectiveMode(ctx.table, `cum-${getColumnKeys(ctx.table)[ctx.colIndex]}`) !== null,
+});
 
-export function injectSparklineLozenge(table: HTMLTableElement): void {
-  if (!isEnrichmentEnabled('sparkline')) return;
-  if (table.hasAttribute('data-gs-ignore')) return;
-  if (table.hasAttribute('data-gs-no-sparkline')) return;
-  const numeric = getNumericColumns(table);
-  if (numeric.size < 3) return;
-  const corner = getCornerCluster(table);
-  if (!corner) return;
-  if (corner.querySelector('.gs-vc-lozenge[data-gs-vc-kind="sparkline"]')) return;
-  const lozenge = makeLozenge('⌇', 'Toggle trend column');
-  lozenge.dataset.gsVcKind = 'sparkline';
+/* ── Sparkline (⌇) ───────────────────────────────────────────────────── */
 
-  let active = false;
+function mountSparkline(ctx: AffordanceContext): HTMLButtonElement | null {
+  const { table } = ctx;
+  const lozenge = makeLozenge('⌇', 'Toggle trend column', 'sparkline');
+  let active = activeDirectiveMode(table, 'spark') !== null;
+  if (active) lozenge.setAttribute('aria-pressed', 'true');
+
   lozenge.addEventListener('click', (ev) => {
     ev.stopPropagation();
     if (!active) {
@@ -117,8 +126,7 @@ export function injectSparklineLozenge(table: HTMLTableElement): void {
         scale: 'per-row',
         style: 'bar',
       };
-      const r = activateDirective(directive);
-      if (!r) return;
+      if (!activateDirective(directive)) return;
       active = true;
       lozenge.setAttribute('aria-pressed', 'true');
     } else {
@@ -127,29 +135,35 @@ export function injectSparklineLozenge(table: HTMLTableElement): void {
       lozenge.setAttribute('aria-pressed', 'false');
     }
   });
-
-  corner.appendChild(lozenge);
+  return lozenge;
 }
 
-export function injectCompareLozenge(table: HTMLTableElement): void {
-  if (!isEnrichmentEnabled('diff-compare')) return;
-  if (table.hasAttribute('data-gs-ignore')) return;
-  if (table.hasAttribute('data-gs-no-compare')) return;
-  const numeric = getNumericColumns(table);
-  if (numeric.size < 2) return;
-  const corner = getCornerCluster(table);
-  if (!corner) return;
-  if (corner.querySelector('.gs-vc-lozenge[data-gs-vc-kind="compare"]')) return;
-  const lozenge = makeLozenge('Δ', 'Toggle column compare');
-  lozenge.dataset.gsVcKind = 'compare';
+registerEnrichment({
+  id: 'sparkline',
+  appliesTo: (ctx) =>
+    ctx.headerType === 'table' &&
+    !ctx.table.hasAttribute('data-gs-no-sparkline') &&
+    getNumericColumns(ctx.table).size >= 3,
+  mount: mountSparkline,
+  isActive: (ctx) => activeDirectiveMode(ctx.table, 'spark') !== null,
+});
 
-  let activeId: string | null = null;
-  let mode: 'abs' | 'rel' | 'percent' = 'abs';
+/* ── Compare (Δ) ─────────────────────────────────────────────────────── */
+
+function mountCompare(ctx: AffordanceContext): HTMLButtonElement | null {
+  const { table } = ctx;
+  const lozenge = makeLozenge('Δ', 'Toggle column compare', 'compare');
+
+  // Recover an active compare directive's id/mode after a rebuild.
+  const existing = _internalGetContext(table).directives.find((d) => d.kind === 'compare');
+  let activeId: string | null = existing ? existing.id : null;
+  let mode: 'abs' | 'rel' | 'percent' =
+    existing && existing.kind === 'compare' ? existing.mode : 'abs';
+  if (activeId) lozenge.setAttribute('aria-pressed', 'true');
 
   lozenge.addEventListener('click', async (ev) => {
     ev.stopPropagation();
     if (activeId) {
-      // Cycle mode: abs → rel → percent → off
       if (mode === 'abs') {
         mode = 'rel';
         mutateDirective(activeId, { mode } as Partial<CompareDirective>);
@@ -164,7 +178,7 @@ export function injectCompareLozenge(table: HTMLTableElement): void {
       }
       return;
     }
-    const picked = await openComparePicker(table);
+    const picked = await openComparePicker(table, lozenge);
     if (!picked) return;
     const directive: CompareDirective = {
       id: `cmp-${picked.colKeyA}-${picked.colKeyB}`,
@@ -174,76 +188,21 @@ export function injectCompareLozenge(table: HTMLTableElement): void {
       colKeyB: picked.colKeyB,
       mode: 'abs',
     };
-    const r = activateDirective(directive);
-    if (!r) return;
+    if (!activateDirective(directive)) return;
     activeId = directive.id;
     mode = 'abs';
     lozenge.setAttribute('aria-pressed', 'true');
   });
-
-  corner.appendChild(lozenge);
+  return lozenge;
 }
 
-export function injectAllVirtualColumnLozenges(table: HTMLTableElement): void {
-  // Pre-warm context so column keys / numeric detection are cached.
-  _internalGetContext(table);
-  injectCumulativeLozenges(table);
-  injectSparklineLozenge(table);
-  injectCompareLozenge(table);
-}
-
-/** Remove every virtual-column lozenge affordance from `table` (the Σ/⌇/Δ
- *  buttons). Does not remove activated virtual columns. */
-export function removeAllVirtualColumnLozenges(table: HTMLTableElement): void {
-  table.querySelectorAll('.gs-vc-lozenge').forEach((el) => el.remove());
-}
-
-/* ── Registry apply/tearDown hooks (spec 012 enrichments now shipped) ──────
- * Each virtual-column kind is a first-class enrichment in the toggle panel.
- * apply re-injects its lozenge when the kind is (re-)enabled while Grid-Sight
- * is on; tearDown removes its activated columns AND its lozenge when disabled.
- * The inject* fns already gate on isEnrichmentEnabled, so apply only adds the
- * "Grid-Sight must be on for this table" policy.
- */
-
-type VcKind = 'cumulative' | 'sparkline' | 'compare';
-
-function isGsActive(table: HTMLTableElement): boolean {
-  return !!table.querySelector('.grid-sight-toggle[aria-expanded="true"]');
-}
-
-function removeVcLozenge(table: HTMLTableElement, kind: VcKind): void {
-  table
-    .querySelectorAll(`.gs-vc-lozenge[data-gs-vc-kind="${kind}"]`)
-    .forEach((el) => el.remove());
-}
-
-function removeVcColumns(table: HTMLTableElement, kind: VcKind): void {
-  for (const d of listDirectives(table)) {
-    if (d.kind === kind) removeDirective(d.id);
-  }
-}
-
-export function applyCumulativeColumn(table: HTMLTableElement): void {
-  if (isGsActive(table)) injectCumulativeLozenges(table);
-}
-export function tearDownCumulativeColumn(table: HTMLTableElement): void {
-  removeVcColumns(table, 'cumulative');
-  removeVcLozenge(table, 'cumulative');
-}
-
-export function applySparklineColumn(table: HTMLTableElement): void {
-  if (isGsActive(table)) injectSparklineLozenge(table);
-}
-export function tearDownSparklineColumn(table: HTMLTableElement): void {
-  removeVcColumns(table, 'sparkline');
-  removeVcLozenge(table, 'sparkline');
-}
-
-export function applyCompareColumn(table: HTMLTableElement): void {
-  if (isGsActive(table)) injectCompareLozenge(table);
-}
-export function tearDownCompareColumn(table: HTMLTableElement): void {
-  removeVcColumns(table, 'compare');
-  removeVcLozenge(table, 'compare');
-}
+registerEnrichment({
+  id: 'diff-compare',
+  appliesTo: (ctx) =>
+    ctx.headerType === 'table' &&
+    !ctx.table.hasAttribute('data-gs-no-compare') &&
+    getNumericColumns(ctx.table).size >= 2,
+  mount: mountCompare,
+  isActive: (ctx) =>
+    _internalGetContext(ctx.table).directives.some((d) => d.kind === 'compare'),
+});

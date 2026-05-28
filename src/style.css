@@ -423,6 +423,50 @@ th.gs-vc-source-highlight {
   white-space: nowrap;
 }
 
+.gs-vc-scale-toggle {
+  margin-left: 6px;
+  padding: 0 4px;
+  border: 1px solid currentcolor;
+  border-radius: 3px;
+  background: transparent;
+  color: inherit;
+  font-size: 0.85em;
+  line-height: 1.2;
+  cursor: pointer;
+}
+
+.gs-vc-scale-toggle[aria-pressed="true"] {
+  background: #4a90e2;
+  color: #fff;
+  border-color: #4a90e2;
+}
+
+/* ── Compare (Δ) picker affordance ──────────────────────────────────────
+ * While compare mode is armed the Δ lozenge shows a reversed-colour state;
+ * numeric column headers are marked as clickable candidates (dashed outline);
+ * and each picked column header takes the same reversed-colour state. All of
+ * this is cleared once the compare column is shown (or the pick is cancelled). */
+
+/* Reversed colours (white-on-accent) for the armed Δ lozenge and each picked
+ * column header — a clear, static signal that compare mode is in progress. */
+.gs-vc-lozenge.gs-vc-pick-active {
+  background: #4a90e2;
+  color: #fff;
+  border-color: #4a90e2;
+}
+
+th.gs-vc-pick-active {
+  background-color: #4a90e2;
+  color: #fff;
+}
+
+/* Numeric headers offered as compare targets — clearly clickable. */
+th.gs-vc-pick-target {
+  cursor: pointer;
+  outline: 2px dashed rgb(74 144 226 / 60%);
+  outline-offset: -2px;
+}
+
 
 @media (prefers-color-scheme: light) {
   :root {

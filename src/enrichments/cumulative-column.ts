@@ -11,11 +11,12 @@ import type {
 } from '../types/virtual-column';
 import { cleanNumericCell } from '../core/type-detection';
 import { registerRenderer, getSourceColumnIndex } from './virtual-column';
+import { sourceCells, headerCellFor, cellValue } from '../core/table-grid';
 
 function getRowValue(row: HTMLTableRowElement, colIndex: number): number | null {
-  if (colIndex < 0 || colIndex >= row.cells.length) return null;
-  const text = row.cells[colIndex]?.textContent ?? '';
-  return cleanNumericCell(text);
+  const cells = sourceCells(row);
+  if (colIndex < 0 || colIndex >= cells.length) return null;
+  return cleanNumericCell(cellValue(cells[colIndex]));
 }
 
 function getColIndex(directive: CumulativeDirective): number {
@@ -108,6 +109,43 @@ function totalForMode(
   return computeTotalFromRows(Array.from(table.tBodies[0]?.rows ?? []), colIndex);
 }
 
+/* Per-render-pass memo. The scaffold calls renderCell once per row with the
+ * same `sequence` array reference, so we compute the running sums + total for
+ * a (sequence, column) once in a single O(n) pass and serve O(1) lookups —
+ * instead of re-walking the sequence per row (which was O(n²) and, with the
+ * addressing-layer per-cell reads, dominated the 1 000-row render budget). */
+interface PassSums {
+  sums: Map<HTMLTableRowElement, number>;
+  total: number;
+}
+const passCache = new WeakMap<object, Map<number, PassSums>>();
+
+function passSums(sequence: VisibleRowEntry[], colIndex: number): PassSums {
+  let byCol = passCache.get(sequence);
+  if (!byCol) {
+    byCol = new Map();
+    passCache.set(sequence, byCol);
+  }
+  let entry = byCol.get(colIndex);
+  if (!entry) {
+    const sums = new Map<HTMLTableRowElement, number>();
+    let running = 0;
+    let total = 0;
+    for (const e of sequence) {
+      if (e.state !== 'visible') continue;
+      const v = getRowValue(e.rowEl, colIndex);
+      if (v !== null) {
+        running += v;
+        total += v;
+      }
+      sums.set(e.rowEl, running);
+    }
+    entry = { sums, total };
+    byCol.set(colIndex, entry);
+  }
+  return entry;
+}
+
 function writeBlankCell(td: HTMLTableCellElement): void {
   td.textContent = '';
   td.setAttribute('aria-label', 'non-numeric');
@@ -134,18 +172,10 @@ const cumulativeRenderer: Renderer<CumulativeDirective> = {
   kind: 'cumulative',
 
   headerText(directive) {
-    const head = directive.tableEl.tHead?.rows[0];
     const colIdx = getColIndex(directive);
-    const cell = head?.cells[colIdx];
-    // Use only text nodes (skip lozenge button text).
-    let sourceLabel = '';
-    if (cell) {
-      cell.childNodes.forEach((n) => {
-        if (n.nodeType === 3) sourceLabel += n.textContent;
-      });
-      sourceLabel = sourceLabel.trim();
-    }
-    if (!sourceLabel) sourceLabel = directive.sourceColKey;
+    const cell = headerCellFor(directive.tableEl, colIdx);
+    // cellValue strips injected lozenge/readout UI, leaving the author label.
+    const sourceLabel = (cell ? cellValue(cell) : '') || directive.sourceColKey;
     return `Σ ${sourceLabel}`;
   },
 
@@ -159,11 +189,23 @@ const cumulativeRenderer: Renderer<CumulativeDirective> = {
       writeBlankCell(td);
       return;
     }
-    const runningSum = computeRunningSumUpTo(directive.tableEl, rowEl, colIdx, sequence);
+    // O(1) lookup from the per-pass memo when the row is in the sequence;
+    // fall back to a direct walk for rows outside it (e.g. dimmed/detached).
+    let runningSum: number;
+    let total = 0;
+    const cached = sequence.length > 0 ? passSums(sequence, colIdx) : null;
+    const memoised = cached?.sums.get(rowEl);
+    if (memoised !== undefined) {
+      runningSum = memoised;
+      total = cached!.total;
+    } else {
+      runningSum = computeRunningSumUpTo(directive.tableEl, rowEl, colIdx, sequence);
+      total = totalForMode(directive.tableEl, colIdx, sequence);
+    }
     if (directive.mode === 'sum') {
       writeSumCell(td, runningSum);
     } else {
-      writePercentCell(td, runningSum, totalForMode(directive.tableEl, colIdx, sequence));
+      writePercentCell(td, runningSum, total);
     }
   },
 

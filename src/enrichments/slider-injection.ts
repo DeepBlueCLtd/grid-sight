@@ -10,6 +10,13 @@
 import { parseHeaderNumber } from '../utils/sync-key';
 import { SLIDER_HIGHLIGHT_CLASSES } from './slider-readout';
 import type { EquationSnapshot } from './equation-panel';
+import {
+  gridRows,
+  bodyRows,
+  headerRow as gridHeaderRow,
+  sourceCells,
+  cellValue,
+} from '../core/table-grid';
 
 export type Axis = 'row' | 'col';
 
@@ -50,27 +57,24 @@ export const tableContexts = new WeakMap<HTMLTableElement, TableContext>();
 /* Parsing helpers                                                            */
 /* ────────────────────────────────────────────────────────────────────────── */
 
-function nonInjectedRows(table: HTMLTableElement): HTMLTableRowElement[] {
-  return Array.from(table.rows).filter(r => !r.hasAttribute('data-gs-injected'));
-}
-
-function nonInjectedCells(row: HTMLTableRowElement): HTMLTableCellElement[] {
-  return Array.from(row.cells).filter(c => !c.hasAttribute('data-gs-injected'));
-}
-
+/** Slider axis binding reads AUTHOR SOURCE cells only — virtual columns and
+ *  injected scaffolding are excluded — via the canonical addressing layer, so
+ *  axis binding is robust no matter what enrichments are active or the order
+ *  they were activated (spec 013, R-2/R-5). `cellValue` strips injected UI so a
+ *  lozenge present at slider-activation time can't corrupt the parsed value. */
 function cellText(cell: HTMLTableCellElement): string {
-  return cell.textContent?.trim() ?? '';
+  return cellValue(cell);
 }
 
 export function readRawAxisHeaders(table: HTMLTableElement, axis: Axis): string[] {
-  const rows = nonInjectedRows(table);
   if (axis === 'col') {
-    if (!rows[0]) return [];
-    return nonInjectedCells(rows[0]).slice(1).map(cellText);
+    const header = gridHeaderRow(table);
+    if (!header) return [];
+    return sourceCells(header).slice(1).map(cellText);
   }
   // axis === 'row'
-  return rows.slice(1)
-    .map(nonInjectedCells)
+  return bodyRows(table)
+    .map(sourceCells)
     .filter(cells => cells.length > 0)
     .map(cells => cellText(cells[0]));
 }
@@ -81,16 +85,15 @@ function parseCell(cell: HTMLTableCellElement): number {
 }
 
 function readDataRowAsNumbers(row: HTMLTableRowElement): number[] {
-  const cells = nonInjectedCells(row).slice(1);
+  const cells = sourceCells(row).slice(1);
   const out: number[] = [];
   for (const cell of cells) out.push(parseCell(cell));
   return out;
 }
 
 export function readRawCellMatrix(table: HTMLTableElement): number[][] {
-  const dataRows = nonInjectedRows(table).slice(1);
   const out: number[][] = [];
-  for (const row of dataRows) out.push(readDataRowAsNumbers(row));
+  for (const row of bodyRows(table)) out.push(readDataRowAsNumbers(row));
   return out;
 }
 
@@ -146,9 +149,8 @@ export function buildAxisBinding(table: HTMLTableElement, axis: Axis): AxisBindi
 /* ────────────────────────────────────────────────────────────────────────── */
 
 function tagDataCells(table: HTMLTableElement): void {
-  const rows = nonInjectedRows(table).slice(1);
-  rows.forEach((row, i) => {
-    nonInjectedCells(row).slice(1).forEach((cell, j) => {
+  bodyRows(table).forEach((row, i) => {
+    sourceCells(row).slice(1).forEach((cell, j) => {
       cell.setAttribute('data-gs-rc', `${i}:${j}`);
     });
   });
@@ -221,7 +223,7 @@ export function ensureTopRow(ctx: TableContext): HTMLTableRowElement {
   tr.appendChild(corner);
   tr.appendChild(colSlot);
 
-  const firstOriginal = nonInjectedRows(ctx.table)[0];
+  const firstOriginal = gridRows(ctx.table)[0];
   const tbody = ctx.table.tBodies[0] ?? ctx.table;
   if (firstOriginal) {
     firstOriginal.parentElement!.insertBefore(tr, firstOriginal);
@@ -260,14 +262,16 @@ function buildRowSliderCell(rowSpan: number): HTMLTableCellElement {
 export function ensureRowSliderSlot(ctx: TableContext): HTMLTableCellElement {
   if (ctx.rowSliderCell) return ctx.rowSliderCell;
 
-  const headerRow = nonInjectedRows(ctx.table)[0];
+  const headerRow = gridHeaderRow(ctx.table);
   if (!headerRow) throw new Error('No original header row found');
 
   const headerCell = buildRowHeaderCell();
   headerRow.insertBefore(headerCell, headerRow.firstChild);
 
   const cell = buildRowSliderCell(ctx.dataRowCount);
-  const firstDataRow = headerRow.nextElementSibling as HTMLTableRowElement | null;
+  // First body row (works whether the header lives in <thead> or the implicit
+  // tbody block — `nextElementSibling` would be null for a <thead> header).
+  const firstDataRow = bodyRows(ctx.table)[0] ?? null;
   if (firstDataRow) {
     firstDataRow.insertBefore(cell, firstDataRow.firstChild);
   } else {

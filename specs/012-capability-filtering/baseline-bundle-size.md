@@ -101,34 +101,52 @@ and result) brings the combined bundle to **~34.6 KB gzipped**, breaching the
 Contribution is ~1.4 KB gz: the `equation-panel` module + CSS and the readout
 rewiring. Constitution §I 10 KB target unchanged.
 
-## Ceiling bump for 006-cell-annotations (2026-05-26)
+## Ceiling bump after 012-virtual-columns US4 / US5 / US8 polish (2026-05-23, re-recorded on merge)
 
-| Stage                              | Raw KB | Gzipped KB | Δ from previous stage |
-|------------------------------------|--------|------------|-----------------------|
-| Before annotations (baseline)      | 128.21 | 34.73      | —                     |
-| After 006-cell-annotations         | 144.00 | 39.13      | **+4.40 KB**          |
+When the remaining spec-012 tasks landed (sparkline focus/hover/tooltip
+interactions + arrow-key navigation + header highlight, the scale-toggle
+button next to the Trend header, in-place scale-flip via mutateDirective,
+the dev-mode canonical-order guard, and the test-only `__gridSightVisibleRows`
+global that backs the Playwright mock-VRS helper for US8 e2e), the spec-012
+branch measured **34.59 KB gzipped** against the then-34 KB ceiling.
 
-Result: 006-cell-annotations adds **+4.40 KB gzipped**, against the SC-005
-target of ≤ 2 KB — i.e. the budget is overrun by ~2.4 KB (the R-7 estimate of
-~2 KB under-projected the real cost). Drivers across the eight new modules:
+Merging that branch on top of the slider calculated-result panel (which had
+already moved the ceiling to 35 KB) combines both deltas. The merged bundle
+breaches 35 KB, so the enforced ceiling is bumped **35 → 37 KB** in
+`scripts/bundle-size.js`. Constitution §I 10 KB target unchanged; the formal
+amendment / bundle-cut PR now owes ~27 KB of gap.
 
-- identity triple derivation (`annotation-identity.ts`) — slug/derive/resolve.
-- the per-document `localStorage` codec (`annotation-persistence.ts`).
-- orchestration (`annotations.ts`) — store, hydrate, save/delete, nav-hint,
-  teardown, reorder subscription.
-- affordance + marker UI (`annotation-affordance.ts`) and the editor popover
-  (`annotation-popover.ts`) — DOM construction, 280-char clamp, aria wiring.
-- the cross-document index (`annotation-index.ts`) + popup
-  (`annotation-popup.ts`) for US3.
-- the injected CSS string (minified at source) + glue in `src/index.ts`.
+Cheapest follow-up cuts (not done in-PR):
 
-**Decision (2026-05-26 — user choice during implementation)**: raise the
-enforced ceiling from 35 KB to **40 KB gzipped** to land this PR, leaving the
-constitution §I 10 KB ceiling unchanged. Same posture as every prior overage:
-an **explicit, recorded constitution violation** pending the standing
-constitution-amendment / bundle-cut PR. The amendment now owes ~29 KB of gap.
+- collapse the sparkline interaction helpers into the bottom of
+  `sparkline-column.ts` — a chunk of helpers are only reachable when a
+  sparkline activates, but terser keeps them since `wireSparklineCell`
+  has multiple call paths.
+- gate the dev-mode canonical-order guard behind a build-time `define`
+  flag (current `import.meta.env.MODE !== 'production'` check leaves the
+  assertion bodies in `production` builds via Vite's default mode mapping
+  in dev/preview).
+- drop the `aria-pressed` reflection on the scale-toggle in favour of a
+  data attribute that the renderer reads on each click.
 
-Cheapest follow-up cuts if the budget must be recovered later (not done in-PR):
+## Ceiling bump for 006-cell-annotations (merged on top of 012, 2026-05-28)
+
+006-cell-annotations adds **+4.40 KB gzipped** on its own (measured pre-merge:
+34.73 → 39.13 KB), against the SC-005 target of ≤ 2 KB — overrun by ~2.4 KB
+(the R-7 estimate of ~2 KB under-projected). Drivers across the eight new
+modules: identity-triple derivation, the per-document `localStorage` codec,
+the orchestration store/hydrate/save/nav-hint/teardown, the affordance + marker
+UI and editor popover, the cross-document index + popup (US3), and the injected
+CSS string.
+
+Merged on top of main (which had already moved the ceiling to 37 KB for the
+spec-012 polish), the combined bundle breaches 37 KB, so the enforced ceiling
+is bumped **37 → 42 KB** in `scripts/bundle-size.js` (final value set to the
+measured merged size + headroom). Same posture as every prior overage: an
+explicit, recorded constitution violation pending the standing
+constitution-amendment / bundle-cut PR.
+
+Cheapest follow-up cuts (not done in-PR):
 
 - defer the US3 popup + cross-document index behind a lazy entry point (~1.3 KB).
 - fold `annotation-index.ts` parsing into `annotation-persistence.ts` to share

@@ -62,6 +62,10 @@ import {
   removeAllDirectivesOnTable as vcRemoveAllOnTable,
   registerVirtualColumn,
 } from './enrichments/virtual-column';
+// Side-effect import: registers the virtual-column enrichment descriptors
+// (cumulative / sparkline / compare) so the single injection pass in
+// header-utils mounts and capability-gates them like every other enrichment.
+import './ui/virtual-column-lozenges';
 // Side-effect imports register renderers
 import './enrichments/cumulative-column';
 import './enrichments/sparkline-column';
@@ -185,9 +189,10 @@ const GridSight = {
           id: `table-${index}`,
           ...options,
         });
-        // Virtual-column lozenges are injected on GS-enable (see
-        // toggle-injector), not at load — they are column enrichment toggles
-        // and must not appear while Grid-Sight is off.
+        // Virtual-column lozenges are now mounted by the single enrichment
+        // injection pass (header-utils.mountEnrichments), on GS-enable, gated
+        // by capability — no separate init-time injection. See
+        // docs/architecture/enrichments.md.
         processed.push(table);
       } catch (error) {
         console.error(`Failed to process table ${index}:`, error);

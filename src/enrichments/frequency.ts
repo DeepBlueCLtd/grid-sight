@@ -1,5 +1,6 @@
 import { isCategoricalColumn } from '../core/type-detection';
 import { analyzeFrequencies } from '../utils/frequency';
+import { columnCells, gridCells, headerCellFor, cellValue } from '../core/table-grid';
 
 const FREQUENCY_CLASS = 'gs-frequency';
 
@@ -26,28 +27,18 @@ export function applyFrequencyAnalysis(
   index: number,
   type: 'row' | 'column' = 'column'
 ): Array<[string, number, number]> {
-  // Get the cells to analyze
-  const cells: HTMLTableCellElement[] = [];
-  
-  if (type === 'column') {
-    // For columns, get all cells in the specified column index
-    const rows = table.tBodies[0]?.rows || table.rows;
-    for (let i = 0; i < rows.length; i++) {
-      const cell = rows[i].cells[index];
-      if (cell) cells.push(cell);
-    }
-  } else {
-    // For rows, get all cells in the specified row
-    const row = table.rows[index];
-    if (row) {
-      for (let i = 0; i < row.cells.length; i++) {
-        cells.push(row.cells[i]);
-      }
-    }
-  }
-  
+  // Get the cells to analyze via the canonical addressing layer so slider
+  // scaffolding / injected UI never shift the column or pollute values (013).
+  const cells: HTMLTableCellElement[] =
+    type === 'column'
+      ? columnCells(table, index)
+      : (() => {
+          const row = table.rows[index];
+          return row ? gridCells(row) : [];
+        })();
+
   // Extract cell values
-  const values = cells.map(cell => cell.textContent || '');
+  const values = cells.map(cellValue);
   
   // Check if the column is categorical
   if (!isCategoricalColumn(values)) {
@@ -63,10 +54,13 @@ export function applyFrequencyAnalysis(
   }
   
   // Mark the row/column as having frequency analysis
-  const header = type === 'column' 
-    ? table.rows[0]?.cells[index]
-    : table.rows[index]?.cells[0];
-    
+  const header = type === 'column'
+    ? headerCellFor(table, index)
+    : (() => {
+        const row = table.rows[index];
+        return row ? gridCells(row)[0] : undefined;
+      })();
+
   if (header) {
     header.classList.add(`${FREQUENCY_CLASS}-header`);
     
