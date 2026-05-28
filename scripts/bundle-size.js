@@ -20,6 +20,7 @@
  *   - 37 KB: raised when the spec-012 sparkline interactions (US4) + scale
  *            toggle (US5) + mock-VRS test globals merged on top of the slider
  *            panel.
+ *   - 42 KB: raised when 006-cell-annotations merged on top (+~4.4 KB).
  *
  * Flags:
  *   --soft   warn-only (does not exit non-zero on overage); use for local
@@ -36,7 +37,7 @@ const __dirname = path.dirname(__filename);
 
 const BUNDLE = path.resolve(__dirname, '..', 'dist', 'grid-sight.iife.js');
 
-// Constitution §I target: 10 KB. Enforced ceiling raised to 37 KB pending
+// Constitution §I target: 10 KB. Enforced ceiling raised to 42 KB pending
 // a recorded constitution amendment — see baseline-bundle-size.md.
 // Bumps so far on top of the 25 KB working ceiling that 012-capability-
 // filtering introduced: 25 → 28 KB on 2026-05-19 when 002-003-row-visibility
@@ -45,9 +46,10 @@ const BUNDLE = path.resolve(__dirname, '..', 'dist', 'grid-sight.iife.js');
 // on top of 012-virtual-columns (combined gz 33.25 KB), then 34 → 35 KB for
 // the slider calculated-result info panel (combined gz ~34.6 KB), then
 // 35 → 37 KB when the spec-012 sparkline interactions (US4) + scale toggle
-// (US5) + mock-VRS test globals merged on top of the slider panel.
+// (US5) + mock-VRS test globals merged on top of the slider panel, then
+// 37 → 42 KB when 006-cell-annotations merged on top (+~4.4 KB gz).
 // Constitution §I 10 KB target unchanged.
-const MAX_GZ_KB = 37;
+const MAX_GZ_KB = 42;
 const CONSTITUTION_TARGET_KB = 10;
 
 const soft = process.argv.includes('--soft');

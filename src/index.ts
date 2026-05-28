@@ -101,6 +101,10 @@ import { resolveVisitorEnrichments } from './utils/slider-persistence';
 import { clearColumnTypes } from './core/column-types-cache';
 import { mountTogglePanel } from './ui/toggle-panel';
 
+// Cell annotations (spec 006-cell-annotations)
+import { applyAnnotations, tearDownAnnotations, consumeNavigationHint } from './enrichments/annotations';
+import { registerAnnotationsMenuEntry } from './ui/annotation-popup';
+
 // Internal InitOptions type. Not exported — see ⚠ note above and
 // specs/012-virtual-columns/research.md §R-13.
 interface InitOptions extends TableProcessorOptions {
@@ -199,6 +203,11 @@ const GridSight = {
       try { vcRestoreFromUrl(processed); } catch (e) { console.warn('virtual-column URL restore failed', e); }
     }
 
+    // Annotations: surface the cross-document menu entry (gated on existence)
+    // and consume any transient `#gs.annot=` deep-link hint once tables exist.
+    try { registerAnnotationsMenuEntry(); } catch (e) { void e; }
+    try { consumeNavigationHint(); } catch (e) { void e; }
+
     // Mount the runtime toggle panel if the page opted in via either the
     // `showToggleUi` flag or a `[data-gs-toggle-panel]` element on the page.
     if (typeof document !== 'undefined') {
@@ -229,6 +238,7 @@ const GridSight = {
       const toggle = table.querySelector('.grid-sight-toggle-container');
       if (toggle) toggle.remove();
       try { unmountFilterChip(table); } catch (e) { /* ignore */ void e; }
+      try { tearDownAnnotations(table); } catch (e) { /* ignore */ void e; }
       try { teardownVisibleRows(table); } catch (e) { /* ignore */ void e; }
       removePlusIcons(table);
       // Remove any virtual-column lozenges that were appended.
@@ -246,6 +256,12 @@ const GridSight = {
       if (table.getAttribute('class') === '') table.removeAttribute('class');
     }
     tableRegistry.clear();
+    // Remove page-level annotation chrome (menu entry, any open popover/popup).
+    if (typeof document !== 'undefined') {
+      document
+        .querySelectorAll('.gs-annotations-menu-entry, .gs-annotation-popover, .gs-annotation-popup')
+        .forEach((el) => el.remove());
+    }
     return this;
   },
 
@@ -301,6 +317,10 @@ const GridSight = {
         commitViewStateToLocation(directives);
       });
     } catch (e) { void e; }
+
+    // Cell annotations — gated internally on the `annotations` enrichment
+    // being in the effective enabled set (spec 006).
+    try { applyAnnotations(table); } catch (e) { void e; }
 
     return processedTable;
   },

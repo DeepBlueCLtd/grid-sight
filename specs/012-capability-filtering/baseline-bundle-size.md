@@ -128,3 +128,28 @@ Cheapest follow-up cuts (not done in-PR):
   in dev/preview).
 - drop the `aria-pressed` reflection on the scale-toggle in favour of a
   data attribute that the renderer reads on each click.
+
+## Ceiling bump for 006-cell-annotations (merged on top of 012, 2026-05-28)
+
+006-cell-annotations adds **+4.40 KB gzipped** on its own (measured pre-merge:
+34.73 → 39.13 KB), against the SC-005 target of ≤ 2 KB — overrun by ~2.4 KB
+(the R-7 estimate of ~2 KB under-projected). Drivers across the eight new
+modules: identity-triple derivation, the per-document `localStorage` codec,
+the orchestration store/hydrate/save/nav-hint/teardown, the affordance + marker
+UI and editor popover, the cross-document index + popup (US3), and the injected
+CSS string.
+
+Merged on top of main (which had already moved the ceiling to 37 KB for the
+spec-012 polish), the combined bundle breaches 37 KB, so the enforced ceiling
+is bumped **37 → 42 KB** in `scripts/bundle-size.js` (final value set to the
+measured merged size + headroom). Same posture as every prior overage: an
+explicit, recorded constitution violation pending the standing
+constitution-amendment / bundle-cut PR.
+
+Cheapest follow-up cuts (not done in-PR):
+
+- defer the US3 popup + cross-document index behind a lazy entry point (~1.3 KB).
+- fold `annotation-index.ts` parsing into `annotation-persistence.ts` to share
+  the envelope-decode path.
+- drop the test-only `__reset*` exports from the production build via a
+  build-time `define` flag terser can strip.

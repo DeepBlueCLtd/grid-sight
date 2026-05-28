@@ -158,6 +158,26 @@ function runTearDownsForDisabled(
   }
 }
 
+function runApplyForEnabled(
+  before: Set<string>,
+  after: Set<string>,
+  tables: Iterable<HTMLTableElement>
+): void {
+  for (const e of ENRICHMENT_REGISTRY) {
+    if (!e.apply) continue;
+    // Newly enabled this tick (was off, now on).
+    if (before.has(e.id) || !after.has(e.id)) continue;
+    const apply = e.apply;
+    for (const table of tables) {
+      try {
+        apply(table);
+      } catch (err) {
+        console.warn(`[gridsight] apply(${e.id}) threw; continuing`, err);
+      }
+    }
+  }
+}
+
 function runTearDownAcrossTables(
   id: string,
   tearDown: (t: HTMLTableElement) => void,
@@ -201,6 +221,9 @@ function onCheckboxChange(state: PanelState, _id: string, _checked: boolean): vo
 
   runTearDownsForDisabled(before, after, state.tables.values());
   rebuildLozengesAcrossTables(state.tables.values());
+  // Re-apply enrichments that render persisted state automatically (e.g.
+  // annotations) so they restore on toggle-on without a page reload.
+  runApplyForEnabled(before, after, state.tables.values());
 }
 
 function teardownPanel(state: PanelState): void {

@@ -54,6 +54,8 @@ describe('enrichment-registry', () => {
     const shipped = [
       'heatmap', 'sliders', 'slider-threshold', 'statistics', 'frequency',
       'frequency-chart', 'sort', 'filter',
+      // Cell annotations landed via 006-cell-annotations.
+      'annotations',
       // Virtual columns landed via 012-virtual-columns.
       'cumulative', 'sparkline', 'diff-compare',
     ];
@@ -65,11 +67,18 @@ describe('enrichment-registry', () => {
   });
 
   it('spec-only enrichments have no tearDown hooks', () => {
-    const specOnly = ['annotations', 'copy-as-csv', 'outlier', 'units-toggle'];
+    const specOnly = ['copy-as-csv', 'outlier', 'units-toggle'];
     for (const id of specOnly) {
       const e = ENRICHMENT_REGISTRY.find(x => x.id === id);
       expect(e?.shipped, `enrichment "${id}" must be spec-only`).toBe(false);
       expect(e?.tearDown, `spec-only enrichment "${id}" must not have tearDown`).toBeUndefined();
+    }
+  });
+
+  it('spec-only enrichments have no apply hooks', () => {
+    for (const e of ENRICHMENT_REGISTRY) {
+      if (e.shipped) continue;
+      expect(e.apply, `spec-only enrichment "${e.id}" must not have apply`).toBeUndefined();
     }
   });
 });

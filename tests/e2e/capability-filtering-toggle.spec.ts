@@ -48,6 +48,8 @@ test.describe('US2: live enrichment toggle panel', () => {
       // Shipped via 002-003-row-visibility.
       'sort',
       'filter',
+      // Shipped via 006-cell-annotations.
+      'annotations',
       // Shipped via 012-virtual-columns.
       'cumulative',
       'sparkline',

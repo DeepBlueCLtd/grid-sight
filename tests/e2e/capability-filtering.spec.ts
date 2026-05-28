@@ -99,7 +99,7 @@ test.describe('US3: each existing demo declares an explicit subset', () => {
   const cases: Array<{ path: string; expected: Set<string> }> = [
     {
       path: '/grid-sight/',
-      expected: new Set(['heatmap', 'sliders', 'slider-threshold', 'statistics', 'frequency', 'frequency-chart']),
+      expected: new Set(['heatmap', 'sliders', 'slider-threshold', 'statistics', 'frequency', 'frequency-chart', 'annotations']),
     },
     {
       path: '/grid-sight/demo/sliders/interpolation.html',

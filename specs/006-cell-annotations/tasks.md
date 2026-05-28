@@ -32,8 +32,8 @@ Playwright e2e under `tests/e2e/`. Paths below are exact.
 
 **Purpose**: Test surfaces and shared helpers used by every story.
 
-- [ ] T001 [P] Add Playwright fixture pages for annotation e2e specs under `tests/e2e/fixtures/`: one single-table page, one two-table page, and two same-origin documents (`annotations-doc-a.html`, `annotations-doc-b.html`) for the cross-document flow
-- [ ] T002 [P] Create the Storybook story scaffold `src/stories/annotations.stories.ts` with a sample annotated table for interaction tests
+- [X] T001 [P] Add Playwright fixture pages for annotation e2e specs under `tests/e2e/fixtures/`: one single-table page, one two-table page, and two same-origin documents (`annotations-doc-a.html`, `annotations-doc-b.html`) for the cross-document flow
+- [X] T002 [P] Create the Storybook story scaffold `src/stories/annotations.stories.ts` with a sample annotated table for interaction tests
 
 **Checkpoint**: Test surfaces exist; story work can land its tests against them.
 
@@ -45,12 +45,12 @@ Playwright e2e under `tests/e2e/`. Paths below are exact.
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete.
 
-- [ ] T003 Export `urlStem` and `storageKeyFor` from `src/utils/slider-persistence.ts` so the annotations store can reuse the `gs:` per-URL-stem scheme (no behaviour change to existing exports)
-- [ ] T004 [P] Implement cell-identity derivation in `src/enrichments/annotation-identity.ts`: `cellIdentity` (memoised via `WeakMap`), `identityKey`, `parseIdentityKey`, `isOptedOut`, `resolveCell`; tableKey preference `data-gs-key`→`id`→slug(caption)→`t{n}`, rowKey `data-gs-row-key`→slug(first cell)→`r{n}`, columnKey via `colKey` from `view-state-url.ts`; emit ONE `console.warn` per page on index fallback (FR-010,011,012,013)
-- [ ] T005 [P] Unit tests in `src/enrichments/__tests__/annotation-identity.test.ts`: triple derivation, tableKey preference order, rowKey fallbacks, slug rules, opt-out detection, `resolveCell` returns null for missing target, single warning per page
-- [ ] T006 [P] Implement the `localStorage` codec in `src/enrichments/annotation-persistence.ts`: `readDocumentAnnotations`, `writeDocumentAnnotations` (version:1 envelope with `title` + `{t,m}` entries, `try/catch` quota guard returning `{ok:false,reason:'quota'|'unavailable'}`), `isStorageAvailable`; uses `storageKeyFor(stem,'annotations')` from T003 (FR-014,017,018; contract `localstorage-schema.md`)
-- [ ] T007 [P] Unit tests in `src/enrichments/__tests__/annotation-persistence.test.ts`: round-trip (text+modifiedAt), `version!==1`→empty, malformed JSON→empty, quota throw→refuse, storage-unavailable→`{ok:false,'unavailable'}`, empty store removes the key (invariants U1–U8)
-- [ ] T008 [P] Implement style injection in `src/enrichments/annotation-styles.ts`: idempotent `ensureAnnotationStyles()` injecting `<style data-gs-annotation-styles>` for the hover/focus pin affordance, the persistent corner-triangle marker (shape distinct in monochrome), the `--pulse` keyframe, the popover, and the popup (FR-002,003,025; research R-5)
+- [X] T003 Export `urlStem` and `storageKeyFor` from `src/utils/slider-persistence.ts` so the annotations store can reuse the `gs:` per-URL-stem scheme (no behaviour change to existing exports)
+- [X] T004 [P] Implement cell-identity derivation in `src/enrichments/annotation-identity.ts`: `cellIdentity` (memoised via `WeakMap`), `identityKey`, `parseIdentityKey`, `isOptedOut`, `resolveCell`; tableKey preference `data-gs-key`→`id`→slug(caption)→`t{n}`, rowKey `data-gs-row-key`→slug(first cell)→`r{n}`, columnKey via `colKey` from `view-state-url.ts`; emit ONE `console.warn` per page on index fallback (FR-010,011,012,013)
+- [X] T005 [P] Unit tests in `src/enrichments/__tests__/annotation-identity.test.ts`: triple derivation, tableKey preference order, rowKey fallbacks, slug rules, opt-out detection, `resolveCell` returns null for missing target, single warning per page
+- [X] T006 [P] Implement the `localStorage` codec in `src/enrichments/annotation-persistence.ts`: `readDocumentAnnotations`, `writeDocumentAnnotations` (version:1 envelope with `title` + `{t,m}` entries, `try/catch` quota guard returning `{ok:false,reason:'quota'|'unavailable'}`), `isStorageAvailable`; uses `storageKeyFor(stem,'annotations')` from T003 (FR-014,017,018; contract `localstorage-schema.md`)
+- [X] T007 [P] Unit tests in `src/enrichments/__tests__/annotation-persistence.test.ts`: round-trip (text+modifiedAt), `version!==1`→empty, malformed JSON→empty, quota throw→refuse, storage-unavailable→`{ok:false,'unavailable'}`, empty store removes the key (invariants U1–U8)
+- [X] T008 [P] Implement style injection in `src/enrichments/annotation-styles.ts`: idempotent `ensureAnnotationStyles()` injecting `<style data-gs-annotation-styles>` for the hover/focus pin affordance, the persistent corner-triangle marker (shape distinct in monochrome), the `--pulse` keyframe, the popover, and the popup (FR-002,003,025; research R-5)
 
 **Checkpoint**: Identity, persistence, and styling are ready and unit-tested — user stories can begin.
 
@@ -69,18 +69,18 @@ popover shows the text with Delete enabled; Delete → marker and
 
 ### Tests for User Story 1
 
-- [ ] T009 [P] [US1] Interaction test `src/ui/__tests__/annotation-affordance.test.ts`: affordance reveals on hover and on keyboard focus and is Tab-reachable; `renderMarker` paints the corner marker with an accessible name; `aria-describedby` set on save and removed on delete (FR-001,002,003,004,023,025)
-- [ ] T010 [P] [US1] Interaction test `src/ui/__tests__/annotation-popover.test.ts`: focus lands in textarea on open; Tab cycles Save→Delete; Escape closes without saving; Delete disabled when no note; input and paste clamp to 280 chars (FR-005,006,007,008)
-- [ ] T011 [P] [US1] Unit test `src/enrichments/__tests__/annotations.test.ts`: `saveAnnotation` upserts the in-memory store and sets `modifiedAt`; empty/whitespace save deletes; `deleteAnnotation` removes; `getAnnotation` returns current text; `tearDownAnnotations` removes all injected DOM (markers, affordances, aria nodes) leaving byte-identical cells
+- [X] T009 [P] [US1] Interaction test `src/ui/__tests__/annotation-affordance.test.ts`: affordance reveals on hover and on keyboard focus and is Tab-reachable; `renderMarker` paints the corner marker with an accessible name; `aria-describedby` set on save and removed on delete (FR-001,002,003,004,023,025)
+- [X] T010 [P] [US1] Interaction test `src/ui/__tests__/annotation-popover.test.ts`: focus lands in textarea on open; Tab cycles Save→Delete; Escape closes without saving; Delete disabled when no note; input and paste clamp to 280 chars (FR-005,006,007,008)
+- [X] T011 [P] [US1] Unit test `src/enrichments/__tests__/annotations.test.ts`: `saveAnnotation` upserts the in-memory store and sets `modifiedAt`; empty/whitespace save deletes; `deleteAnnotation` removes; `getAnnotation` returns current text; `tearDownAnnotations` removes all injected DOM (markers, affordances, aria nodes) leaving byte-identical cells
 
 ### Implementation for User Story 1
 
-- [ ] T012 [US1] Implement orchestration `src/enrichments/annotations.ts`: in-memory `AnnotationStore` (Map keyed by `identityKey`), `applyAnnotations` mounting the affordance on each qualifying body cell, `saveAnnotation` (clamp 280, set `modifiedAt`, write store + `writeDocumentAnnotations`, return quota outcome), `deleteAnnotation`, `getAnnotation`, `hasAnyAnnotationsForOrigin`, `tearDownAnnotations` (depends on T004, T006, T008)
-- [ ] T013 [US1] Implement `src/ui/annotation-affordance.ts`: `mountAffordance` (hover/focus pin button), `renderMarker` (corner triangle + accessible name + `aria-describedby` node), `clearMarker`, `pulseMarker`; set/clear cell `position:relative` shim (depends on T008)
-- [ ] T014 [US1] Implement `src/ui/annotation-popover.ts`: `openAnnotationPopover` building textarea/Save/Delete/inline-error DOM, 280-char clamp on input+paste, `installPopupChrome(popup, cell, [textarea,save,delete], onClose)`, Save→`saveAnnotation` (show inline error and keep open on `{ok:false}`), Delete→`deleteAnnotation` (depends on T012, T013)
-- [ ] T015 [US1] Flip the registry entry in `src/core/enrichment-registry.ts`: set `annotations` `shipped: true` and `tearDown: tearDownAnnotations` (import from `../enrichments/annotations`); confirm boot-time validation still passes
-- [ ] T016 [US1] Wire `applyAnnotations(table)` into `src/index.ts` `processTable` flow, gated on `'annotations'` being in the effective enabled set
-- [ ] T017 [P] [US1] Playwright e2e `tests/e2e/annotations.spec.ts`: annotate → marker → reopen popover shows text → Delete removes marker (golden path; SC-001 ≤3 interactions)
+- [X] T012 [US1] Implement orchestration `src/enrichments/annotations.ts`: in-memory `AnnotationStore` (Map keyed by `identityKey`), `applyAnnotations` mounting the affordance on each qualifying body cell, `saveAnnotation` (clamp 280, set `modifiedAt`, write store + `writeDocumentAnnotations`, return quota outcome), `deleteAnnotation`, `getAnnotation`, `hasAnyAnnotationsForOrigin`, `tearDownAnnotations` (depends on T004, T006, T008)
+- [X] T013 [US1] Implement `src/ui/annotation-affordance.ts`: `mountAffordance` (hover/focus pin button), `renderMarker` (corner triangle + accessible name + `aria-describedby` node), `clearMarker`, `pulseMarker`; set/clear cell `position:relative` shim (depends on T008)
+- [X] T014 [US1] Implement `src/ui/annotation-popover.ts`: `openAnnotationPopover` building textarea/Save/Delete/inline-error DOM, 280-char clamp on input+paste, `installPopupChrome(popup, cell, [textarea,save,delete], onClose)`, Save→`saveAnnotation` (show inline error and keep open on `{ok:false}`), Delete→`deleteAnnotation` (depends on T012, T013)
+- [X] T015 [US1] Flip the registry entry in `src/core/enrichment-registry.ts`: set `annotations` `shipped: true` and `tearDown: tearDownAnnotations` (import from `../enrichments/annotations`); confirm boot-time validation still passes
+- [X] T016 [US1] Wire `applyAnnotations(table)` into `src/index.ts` `processTable` flow, gated on `'annotations'` being in the effective enabled set
+- [X] T017 [P] [US1] Playwright e2e `tests/e2e/annotations.spec.ts`: annotate → marker → reopen popover shows text → Delete removes marker (golden path; SC-001 ≤3 interactions)
 
 **Checkpoint**: US1 is a fully functional, independently testable MVP (single-session annotate/edit/delete).
 
@@ -97,15 +97,15 @@ source cell.
 
 ### Tests for User Story 2
 
-- [ ] T018 [P] [US2] Unit test `src/enrichments/__tests__/annotations-hydrate.test.ts`: `applyAnnotations` hydrates the store from `readDocumentAnnotations`, drops entries for missing rows/columns (FR-016) and opted-out cells (FR-012); identity stays equal (memoised) when a cell's row index changes (reorder) (SC-004)
-- [ ] T019 [P] [US2] Playwright e2e `tests/e2e/annotations-persist.spec.ts`: annotate, reload the page, markers + text restored from `localStorage`; assert no network request on the persistence path and that the `gs:…:annotations` key exists (SC-003, invariant U11)
-- [ ] T020 [P] [US2] Playwright e2e `tests/e2e/annotations-reorder.spec.ts`: annotate a cell, sort then filter the table, marker remains on the original source cell with no drift (SC-004)
+- [X] T018 [P] [US2] Unit test `src/enrichments/__tests__/annotations-hydrate.test.ts`: `applyAnnotations` hydrates the store from `readDocumentAnnotations`, drops entries for missing rows/columns (FR-016) and opted-out cells (FR-012); identity stays equal (memoised) when a cell's row index changes (reorder) (SC-004)
+- [X] T019 [P] [US2] Playwright e2e `tests/e2e/annotations-persist.spec.ts`: annotate, reload the page, markers + text restored from `localStorage`; assert no network request on the persistence path and that the `gs:…:annotations` key exists (SC-003, invariant U11)
+- [X] T020 [P] [US2] Playwright e2e `tests/e2e/annotations-reorder.spec.ts`: annotate a cell, sort then filter the table, marker remains on the original source cell with no drift (SC-004)
 
 ### Implementation for User Story 2
 
-- [ ] T021 [US2] Add hydrate-on-load to `applyAnnotations` in `src/enrichments/annotations.ts`: read `readDocumentAnnotations`, `resolveCell` each entry, drop missing/opted-out (FR-012,016), render surviving markers within one animation frame (FR-015, SC-002) (depends on T012)
-- [ ] T022 [US2] Re-attach markers after row reordering in `src/enrichments/annotations.ts`: subscribe to the visible-rows change event (or re-resolve on enrichment refresh) so markers follow their source cell when sort/filter moves/rebuilds rows; verify `aria-describedby` survives (FR-011, SC-004)
-- [ ] T023 [US2] Session-only fallback in `src/enrichments/annotations.ts`: when `isStorageAvailable()` is false, keep the in-memory store working and emit at most one `console.warn` per page; never throw (FR-017)
+- [X] T021 [US2] Add hydrate-on-load to `applyAnnotations` in `src/enrichments/annotations.ts`: read `readDocumentAnnotations`, `resolveCell` each entry, drop missing/opted-out (FR-012,016), render surviving markers within one animation frame (FR-015, SC-002) (depends on T012)
+- [X] T022 [US2] Re-attach markers after row reordering in `src/enrichments/annotations.ts`: subscribe to the visible-rows change event (or re-resolve on enrichment refresh) so markers follow their source cell when sort/filter moves/rebuilds rows; verify `aria-describedby` survives (FR-011, SC-004)
+- [X] T023 [US2] Session-only fallback in `src/enrichments/annotations.ts`: when `isStorageAvailable()` is false, keep the in-memory store working and emit at most one `console.warn` per page; never throw (FR-017)
 
 **Checkpoint**: US1 + US2 both work independently; notes are durable and position-stable.
 
@@ -124,16 +124,16 @@ its marker pulsing.
 
 ### Tests for User Story 3
 
-- [ ] T024 [P] [US3] Unit test `src/enrichments/__tests__/annotation-index.test.ts`: `buildCrossDocumentIndex` selects only `^gs:.*:annotations$` keys, groups by document, orders by `modifiedAt`, flags `isCurrentDocument`, and yields an empty model when none exist (invariant U9; US3 AC-1,4)
-- [ ] T025 [P] [US3] Interaction test `src/ui/__tests__/annotation-popup.test.ts`: list grouping + dates render; arrow keys move, Enter activates, Escape closes; same-document entry scrolls + pulses; cross-document entry triggers navigation to `documentUrl#gs.annot=key` (FR-020,021,022)
-- [ ] T026 [P] [US3] Playwright e2e `tests/e2e/annotations-popup.spec.ts`: cross-document — annotate on doc A and doc B, open popup, click the doc-B entry from doc A, assert navigation + scroll-to-cell + marker pulse, and that `#gs.annot` is cleared after consumption (SC-006, invariant U10)
+- [X] T024 [P] [US3] Unit test `src/enrichments/__tests__/annotation-index.test.ts`: `buildCrossDocumentIndex` selects only `^gs:.*:annotations$` keys, groups by document, orders by `modifiedAt`, flags `isCurrentDocument`, and yields an empty model when none exist (invariant U9; US3 AC-1,4)
+- [X] T025 [P] [US3] Interaction test `src/ui/__tests__/annotation-popup.test.ts`: list grouping + dates render; arrow keys move, Enter activates, Escape closes; same-document entry scrolls + pulses; cross-document entry triggers navigation to `documentUrl#gs.annot=key` (FR-020,021,022)
+- [X] T026 [P] [US3] Playwright e2e `tests/e2e/annotations-popup.spec.ts`: cross-document — annotate on doc A and doc B, open popup, click the doc-B entry from doc A, assert navigation + scroll-to-cell + marker pulse, and that `#gs.annot` is cleared after consumption (SC-006, invariant U10)
 
 ### Implementation for User Story 3
 
-- [ ] T027 [P] [US3] Implement `src/enrichments/annotation-index.ts`: `buildCrossDocumentIndex` scanning `localStorage` for the current origin, reconstructing `documentUrl`/`documentLabel` from each key + envelope `title`, producing the grouped `AnnotationPopupViewModel` (research R-8)
-- [ ] T028 [US3] Implement `consumeNavigationHint` in `src/enrichments/annotations.ts`: read `#gs.annot=<key>` from the hash on load, `resolveCell`, `scrollIntoView` + `pulseMarker`, then clear the hint via `history.replaceState`; silent no-op when absent/unresolvable (FR-019,021)
-- [ ] T029 [US3] Implement `src/ui/annotation-popup.ts`: `registerAnnotationsMenuEntry` (visible only when `hasAnyAnnotationsForOrigin()`); `openAnnotationsPopup` rendering the index via `installPopupChrome`, keyboard nav, empty-state message; activation → same-doc scroll+pulse or navigate to `documentUrl#gs.annot=key` (FR-020,021,022; US3 AC-1–4)
-- [ ] T030 [US3] Wire into `src/index.ts`: call `registerAnnotationsMenuEntry()` once per page and `consumeNavigationHint()` once after tables are processed
+- [X] T027 [P] [US3] Implement `src/enrichments/annotation-index.ts`: `buildCrossDocumentIndex` scanning `localStorage` for the current origin, reconstructing `documentUrl`/`documentLabel` from each key + envelope `title`, producing the grouped `AnnotationPopupViewModel` (research R-8)
+- [X] T028 [US3] Implement `consumeNavigationHint` in `src/enrichments/annotations.ts`: read `#gs.annot=<key>` from the hash on load, `resolveCell`, `scrollIntoView` + `pulseMarker`, then clear the hint via `history.replaceState`; silent no-op when absent/unresolvable (FR-019,021)
+- [X] T029 [US3] Implement `src/ui/annotation-popup.ts`: `registerAnnotationsMenuEntry` (visible only when `hasAnyAnnotationsForOrigin()`); `openAnnotationsPopup` rendering the index via `installPopupChrome`, keyboard nav, empty-state message; activation → same-doc scroll+pulse or navigate to `documentUrl#gs.annot=key` (FR-020,021,022; US3 AC-1–4)
+- [X] T030 [US3] Wire into `src/index.ts`: call `registerAnnotationsMenuEntry()` once per page and `consumeNavigationHint()` once after tables are processed
 
 **Checkpoint**: All three stories are independently functional.
 
@@ -143,10 +143,13 @@ its marker pulsing.
 
 **Purpose**: Budget, accessibility, and end-to-end validation across stories.
 
-- [ ] T031 Run `yarn build` and confirm via `scripts/bundle-size.js` that the IIFE net delta is ≤ 2 KB gzipped (SC-005) and the total stays ≤ 10 KB; trim (defer/slim the popup first) if over
-- [ ] T032 [P] Flesh out `src/stories/annotations.stories.ts` with affordance/popover/marker/popup stories for visual + interaction coverage
+- [X] T031 Run `yarn build` and confirm via `scripts/bundle-size.js` that the IIFE net delta is ≤ 2 KB gzipped (SC-005) and the total stays ≤ 10 KB; trim (defer/slim the popup first) if over
+  - ⚠️ **SC-005 NOT met**: the feature adds **+4.4 KB gzipped** (≈2.2× the budget). Per user decision the enforced ceiling was raised 35 → 40 KB and the overrun recorded in `scripts/bundle-size.js` + `specs/012-capability-filtering/baseline-bundle-size.md`. The build/measure/record step is done; the budget target is not.
+- [X] T032 [P] Flesh out `src/stories/annotations.stories.ts` with affordance/popover/marker/popup stories for visual + interaction coverage
 - [ ] T033 [P] Accessibility pass (constitution §III): keyboard-only operation of affordance, popover, and popup; marker distinguishable in a monochrome simulation; `aria-describedby` verified with a screen reader (FR-023,024,025)
-- [ ] T034 Run `quickstart.md` end-to-end (all 7 sections), including toggle-off restoring byte-identical DOM with the `localStorage` envelope left intact
+  - **Partial — automated proxies only.** Keyboard operation and `aria-describedby` wiring are covered by jsdom interaction tests + Playwright e2e. The marker is a CSS clip-path **shape** (structurally distinguishable without colour), but a real grayscale/monochrome visual check was **not** performed, and **no screen reader was run**. Outstanding: a human AT pass + grayscale spot-check before this can be checked.
+- [X] T034 Run `quickstart.md` end-to-end (all 7 sections), including toggle-off restoring byte-identical DOM with the `localStorage` envelope left intact
+  - **Covered by automation + a maintainer walkthrough.** §1 embed snippet — `annotations-embed-snippet.spec.ts` (verbatim snippet, incl. no double-mount under auto-init); §2 annotate + marker tooltip (`title`) — annotate e2e + affordance unit; §4 reload-persist + storage-unavailable session-only path — `annotations-persist.spec.ts` + `annotations-storage-unavailable.spec.ts`; §5 sort/filter stability — reorder e2e; §6 cross-document popup — popup e2e; §7 opt-out — hydrate unit. Toggle-off leaving the `localStorage` envelope intact is unit-tested (`annotations.test.ts`). The maintainer also did a manual walkthrough. **Residual:** the formal screen-reader + grayscale checks (the §3 accessibility portion) remain genuinely outstanding and are tracked under **T033**.
 
 ---
 
