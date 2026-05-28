@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Grid-Sight · Find in table (spec 014)</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 920px; margin: 24px auto; padding: 0 16px 80px; color: #222; line-height: 1.5; }
+    h1 { margin-top: 0; }
+    h2 { margin: 32px 0 8px; }
+    .lede { color: #555; max-width: 72ch; }
+    nav { margin-bottom: 16px; padding: 8px 0; border-bottom: 1px solid #ddd; font-size: 14px; }
+    nav strong { margin-right: 8px; }
+    ol.steps { max-width: 70ch; }
+    ol.steps code { background: #f5f7fa; padding: 1px 5px; border-radius: 3px; font-size: 13px; }
+    .layout { display: grid; grid-template-columns: 1fr 240px; gap: 24px; align-items: start; }
+    @media (max-width: 760px) { .layout { grid-template-columns: 1fr; } }
+    .panel-slot { position: sticky; top: 16px; }
+    table { border-collapse: collapse; margin: 16px 0; }
+    th, td { border: 1px solid #ccc; padding: 5px 10px; text-align: left; }
+    td.num { text-align: right; font-variant-numeric: tabular-nums; }
+    thead th { background: #f4f4f4; }
+    footer { margin-top: 56px; padding-top: 16px; border-top: 1px solid #eee; color: #888; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <nav>
+    <strong>Grid-Sight demos:</strong>
+    <a href="../../">Home</a> ·
+    <a href="../freeze-panes/index.html">Freeze panes</a> ·
+    <a href="../statistics/index.html">Statistics</a> ·
+    <a href="../summary-row/index.html">Summary row</a> ·
+    <a href="index.html">Find in table</a>
+  </nav>
+
+  <h1>Find in table</h1>
+  <p class="lede">
+    Click <strong>GS</strong>, then the <code>⌕</code> lozenge in the table's
+    top-left corner to open a search box. Type a term to highlight every visible
+    match; the counter shows your position, and Next / Previous (or Enter /
+    Shift+Enter) step through them with wrap-around, scrolling each into view.
+    Clearing or closing removes the highlights byte-identically.
+  </p>
+
+  <script>
+    window.gridSight = { pageConfig: {
+      enrichments: ['find-in-table', 'sort', 'filter'],
+      showToggleUi: true,
+    } };
+  </script>
+
+  <h2>Try it</h2>
+  <ol class="steps">
+    <li>Enable <strong>GS</strong>; the <code>⌕</code> lozenge appears on the
+      corner cell.</li>
+    <li>Search a repeated term such as <code>EU</code> — every matching cell
+      highlights and the counter reads e.g. <em>1 of 5</em>.</li>
+    <li>Step with <strong>Next</strong>/<strong>Previous</strong> (the active
+      match gets a thicker outline, a non-colour cue); it wraps at the ends.</li>
+    <li>Untick <em>Find in table</em> in the panel to remove the lozenge, then
+      re-tick it — it returns without a reload.</li>
+  </ol>
+
+  <div class="layout">
+    <div>
+      <h2>Shipment lookup</h2>
+      <table id="lookup">
+        <thead>
+          <tr><th>Ref</th><th>Product</th><th>Region</th><th>Status</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>R-1001</td><td>Laptop</td><td>EU</td><td>shipped</td></tr>
+          <tr><td>R-1002</td><td>Monitor</td><td>US</td><td>pending</td></tr>
+          <tr><td>R-1003</td><td>Keyboard</td><td>EU</td><td>shipped</td></tr>
+          <tr><td>R-1004</td><td>Mouse</td><td>JP</td><td>delivered</td></tr>
+          <tr><td>R-1005</td><td>Webcam</td><td>EU</td><td>pending</td></tr>
+          <tr><td>R-1006</td><td>Desk</td><td>US</td><td>shipped</td></tr>
+          <tr><td>R-1007</td><td>Chair</td><td>EU</td><td>delivered</td></tr>
+          <tr><td>R-1008</td><td>Cable</td><td>JP</td><td>shipped</td></tr>
+          <tr><td>R-1009</td><td>Dock</td><td>EU</td><td>pending</td></tr>
+          <tr><td>R-1010</td><td>Stand</td><td>US</td><td>delivered</td></tr>
+          <tr><td>R-1011</td><td>Headset</td><td>JP</td><td>shipped</td></tr>
+          <tr><td>R-1012</td><td>Charger</td><td>US</td><td>pending</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <aside class="panel-slot">
+      <div data-gs-toggle-panel></div>
+    </aside>
+  </div>
+
+  <footer>
+    Spec: <code>specs/014-navigation-and-analysis/</code> · No runtime dependencies · Works offline (file://).
+  </footer>
+
+  <script src="../../grid-sight.iife.js"></script>
+</body>
+</html>
