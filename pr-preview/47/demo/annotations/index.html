@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Grid-Sight · Cell annotations (spec 006)</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 960px; margin: 24px auto; padding: 0 16px 80px; color: #222; line-height: 1.5; }
+    h1 { margin-top: 0; }
+    h2 { margin: 32px 0 8px; }
+    .lede { color: #555; max-width: 70ch; }
+    nav { margin-bottom: 16px; padding: 8px 0; border-bottom: 1px solid #ddd; font-size: 14px; }
+    nav strong { margin-right: 8px; }
+    ol.steps { max-width: 70ch; }
+    ol.steps code { background: #f5f7fa; padding: 1px 5px; border-radius: 3px; font-size: 13px; }
+    table { border-collapse: collapse; margin: 16px 0; width: auto; }
+    caption { text-align: left; font-weight: 600; padding-bottom: 6px; }
+    th, td { border: 1px solid #ccc; padding: 6px 12px; text-align: left; }
+    td.num { text-align: right; font-variant-numeric: tabular-nums; }
+    thead th { background: #f4f4f4; }
+    .cross-doc { display: flex; gap: 12px; margin: 8px 0 0; }
+    .cross-doc a { display: inline-block; padding: 6px 12px; border: 1px solid #1976d2; border-radius: 4px; color: #1976d2; text-decoration: none; font-size: 14px; }
+    .cross-doc a:hover { background: #eef3fb; }
+    footer { margin-top: 56px; padding-top: 16px; border-top: 1px solid #eee; color: #888; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <nav>
+    <strong>Grid-Sight demos:</strong>
+    <a href="../../">Home</a> ·
+    <a href="../sliders/interpolation.html">1. Interpolation</a> ·
+    <a href="../sliders/alternate-calc-models.html">2. Alternate calc models</a> ·
+    <a href="../sliders/synced-tables.html">3. Persistent URL</a> ·
+    <a href="../toggle/live-enrichments.html">4. Live toggles — start with everything on</a> ·
+    <a href="../toggle/opt-in-playground.html">5. Opt-in playground — start with nothing on</a> ·
+    <a href="../virtual-columns.html">6. Virtual columns</a> ·
+    <a href="index.html">7. Cell annotations</a>
+  </nav>
+
+  <h1>Cell annotations</h1>
+  <p class="lede">
+    Attach a short note (≤ 280 chars) to any body cell. Notes paint a persistent
+    corner marker, persist per-document to <code>localStorage</code>, stay glued
+    to their source cell across sort/filter, and are listed origin-wide in a
+    cross-document popup. No runtime dependencies; works fully offline.
+  </p>
+
+  <!-- Enable annotations alongside sort + filter so the "survives reorder"
+       behaviour can be demonstrated on this page. -->
+  <script>
+    window.gridSight = { pageConfig: {
+      enrichments: ['annotations', 'sort', 'filter', 'statistics']
+    } };
+  </script>
+
+  <h2>Try it</h2>
+  <ol class="steps">
+    <li><strong>Annotate:</strong> hover (or <kbd>Tab</kbd> to) a body cell, click the
+      <code>✎</code> pin, type a note, and click <strong>Save</strong>. A blue
+      corner triangle marks the cell; its text is wired to the cell via
+      <code>aria-describedby</code>.</li>
+    <li><strong>Persists:</strong> reload the page — the marker and note come back
+      from <code>localStorage</code> (key <code>gs:&lt;url&gt;:annotations</code>).</li>
+    <li><strong>Follows its cell:</strong> click <strong>GS</strong>, then the sort
+      lozenge on <em>Q3 revenue</em> — rows reorder but the note stays on its
+      original region's row.</li>
+    <li><strong>Cross-document:</strong> once a note exists on the origin, a
+      <strong>Show annotations</strong> button appears bottom-right. It lists every
+      note across same-origin documents (try the two linked reports below) with
+      dates, and deep-links to each cell.</li>
+  </ol>
+
+  <h2>Sample table</h2>
+  <table id="tbl-revenue" data-gs-key="revenue">
+    <caption>Regional revenue (Q3)</caption>
+    <thead>
+      <tr><th>Region</th><th>Q3 revenue</th><th>Owner</th></tr>
+    </thead>
+    <tbody>
+      <tr data-gs-row-key="acme"><th scope="row">Acme</th><td class="num">1200</td><td>Dana</td></tr>
+      <tr data-gs-row-key="globex"><th scope="row">Globex</th><td class="num">980</td><td>Lee</td></tr>
+      <tr data-gs-row-key="initech"><th scope="row">Initech</th><td class="num">540</td><td>Sam</td></tr>
+      <tr data-gs-row-key="umbrella"><th scope="row">Umbrella</th><td class="num">1750</td><td>Priya</td></tr>
+      <tr data-gs-row-key="hooli"><th scope="row">Hooli</th><td class="num">820</td><td>Chris</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Cross-document</h2>
+  <p class="lede">
+    Two more same-origin pages. Annotate a cell on each, then open
+    <strong>Show annotations</strong> from any of them to jump between documents.
+  </p>
+  <div class="cross-doc">
+    <a href="annotations-doc-a.html">Report A →</a>
+    <a href="annotations-doc-b.html">Report B →</a>
+  </div>
+
+  <footer>
+    Spec: <code>specs/006-cell-annotations/</code> · No runtime dependencies · Works offline (file://).
+  </footer>
+
+  <script src="../../grid-sight.iife.js"></script>
+</body>
+</html>
