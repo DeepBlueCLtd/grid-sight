@@ -163,36 +163,36 @@ and confirm the choice persists.
 
 ### Tests for US3 (write first, must fail)
 
-- [ ] T022 [P] [US3] Unit `src/enrichments/__tests__/summary-row.test.ts`:
+- [X] T022 [P] [US3] Unit `src/enrichments/__tests__/summary-row.test.ts`:
   `aggregate()` math (numeric excludes blank/non-numeric; `count` counts
   non-blank); persistence codec round-trip + malformed-ignored + storage-
   unavailable degrades with one warn; `removeSummaryRow` byte-identical teardown.
-- [ ] T023 [P] [US3] jsdom: footer cells align to logical columns and are
+- [X] T023 [P] [US3] jsdom: footer cells align to logical columns and are
   `data-gs-injected`; aggregate control keyboard-operable; recompute on
   simulated visible-rows change.
-- [ ] T024 [P] [US3] Storybook story `src/stories/summary-row.stories.ts`.
-- [ ] T025 [P] [US3] Playwright (summary section): sum over visible → switch to
+- [X] T024 [P] [US3] Storybook story `src/stories/summary-row.stories.ts`.
+- [X] T025 [P] [US3] Playwright (summary section): sum over visible → switch to
   average → filter recompute → persists across reload → disable→enable round-trip
   restores footer + choices without reload.
 
 ### Implementation for US3
 
-- [ ] T026 [US3] Implement `src/ui/summary-row-control.ts`
+- [X] T026 [US3] Implement `src/ui/summary-row-control.ts`
   `mountAggregateControl(...)` (keyboard-operable chooser).
-- [ ] T027 [US3] Implement `src/enrichments/summary-row.ts`
+- [X] T027 [US3] Implement `src/enrichments/summary-row.ts`
   `applySummaryRow`/`removeSummaryRow`/`aggregate` per `contracts/summary-row.md`
   — inject `data-gs-injected` `<tfoot>`, restore choices via `storageKeyFor`,
   subscribe `onVisibleRowsChange`, persist on change. Depends: T026.
-- [ ] T028 [US3] Add the `summary-row` entry (`apply`/`tearDown`) to
+- [X] T028 [US3] Add the `summary-row` entry (`apply`/`tearDown`) to
   `src/core/enrichment-registry.ts`. Depends: T027. *(shared file)*
-- [ ] T029 [US3] Wire `applySummaryRow(table)` in `src/index.ts` `processTable`,
+- [X] T029 [US3] Wire `applySummaryRow(table)` in `src/index.ts` `processTable`,
   gated on `isEnrichmentEnabled('summary-row')`. Depends: T027, T028. *(shared file)*
-- [ ] T030 [US3] Update id/count assertions in `enrichment-registry.test.ts` and
+- [X] T030 [US3] Update id/count assertions in `enrichment-registry.test.ts` and
   `capability-filtering-toggle.spec.ts`. Depends: T028. *(shared files)*
-- [ ] T031 [P] [US3] Demo `public/demo/summary-row/index.html` — a filterable
+- [X] T031 [P] [US3] Demo `public/demo/summary-row/index.html` — a filterable
   measurement/financial table; nav; `pageConfig.enrichments` includes `summary-row`.
-- [ ] T032 [US3] Add a demo card to `public/index.html`. *(shared file)*
-- [ ] T033 [US3] `node scripts/bundle-size.js --soft` (≤ 1.4 KB delta) + a11y
+- [X] T032 [US3] Add a demo card to `public/index.html`. *(shared file)*
+- [X] T033 [US3] `node scripts/bundle-size.js --soft` (≤ 1.4 KB delta) + a11y
   (non-colour emphasis, keyboard control).
 
 **Checkpoint**: footer aggregates correct under filter/sort and persist.

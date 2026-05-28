@@ -34,6 +34,7 @@ import { unmountFilterChip } from '../enrichments/filter-chip';
 import { tearDownAnnotations, applyAnnotations } from '../enrichments/annotations';
 import { removeDirectivesByKind } from '../enrichments/virtual-column';
 import { applyFreezePanes, removeFreezePanes } from '../enrichments/freeze-panes';
+import { applySummaryRow, removeSummaryRow } from '../enrichments/summary-row';
 
 export type EnrichmentId = string;
 
@@ -132,6 +133,7 @@ const ENTRIES: EnrichmentRegistryEntry[] = [
   { id: 'units-toggle',     label: 'Units toggle',      defaultOn: true, shipped: false },  // spec 007
   // ── Navigation & analysis tier 1 (spec 014) ─────────────────────────
   { id: 'freeze-panes',     label: 'Freeze panes',      defaultOn: true, shipped: true,  apply: applyFreezePanes, tearDown: removeFreezePanes },  // spec 014
+  { id: 'summary-row',      label: 'Summary row',       defaultOn: true, shipped: true,  apply: applySummaryRow,  tearDown: removeSummaryRow },   // spec 014
 ];
 
 // Boot-time validation.

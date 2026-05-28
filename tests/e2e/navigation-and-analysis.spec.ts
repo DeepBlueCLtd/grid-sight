@@ -173,3 +173,74 @@ test.describe('US2: statistics extension', () => {
     expect(await readStat(page, 'Missing')).toContain('0');
   });
 });
+
+/* ── US3: summary-row ───────────────────────────────────────────────── */
+
+test.describe('US3: summary-row', () => {
+  const URL = `${BASE}/summary-row/index.html`;
+  const UNITS_VALUE = '#sales-summary tfoot tr.gs-summary-row td:nth-child(2) .gs-summary-value';
+  const UNITS_CTRL = '#sales-summary tfoot tr.gs-summary-row td:nth-child(2) .gs-summary-agg';
+
+  test('shows a footer aggregate over visible rows; switching to average persists across reload', async ({ page }) => {
+    await page.goto(URL);
+    await page.waitForFunction(() => !!(window as any).gridSight);
+
+    // Default numeric aggregate is the sum: 10+20+30+40+25+35 = 160.
+    await expect(page.locator(UNITS_VALUE)).toHaveText('160');
+
+    // Cycle Units to average → (160/6) ≈ 26.67.
+    await page.locator(UNITS_CTRL).click();
+    await expect(page.locator(UNITS_CTRL)).toHaveText('avg');
+    await expect(page.locator(UNITS_VALUE)).toHaveText('26.67');
+
+    // The choice persists across a reload.
+    await page.reload();
+    await page.waitForFunction(() => !!(window as any).gridSight);
+    await expect(page.locator(UNITS_CTRL)).toHaveText('avg');
+    await expect(page.locator(UNITS_VALUE)).toHaveText('26.67');
+  });
+
+  test('recomputes the footer when a filter changes the visible set', async ({ page }) => {
+    await page.goto(URL);
+    await page.waitForFunction(() => !!(window as any).gridSight);
+    await expect(page.locator(UNITS_VALUE)).toHaveText('160');
+
+    // Keep Units >= 30 (East 30, West 40, Coastal 35) → sum 105.
+    await page.evaluate(() => {
+      const t = document.getElementById('sales-summary') as HTMLTableElement;
+      (window as any).__gridSightVisibleRows.setFilter(t, 1, {
+        columnIndex: 1,
+        columnKey: 'units',
+        test: (row: HTMLTableRowElement) => {
+          const v = parseFloat(row.cells[1]?.textContent ?? '');
+          return Number.isFinite(v) && v >= 30;
+        },
+        toDirective: () => ({ kind: 'numeric-range', columnKey: 'units', min: 30, max: null, hideEmpty: false }),
+      });
+    });
+    await expect(page.locator(UNITS_VALUE)).toHaveText('105');
+  });
+
+  test('disable→enable round-trip restores the footer and choices without reload', async ({ page }) => {
+    await page.goto(URL);
+    await page.waitForFunction(() => !!(window as any).gridSight);
+
+    // Choose average first so the round-trip has a non-default choice to restore.
+    await page.locator(UNITS_CTRL).click();
+    await expect(page.locator(UNITS_CTRL)).toHaveText('avg');
+
+    const cb = page.locator('[data-gs-toggle-panel-root] input[value="summary-row"]');
+
+    // OFF → footer removed (byte-identical un-inject).
+    await cb.uncheck();
+    await raf(page);
+    await expect(page.locator('#sales-summary tr.gs-summary-row')).toHaveCount(0);
+
+    // ON → footer restored via the registry apply hook, choices intact, no reload.
+    await cb.check();
+    await raf(page);
+    await expect(page.locator('#sales-summary tr.gs-summary-row')).toHaveCount(1);
+    await expect(page.locator(UNITS_CTRL)).toHaveText('avg');
+    await expect(page.locator(UNITS_VALUE)).toHaveText('26.67');
+  });
+});

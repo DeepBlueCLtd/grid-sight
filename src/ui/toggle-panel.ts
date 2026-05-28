@@ -195,9 +195,11 @@ function runTearDownAcrossTables(
 function resolveColumnTypes(table: HTMLTableElement) {
   const cached = getColumnTypes(table);
   if (cached) return cached;
-  const rows = Array.from(table.rows).map(row =>
-    Array.from(row.cells).map(cell => cell.textContent || '')
-  );
+  // Skip Grid-Sight-injected scaffold rows (e.g. the summary-row <tfoot>,
+  // spec 014) so they never skew column typing on the panel-rebuild path.
+  const rows = Array.from(table.rows)
+    .filter(row => !row.hasAttribute('data-gs-injected'))
+    .map(row => Array.from(row.cells).map(cell => cell.textContent || ''));
   return analyzeTable(rows).columnTypes;
 }
 

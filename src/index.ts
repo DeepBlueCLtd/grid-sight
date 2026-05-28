@@ -107,6 +107,7 @@ import { registerAnnotationsMenuEntry } from './ui/annotation-popup';
 
 // Navigation & analysis tier 1 (spec 014-navigation-and-analysis)
 import { applyFreezePanes, removeFreezePanes } from './enrichments/freeze-panes';
+import { applySummaryRow, removeSummaryRow } from './enrichments/summary-row';
 
 // Internal InitOptions type. Not exported — see ⚠ note above and
 // specs/012-virtual-columns/research.md §R-13.
@@ -243,6 +244,7 @@ const GridSight = {
       try { unmountFilterChip(table); } catch (e) { /* ignore */ void e; }
       try { tearDownAnnotations(table); } catch (e) { /* ignore */ void e; }
       try { removeFreezePanes(table); } catch (e) { /* ignore */ void e; }
+      try { removeSummaryRow(table); } catch (e) { /* ignore */ void e; }
       try { teardownVisibleRows(table); } catch (e) { /* ignore */ void e; }
       removePlusIcons(table);
       // Remove any virtual-column lozenges that were appended.
@@ -330,6 +332,11 @@ const GridSight = {
     // stays dark when Grid-Sight is globally off (FR-015).
     if (isEnrichmentEnabled('freeze-panes')) {
       try { applyFreezePanes(table); } catch (e) { void e; }
+    }
+
+    // Summary row (spec 014) — auto-rendered aggregate footer, same gating.
+    if (isEnrichmentEnabled('summary-row')) {
+      try { applySummaryRow(table); } catch (e) { void e; }
     }
 
     return processedTable;

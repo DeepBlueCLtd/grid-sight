@@ -59,7 +59,7 @@ describe('enrichment-registry', () => {
       // Virtual columns landed via 012-virtual-columns.
       'cumulative', 'sparkline', 'diff-compare',
       // Navigation & analysis tier 1 landed via 014-navigation-and-analysis.
-      'freeze-panes',
+      'freeze-panes', 'summary-row',
     ];
     for (const id of shipped) {
       const e = ENRICHMENT_REGISTRY.find(x => x.id === id);
