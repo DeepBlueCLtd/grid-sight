@@ -141,6 +141,10 @@
       <h3>6. Virtual columns — Σ cumulative · ⌇ sparkline · Δ compare</h3>
       <p>Append derived columns on the right edge: a running-sum/percent column, an inline trend sparkline per row, and a pairwise column delta. Shareable via the URL fragment.</p>
     </a>
+    <a class="demo-card" href="demo/annotations/index.html">
+      <h3>7. Cell annotations</h3>
+      <p>Spec 006 — attach a note to any cell. Persists per-document, follows its cell across sort/filter, and lists origin-wide in a cross-document popup.</p>
+    </a>
   </div>
 
   <h2>Tables on this page</h2>
@@ -205,7 +209,7 @@
 
   <script>
     // spec 012 — narrow to the shipped enrichments today.
-    window.gridSight = { pageConfig: { enrichments: ['heatmap','sliders','slider-threshold','statistics','frequency','frequency-chart'] } };
+    window.gridSight = { pageConfig: { enrichments: ['heatmap','sliders','slider-threshold','statistics','frequency','frequency-chart','annotations'] } };
   </script>
   <script src="grid-sight.iife.js"></script>
   <script>
