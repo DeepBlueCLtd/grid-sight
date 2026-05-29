@@ -47,6 +47,7 @@ test.describe('Grid-Sight landing page', () => {
       expect.stringContaining('Opt-in playground'),
       expect.stringContaining('Virtual columns'),
       expect.stringContaining('Cell annotations'),
+      expect.stringContaining('Outlier marker'),
     ]));
   });
 
@@ -71,8 +72,8 @@ test.describe('Grid-Sight landing page', () => {
     await expect(page.locator('#featured-table .grid-sight-toggle')).toHaveCount(1);
   });
 
-  test('all seven demo pages linked from the landing page are reachable', async ({ page }) => {
-    // Mirrors the seven `.demo-card` links in public/index.html.
+  test('all eight demo pages linked from the landing page are reachable', async ({ page }) => {
+    // Mirrors the eight `.demo-card` links in public/index.html.
     const paths = [
       '/grid-sight/demo/sliders/interpolation.html',
       '/grid-sight/demo/sliders/alternate-calc-models.html',
@@ -81,6 +82,7 @@ test.describe('Grid-Sight landing page', () => {
       '/grid-sight/demo/toggle/opt-in-playground.html',
       '/grid-sight/demo/virtual-columns.html',
       '/grid-sight/demo/annotations/index.html',
+      '/grid-sight/demo/outlier/measurements.html',
     ];
     for (const p of paths) {
       const resp = await page.goto('http://localhost:3014' + p);
