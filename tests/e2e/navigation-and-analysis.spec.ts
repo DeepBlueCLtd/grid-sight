@@ -297,4 +297,21 @@ test.describe('US4: find-in-table', () => {
     await raf(page);
     await expect(page.locator(LOZENGE)).toHaveCount(1);
   });
+
+  test('an enabled-but-inapplicable enrichment (sliders) shows a disabled corner lozenge', async ({ page }) => {
+    await page.goto(URL);
+    await page.waitForFunction(() => !!(window as any).gridSight);
+    await page.locator('#lookup .grid-sight-toggle').first().click();
+
+    // The lookup table is all text → no numeric axis. Enabling sliders must
+    // surface the corner S lozenge in a disabled state with a reason, not hide it.
+    await page.locator('[data-gs-toggle-panel-root] input[value="sliders"]').check();
+    await raf(page);
+
+    const s = page.locator('#lookup [data-gs-lozenge-id="sliders"]');
+    await expect(s).toHaveCount(1);
+    await expect(s).toHaveAttribute('aria-disabled', 'true');
+    await expect(s).toHaveClass(/gs-lozenge--disabled/);
+    await expect(s).toHaveAttribute('title', /slider/i);
+  });
 });
