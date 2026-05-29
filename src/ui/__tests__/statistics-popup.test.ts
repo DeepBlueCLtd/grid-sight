@@ -47,6 +47,9 @@ describe('StatisticsPopup — spec 014 extension', () => {
       expect(title, 'each bar must carry a <title>').not.toBeNull();
       expect((title!.textContent ?? '').length).toBeGreaterThan(0);
     }
+    // One upright value label per bin, plus bin-edge tick markers.
+    expect(svg!.querySelectorAll('text').length).toBe(stats.histogram.length);
+    expect(svg!.querySelectorAll('line').length).toBeGreaterThan(0);
   });
 
   it('shows the empty-state copy and no histogram when count is 0', () => {

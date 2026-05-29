@@ -18,11 +18,16 @@ const GRID_CLASS = 'gs-statistics-popup__grid';
 
 /** Inline-SVG mini histogram. Bars scale to the tallest bin; each bar carries
  *  a <title> (value range + count) so the shape is legible without colour and
- *  to a screen reader (spec 014 §R-4). */
+ *  to a screen reader (spec 014 §R-4).
+ *
+ *  Bin edges are marked with short vertical ticks rising from the baseline and
+ *  each bin's centre value is drawn as upright text rising from the baseline —
+ *  so it sits *within* a shaded bar (or just above the line for an empty bin),
+ *  adding no vertical height. Labels/ticks use white glyphs with a navy halo
+ *  (paint-order: stroke) so they read over both the blue bars and the gaps. */
 function buildHistogramSvg(histogram: number[], minV: number, maxV: number): SVGElement {
   const width = 256;
   const height = 56;
-  const gap = 1;
   const svg = document.createElementNS(SVG_NS, 'svg');
   svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
   svg.setAttribute('width', String(width));
@@ -33,32 +38,79 @@ function buildHistogramSvg(histogram: number[], minV: number, maxV: number): SVG
   const n = histogram.length;
   if (n === 0) return svg;
   const maxCount = Math.max(...histogram, 1);
-  const barW = Math.max(1, (width - gap * (n - 1)) / n);
+  const binW = width / n;
   const range = maxV - minV;
 
+  // Bars (full bin width; edge ticks below provide the separation).
   for (let i = 0; i < n; i++) {
     const c = histogram[i];
-    const x = i * (barW + gap);
     const h = c === 0 ? 0 : Math.max(1, (c / maxCount) * height);
     const rect = document.createElementNS(SVG_NS, 'rect');
-    rect.setAttribute('x', String(x));
+    rect.setAttribute('x', String(i * binW));
     rect.setAttribute('y', String(height - h));
-    rect.setAttribute('width', String(barW));
+    rect.setAttribute('width', String(binW));
     rect.setAttribute('height', String(h));
     rect.setAttribute('fill', '#4a90e2');
 
     const title = document.createElementNS(SVG_NS, 'title');
-    if (n === 1) {
-      title.textContent = `${formatNumber(minV)}: ${c}`;
-    } else {
-      const lo = minV + (range * i) / n;
-      const hi = minV + (range * (i + 1)) / n;
-      title.textContent = `${formatNumber(lo)}–${formatNumber(hi)}: ${c}`;
-    }
+    const lo = n === 1 ? minV : minV + (range * i) / n;
+    const hi = n === 1 ? maxV : minV + (range * (i + 1)) / n;
+    title.textContent =
+      n === 1 ? `${formatNumber(minV)}: ${c}` : `${formatNumber(lo)}–${formatNumber(hi)}: ${c}`;
     rect.appendChild(title);
     svg.appendChild(rect);
   }
+
+  // Short bin-edge tick markers rising from the baseline (haloed for contrast).
+  for (let e = 0; e <= n; e++) {
+    const x = Math.min(width - 0.5, Math.max(0.5, e * binW));
+    appendHaloedLine(svg, x, height, x, height - 7);
+  }
+
+  // Upright bin-centre value labels rising from the baseline.
+  for (let i = 0; i < n; i++) {
+    const cx = (i + 0.5) * binW;
+    const centre = n === 1 ? minV : minV + (range * (i + 0.5)) / n;
+    appendVerticalLabel(svg, cx, height - 3, formatNumber(centre, range < 5 ? 1 : 0));
+  }
   return svg;
+}
+
+/** A vertical line drawn twice — a white casing under a thin navy line — so it
+ *  stays visible over both the blue bars and the white gaps. */
+function appendHaloedLine(svg: SVGElement, x1: number, y1: number, x2: number, y2: number): void {
+  for (const [stroke, w] of [['#ffffff', 2.4], ['#2b4a6b', 0.9]] as const) {
+    const line = document.createElementNS(SVG_NS, 'line');
+    line.setAttribute('x1', String(x1));
+    line.setAttribute('y1', String(y1));
+    line.setAttribute('x2', String(x2));
+    line.setAttribute('y2', String(y2));
+    line.setAttribute('stroke', stroke);
+    line.setAttribute('stroke-width', String(w));
+    line.setAttribute('stroke-linecap', 'round');
+    svg.appendChild(line);
+  }
+}
+
+/** Upright (bottom-to-top) value label anchored at (x, y), white glyph with a
+ *  navy halo so it reads inside a bar or over the empty baseline gap. */
+function appendVerticalLabel(svg: SVGElement, x: number, y: number, text: string): void {
+  const t = document.createElementNS(SVG_NS, 'text');
+  t.setAttribute('x', String(x));
+  t.setAttribute('y', String(y));
+  t.setAttribute('transform', `rotate(-90 ${x} ${y})`);
+  t.setAttribute('text-anchor', 'start');
+  t.setAttribute('dominant-baseline', 'central');
+  t.setAttribute('font-size', '7.5');
+  t.setAttribute('font-weight', '700');
+  t.setAttribute('font-family', '-apple-system, system-ui, sans-serif');
+  t.setAttribute('fill', '#ffffff');
+  t.setAttribute('stroke', '#2b4a6b');
+  t.setAttribute('stroke-width', '2.2');
+  t.setAttribute('paint-order', 'stroke');
+  t.setAttribute('stroke-linejoin', 'round');
+  t.textContent = text;
+  svg.appendChild(t);
 }
 
 // CSS styles for the popup
