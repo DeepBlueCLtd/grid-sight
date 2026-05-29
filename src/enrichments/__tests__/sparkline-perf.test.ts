@@ -48,28 +48,34 @@ beforeEach(() => {
 });
 
 describe('sparkline perf smoke (jsdom)', () => {
-  it('renders 1 000 rows × 10 numeric columns inside the jsdom smoke budget', () => {
-    const table = makePerfTable(1000, 10);
-    const start = performance.now();
-    activateDirective({
-      id: 'spark',
-      kind: 'sparkline',
-      tableEl: table,
-      scale: 'per-row',
-      style: 'bar',
-    });
-    const elapsed = performance.now() - start;
-    // jsdom on commodity CI runners is ~5-10× slower than real Chromium for
-    // SVG construction; the spec-level budget (SC-002, < 200 ms) is enforced
-    // by the Playwright run on Chromium in T057. This smoke ceiling is here
-    // to catch catastrophic regressions (e.g. O(n²) growth) without flaking
-    // on slow runners. NOTE: `elapsed` is wall-clock around a synchronous
-    // render, so it absorbs CPU contention from sibling vitest workers + the
-    // concurrent Storybook browser project. The isolated render is ~2.4 s; the
-    // ceiling carries generous headroom over that so a busy full-suite run
-    // does not flake while a true O(n²) blow-up (seconds→minutes) still trips.
-    expect(elapsed).toBeLessThan(5000);
-    // Confirm the work actually happened.
-    expect(table.querySelectorAll('td[data-gs-virtual-column="sparkline"] svg').length).toBe(1000);
-  });
+  // This is a wall-clock smoke test, and the unit suite runs in parallel with
+  // the Storybook browser project, so a single sample can be starved by a
+  // transient CPU spike on a shared runner (observed up to ~3.3 s vs ~2 s
+  // uncontended). To stay a regression guard without flaking we:
+  //   • give the ceiling headroom over the worst observed contended sample, and
+  //   • retry a couple of times so a one-off scheduler spike re-runs rather than
+  //     failing the suite.
+  // A genuine algorithmic regression (e.g. O(n²) growth) is slow on every run —
+  // minutes at this fixture size — so it still trips the ceiling. The real
+  // wall-clock budget (SC-002, < 200 ms) is enforced by the Playwright run on
+  // Chromium.
+  it(
+    'renders 1 000 rows × 10 numeric columns inside the jsdom smoke budget',
+    { retry: 2 },
+    () => {
+      const table = makePerfTable(1000, 10);
+      const start = performance.now();
+      activateDirective({
+        id: 'spark',
+        kind: 'sparkline',
+        tableEl: table,
+        scale: 'per-row',
+        style: 'bar',
+      });
+      const elapsed = performance.now() - start;
+      expect(elapsed).toBeLessThan(4500);
+      // Confirm the work actually happened.
+      expect(table.querySelectorAll('td[data-gs-virtual-column="sparkline"] svg').length).toBe(1000);
+    },
+  );
 });

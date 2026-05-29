@@ -20,10 +20,11 @@
     { path: 'toggle/opt-in-playground.html', label: '5. Opt-in playground' },
     { path: 'virtual-columns.html', label: '6. Virtual columns' },
     { path: 'annotations/index.html', label: '7. Cell annotations' },
-    { path: 'freeze-panes/index.html', label: '8. Freeze panes' },
-    { path: 'statistics/index.html', label: '9. Statistics' },
-    { path: 'summary-row/index.html', label: '10. Summary row' },
-    { path: 'find-in-table/index.html', label: '11. Find in table' }
+    { path: 'outlier/measurements.html', label: '8. Outlier marker' },
+    { path: 'freeze-panes/index.html', label: '9. Freeze panes' },
+    { path: 'statistics/index.html', label: '10. Statistics' },
+    { path: 'summary-row/index.html', label: '11. Summary row' },
+    { path: 'find-in-table/index.html', label: '12. Find in table' }
   ];
 
   var STYLE_ID = 'gs-demo-nav-styles';

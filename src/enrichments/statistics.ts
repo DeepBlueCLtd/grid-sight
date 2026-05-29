@@ -3,11 +3,10 @@ import {
   median,
   min,
   max,
-  standardDeviation,
-  variance as sampleVariance,
   sum,
-  quantile,
+  quantile
 } from 'simple-statistics';
+import { populationStdDev } from '../core/column-statistics';
 
 /** Number of equal-width bins in the mini histogram (spec 014 §R-4). */
 export const HISTOGRAM_BINS = 10;
@@ -94,15 +93,26 @@ export function calculateStatistics(values: number[], missing = 0): StatisticsRe
   const minV = min(validValues);
   const maxV = max(validValues);
 
+  // σ is the POPULATION standard deviation (÷ n), derived from the single
+  // shared authority in core/column-statistics so the statistics popup and the
+  // outlier tooltip can never disagree (spec 004-outlier FR-024/SC-006,
+  // research R-1). variance is reported as population variance (σ²) to stay
+  // consistent with the reported σ.
+  const m = mean(validValues);
+  const stdDev = populationStdDev(validValues, m);
+
   return {
     count,
     sum: sum(validValues),
     min: minV,
     max: maxV,
-    mean: mean(validValues),
+    // Population σ / σ² from the shared column-statistics authority so the
+    // statistics popup and the outlier tooltip can never disagree (spec 004
+    // FR-024/SC-006), merged with the spec-014 profile fields.
+    mean: m,
     median: median(validValues),
-    stdDev: standardDeviation(validValues),
-    variance: sampleVariance(validValues),
+    stdDev,
+    variance: stdDev * stdDev,
     missing: missingCount,
     missingPct,
     distinct: new Set(validValues).size,

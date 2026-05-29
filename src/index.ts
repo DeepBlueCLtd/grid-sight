@@ -105,6 +105,9 @@ import { mountTogglePanel } from './ui/toggle-panel';
 import { applyAnnotations, tearDownAnnotations, consumeNavigationHint } from './enrichments/annotations';
 import { registerAnnotationsMenuEntry } from './ui/annotation-popup';
 
+// Outlier marker enrichment (spec 004-outlier)
+import { applyOutliers, tearDownOutliers } from './enrichments/outlier';
+
 // Navigation & analysis tier 1 (spec 014-navigation-and-analysis)
 import { applyFreezePanes, removeFreezePanes } from './enrichments/freeze-panes';
 import { applySummaryRow, removeSummaryRow } from './enrichments/summary-row';
@@ -246,6 +249,7 @@ const GridSight = {
       if (toggle) toggle.remove();
       try { unmountFilterChip(table); } catch (e) { /* ignore */ void e; }
       try { tearDownAnnotations(table); } catch (e) { /* ignore */ void e; }
+      try { tearDownOutliers(table); } catch (e) { /* ignore */ void e; }
       try { removeFreezePanes(table); } catch (e) { /* ignore */ void e; }
       try { removeSummaryRow(table); } catch (e) { /* ignore */ void e; }
       try { removeFindUi(table); } catch (e) { /* ignore */ void e; }
@@ -331,6 +335,11 @@ const GridSight = {
     // Cell annotations — gated internally on the `annotations` enrichment
     // being in the effective enabled set (spec 006).
     try { applyAnnotations(table); } catch (e) { void e; }
+
+    // Outlier markers — restore any persisted `gs.o` directives before the
+    // table content settles (spec 004, SC-003). Gated on the enrichment being
+    // in the effective enabled set.
+    try { if (isEnrichmentEnabled('outlier')) applyOutliers(table); } catch (e) { void e; }
 
     // Freeze panes (spec 014) — auto-rendered; gated on the enabled set so it
     // stays dark when Grid-Sight is globally off (FR-015).

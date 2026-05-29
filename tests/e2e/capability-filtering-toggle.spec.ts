@@ -54,6 +54,8 @@ test.describe('US2: live enrichment toggle panel', () => {
       'cumulative',
       'sparkline',
       'diff-compare',
+      // Shipped via 004-outlier.
+      'outlier',
       // Shipped via 014-navigation-and-analysis.
       'freeze-panes',
       'summary-row',

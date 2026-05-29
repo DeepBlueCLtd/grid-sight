@@ -76,7 +76,9 @@
   </p>
 
   <h2>Sales by region</h2>
-  <table id="sales-table">
+  <!-- This demo showcases virtual columns; opt out of the outlier marker
+       (spec 004) so the header cluster stays focused on the Δ/Σ/sparkline flow. -->
+  <table id="sales-table" data-gs-no-outlier>
     <thead>
       <tr><th>Region</th><th>Q1</th><th>Q2</th><th>Q3</th><th>Q4</th><th>Weight</th></tr>
     </thead>
