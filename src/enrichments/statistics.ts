@@ -8,8 +8,18 @@ import {
 } from 'simple-statistics';
 import { populationStdDev } from '../core/column-statistics';
 
-/** Number of equal-width bins in the mini histogram (spec 014 §R-4). */
-export const HISTOGRAM_BINS = 10;
+/** Mini-histogram bin count: a capped square-root rule — `k = clamp(⌈√n⌉,
+ *  MIN, MAX)` over the finite-value count `n` (spec 014 §R-4, revised). It
+ *  adapts to the data size while staying legible at thumbnail width and bounding
+ *  the per-bin label budget; Freedman–Diaconis is more "correct" for skewed data
+ *  but produces a variable/huge count that would need clamping anyway. */
+export const MIN_HISTOGRAM_BINS = 5;
+export const MAX_HISTOGRAM_BINS = 12;
+export function histogramBinCount(n: number): number {
+  if (n <= 1) return 1;
+  const k = Math.ceil(Math.sqrt(n));
+  return Math.min(MAX_HISTOGRAM_BINS, Math.max(MIN_HISTOGRAM_BINS, k));
+}
 
 export interface StatisticsResult {
   count: number;
@@ -32,22 +42,25 @@ export interface StatisticsResult {
   q1: number;
   /** 75th percentile. */
   q3: number;
-  /** Counts for HISTOGRAM_BINS equal-width bins over [min, max]; a single
-   *  full bar `[count]` when every value is equal; `[]` when count is 0. */
+  /** Equal-width bin counts over [min, max]; the count is `histogramBinCount`
+   *  of the value count (capped √n). A single full bar `[count]` when every
+   *  value is equal; `[]` when count is 0. */
   histogram: number[];
 }
 
-/** Build the equal-width bin counts over [minV, maxV]. The max value lands in
- *  the last bin; an all-equal column collapses to a single full bar. */
+/** Build the equal-width bin counts over [minV, maxV]. The bin count follows
+ *  the capped √n rule (`histogramBinCount`); the max value lands in the last
+ *  bin; an all-equal column collapses to a single full bar. */
 function buildHistogram(values: number[], minV: number, maxV: number): number[] {
   if (values.length === 0) return [];
   if (minV === maxV) return [values.length]; // all-equal → one bar
-  const width = (maxV - minV) / HISTOGRAM_BINS;
-  const bins = new Array<number>(HISTOGRAM_BINS).fill(0);
+  const binCount = histogramBinCount(values.length);
+  const width = (maxV - minV) / binCount;
+  const bins = new Array<number>(binCount).fill(0);
   for (const v of values) {
     let idx = Math.floor((v - minV) / width);
     if (idx < 0) idx = 0;
-    if (idx >= HISTOGRAM_BINS) idx = HISTOGRAM_BINS - 1;
+    if (idx >= binCount) idx = binCount - 1;
     bins[idx] += 1;
   }
   return bins;

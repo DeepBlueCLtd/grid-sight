@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { quantile } from 'simple-statistics';
-import { calculateStatistics, HISTOGRAM_BINS } from '../statistics';
+import { calculateStatistics, histogramBinCount } from '../statistics';
 import {
   computeColumnStatistics,
   columnNumericValues,
@@ -49,13 +49,21 @@ describe('calculateStatistics — spec 014 extension', () => {
     expect(r.missingPct).toBe(0);
   });
 
-  it('builds HISTOGRAM_BINS bins; the max value lands in the last bin', () => {
-    const values = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+  it('bins with the capped √n rule; counts sum to n and the max lands last', () => {
+    const values = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]; // 11 values → ⌈√11⌉=4 → floor 5
     const r = calculateStatistics(values);
-    expect(r.histogram.length).toBe(HISTOGRAM_BINS);
+    expect(r.histogram.length).toBe(histogramBinCount(values.length));
+    expect(r.histogram.length).toBe(5);
     expect(r.histogram.reduce((a, b) => a + b, 0)).toBe(values.length);
-    expect(r.histogram[0]).toBe(1); // just 0 (width 1, [0,1))
-    expect(r.histogram[HISTOGRAM_BINS - 1]).toBe(2); // 9 and 10 both clamp to last bin
+    expect(r.histogram[r.histogram.length - 1]).toBeGreaterThanOrEqual(1); // max in last bin
+  });
+
+  it('histogramBinCount clamps a square-root rule to [5, 12]', () => {
+    expect(histogramBinCount(1)).toBe(1); // degenerate
+    expect(histogramBinCount(4)).toBe(5); // ⌈√4⌉=2 → floored to 5
+    expect(histogramBinCount(36)).toBe(6); // ⌈√36⌉=6
+    expect(histogramBinCount(100)).toBe(10); // ⌈√100⌉=10
+    expect(histogramBinCount(1000)).toBe(12); // ⌈√1000⌉=32 → capped to 12
   });
 
   it('collapses an all-equal column to a single full bar', () => {

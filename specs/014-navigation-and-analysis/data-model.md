@@ -19,7 +19,7 @@ Grows the existing `StatisticsResult` (`src/enrichments/statistics.ts`).
 | **distinct** | number | NEW. Size of the set of finite numeric values. |
 | **q1** | number | NEW. 25th percentile (`simple-statistics.quantile`). |
 | **q3** | number | NEW. 75th percentile. |
-| **histogram** | number[] | NEW. 10 equal-width bin counts over [min, max]; `[]` when count 0. |
+| **histogram** | number[] | NEW. Equal-width bin counts over [min, max]; bin count = `clamp(⌈√n⌉, 5, 12)` (capped √n, R-4 revised); `[count]` when all-equal; `[]` when count 0. |
 
 **Validation / state**:
 
