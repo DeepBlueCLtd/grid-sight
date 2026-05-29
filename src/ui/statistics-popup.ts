@@ -14,6 +14,7 @@ const STAT_LABEL_CLASS = 'gs-statistics-popup__stat-label';
 const STAT_VALUE_CLASS = 'gs-statistics-popup__stat-value';
 const HISTOGRAM_CLASS = 'gs-statistics-popup__histogram';
 const EMPTY_CLASS = 'gs-statistics-popup__empty';
+const GRID_CLASS = 'gs-statistics-popup__grid';
 
 /** Inline-SVG mini histogram. Bars scale to the tallest bin; each bar carries
  *  a <title> (value range + count) so the shape is legible without colour and
@@ -69,8 +70,8 @@ const POPUP_STYLES = `
   border-radius: 6px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
   z-index: 10000;
-  min-width: 280px;
-  max-width: 320px;
+  min-width: 360px;
+  max-width: 440px;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   font-size: 13px;
   line-height: 1.4;
@@ -121,21 +122,36 @@ const POPUP_STYLES = `
   padding: 12px;
 }
 
+/* Two-column profile: figures flow column-major so the left column is
+   counts + central tendency and the right column is spread / quartiles /
+   dispersion. Halves the popup height versus a single stacked list. */
+.${GRID_CLASS} {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: repeat(6, auto);
+  grid-auto-flow: column;
+  column-gap: 18px;
+}
+
 .${STAT_ITEM_CLASS} {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  padding: 6px 0;
-  border-bottom: 1px solid #f8f8f8;
+  align-items: baseline;
+  gap: 10px;
+  padding: 4px 0;
+  border-bottom: 1px solid #f1f1f1;
 }
 
-.${STAT_ITEM_CLASS}:last-child {
+/* Drop the rule under the last cell of each column (rows 6 and 12). */
+.${GRID_CLASS} .${STAT_ITEM_CLASS}:nth-child(6),
+.${GRID_CLASS} .${STAT_ITEM_CLASS}:nth-child(12) {
   border-bottom: none;
 }
 
 .${STAT_LABEL_CLASS} {
   color: #666;
   margin-right: 12px;
+  white-space: nowrap;
 }
 
 .${STAT_VALUE_CLASS} {
@@ -279,20 +295,31 @@ export class StatisticsPopup {
         this.contentElement.appendChild(this.createStatItem('Missing', missingValue));
       }
     } else {
-      // Profile rows. Q1/Q3 sit either side of the median; the new Missing /
-      // Distinct figures lead so the data-quality read is immediate.
-      this.contentElement.appendChild(this.createStatItem('Count', stats.count.toString()));
-      this.contentElement.appendChild(this.createStatItem('Missing', missingValue));
-      this.contentElement.appendChild(this.createStatItem('Distinct', stats.distinct.toString()));
-      this.contentElement.appendChild(this.createStatItem('Sum', this.formatNumber(stats.sum)));
-      this.contentElement.appendChild(this.createStatItem('Min', this.formatNumber(stats.min)));
-      this.contentElement.appendChild(this.createStatItem('Q1', this.formatNumber(stats.q1)));
-      this.contentElement.appendChild(this.createStatItem('Median', this.formatNumber(stats.median)));
-      this.contentElement.appendChild(this.createStatItem('Q3', this.formatNumber(stats.q3)));
-      this.contentElement.appendChild(this.createStatItem('Max', this.formatNumber(stats.max)));
-      this.contentElement.appendChild(this.createStatItem('Mean', this.formatNumber(stats.mean)));
-      this.contentElement.appendChild(this.createStatItem('Std Dev', this.formatNumber(stats.stdDev)));
-      this.contentElement.appendChild(this.createStatItem('Variance', this.formatNumber(stats.variance)));
+      // Two-column profile (column-major): the grid fills the left column first,
+      // so column 1 = counts + central tendency and column 2 = spread / quartiles
+      // / dispersion. Six rows instead of twelve ≈ half the height.
+      const grid = document.createElement('div');
+      grid.className = GRID_CLASS;
+      const rows: Array<[string, string]> = [
+        // Left column (counts + central tendency)
+        ['Count', stats.count.toString()],
+        ['Missing', missingValue],
+        ['Distinct', stats.distinct.toString()],
+        ['Sum', this.formatNumber(stats.sum)],
+        ['Mean', this.formatNumber(stats.mean)],
+        ['Median', this.formatNumber(stats.median)],
+        // Right column (spread / quartiles / dispersion)
+        ['Min', this.formatNumber(stats.min)],
+        ['Q1', this.formatNumber(stats.q1)],
+        ['Q3', this.formatNumber(stats.q3)],
+        ['Max', this.formatNumber(stats.max)],
+        ['Std Dev', this.formatNumber(stats.stdDev)],
+        ['Variance', this.formatNumber(stats.variance)],
+      ];
+      for (const [label, value] of rows) {
+        grid.appendChild(this.createStatItem(label, value));
+      }
+      this.contentElement.appendChild(grid);
 
       if (stats.histogram.length > 0) {
         const histWrap = document.createElement('div');
