@@ -36,11 +36,19 @@
     “show list” affordance (or press <kbd>Shift</kbd>+<kbd>Enter</kbd>).
   </p>
   <p class="hint">
-    The <strong>first</strong> click uses the default <strong>2σ</strong> threshold —
-    the textbook “unusual” cut-off. The <strong>Latency</strong> spike (200) and the
-    <strong>Throughput</strong> spike (1000) both sit beyond 2σ, so they flag on the
-    very first click. On tightly-clustered data with no value past 2σ, the first click
-    correctly marks nothing; click again to relax the threshold to 1σ.
+    <strong>Reading the lozenge:</strong> the digit is the σ (standard-deviation)
+    cut-off, <em>not</em> a step counter. Clicking cycles
+    <code>2σ → 1σ → 3σ → off</code>, starting at the default 2σ (the textbook
+    “unusual” threshold). A cell flags only when its value is more than that many
+    standard deviations from the column mean.
+  </p>
+  <p class="hint">
+    <strong>Lower σ = more sensitive = more cells; higher σ = stricter = fewer.</strong>
+    So you see the <em>most</em> cells at 1σ and the <em>fewest</em> at 3σ — not the
+    other way round. On <strong>Latency</strong> the biggest spike (200) is only
+    ≈ 2.5σ from the mean, so it flags at 2σ (1 cell) and 1σ (5 cells) but
+    <strong>not at 3σ</strong> — nothing in this column is that extreme, so 3σ
+    correctly marks nothing.
   </p>
   <p class="hint">
     The <strong>Baseline</strong> column is all-equal (σ = 0) so its lozenge is
