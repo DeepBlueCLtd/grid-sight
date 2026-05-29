@@ -20,10 +20,10 @@ const GRID_CLASS = 'gs-statistics-popup__grid';
  *  a <title> (value range + count) so the shape is legible without colour and
  *  to a screen reader (spec 014 §R-4).
  *
- *  Bin edges are marked with short vertical ticks rising from the baseline and
- *  each bin's centre value is drawn as upright text rising from the baseline —
- *  so it sits *within* a shaded bar (or just above the line for an empty bin),
- *  adding no vertical height. Labels/ticks use white glyphs with a navy halo
+ *  Bin edges get short vertical tick markers rising from the baseline and each
+ *  bin's centre value is drawn as small upright text just above the baseline —
+ *  so it reads within a shaded bar (or over the gap for an empty bin), adding no
+ *  vertical height. Labels/ticks use white glyphs with a navy halo
  *  (paint-order: stroke) so they read over both the blue bars and the gaps. */
 function buildHistogramSvg(histogram: number[], minV: number, maxV: number): SVGElement {
   const width = 256;
@@ -67,11 +67,11 @@ function buildHistogramSvg(histogram: number[], minV: number, maxV: number): SVG
     appendHaloedLine(svg, x, height, x, height - 7);
   }
 
-  // Upright bin-centre value labels rising from the baseline.
+  // Upright bin-centre value labels sitting just above the baseline.
   for (let i = 0; i < n; i++) {
     const cx = (i + 0.5) * binW;
     const centre = n === 1 ? minV : minV + (range * (i + 0.5)) / n;
-    appendVerticalLabel(svg, cx, height - 3, formatNumber(centre, range < 5 ? 1 : 0));
+    appendBinLabel(svg, cx, height - 3, formatNumber(centre, range < 5 ? 1 : 0));
   }
   return svg;
 }
@@ -92,16 +92,15 @@ function appendHaloedLine(svg: SVGElement, x1: number, y1: number, x2: number, y
   }
 }
 
-/** Upright (bottom-to-top) value label anchored at (x, y), white glyph with a
- *  navy halo so it reads inside a bar or over the empty baseline gap. */
-function appendVerticalLabel(svg: SVGElement, x: number, y: number, text: string): void {
+/** Small upright value label centred horizontally at `x` with its baseline at
+ *  `y`; white glyph with a navy halo so it reads inside a bar or over the empty
+ *  baseline gap. */
+function appendBinLabel(svg: SVGElement, x: number, y: number, text: string): void {
   const t = document.createElementNS(SVG_NS, 'text');
   t.setAttribute('x', String(x));
   t.setAttribute('y', String(y));
-  t.setAttribute('transform', `rotate(-90 ${x} ${y})`);
-  t.setAttribute('text-anchor', 'start');
-  t.setAttribute('dominant-baseline', 'central');
-  t.setAttribute('font-size', '7.5');
+  t.setAttribute('text-anchor', 'middle');
+  t.setAttribute('font-size', '8');
   t.setAttribute('font-weight', '700');
   t.setAttribute('font-family', '-apple-system, system-ui, sans-serif');
   t.setAttribute('fill', '#ffffff');
