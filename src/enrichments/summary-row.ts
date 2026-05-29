@@ -24,6 +24,7 @@ export type Aggregate = 'sum' | 'avg' | 'min' | 'max' | 'count';
 const FOOT_ATTR = 'data-gs-injected';
 const ROW_CLASS = 'gs-summary-row';
 const VALUE_CLASS = 'gs-summary-value';
+const LABEL_CLASS = 'gs-summary-label';
 const STORAGE_VERSION = 1;
 
 const VALID: ReadonlySet<string> = new Set<Aggregate>(['sum', 'avg', 'min', 'max', 'count']);
@@ -160,6 +161,14 @@ function columnIsNumeric(table: HTMLTableElement, colIndex: number): boolean {
   return columnCells(table, colIndex).some((c) => cleanNumericCell(cellValue(c)) !== null);
 }
 
+/** A row-header / identifier column — its body cells are all `<th>` (e.g.
+ *  `<th scope="row">`). Such columns hold labels, not data, so the summary row
+ *  shows a "Total" caption there rather than (mis-)aggregating them. */
+function isRowHeaderColumn(table: HTMLTableElement, colIndex: number): boolean {
+  const cells = columnCells(table, colIndex);
+  return cells.length > 0 && cells.every((c) => c.tagName === 'TH');
+}
+
 function visibleColumnTexts(table: HTMLTableElement, colIndex: number): string[] {
   return visibleBodyRows(table).map((row) => {
     const cell = gridCells(row)[colIndex];
@@ -218,14 +227,26 @@ export function applySummaryRow(table: HTMLTableElement): void {
   footRow.setAttribute(FOOT_ATTR, '');
 
   for (let i = 0; i < colCount; i++) {
+    const td = document.createElement('td');
+    td.setAttribute(FOOT_ATTR, '');
+
+    // Identifier columns (row-header <th> cells) are not data — caption them
+    // "Total" and never aggregate them (spec 014 review).
+    if (isRowHeaderColumn(table, i)) {
+      const label = document.createElement('span');
+      label.className = LABEL_CLASS;
+      label.textContent = 'Total';
+      td.appendChild(label);
+      footRow.appendChild(td);
+      continue;
+    }
+
     const numeric = columnIsNumeric(table, i);
     const def: Aggregate = numeric ? 'sum' : 'count';
     const restored = persisted[i];
     const choice: Aggregate = restored && (numeric || restored === 'count') ? restored : def;
     choices.set(i, choice);
 
-    const td = document.createElement('td');
-    td.setAttribute(FOOT_ATTR, '');
     const valueSpan = document.createElement('span');
     valueSpan.className = VALUE_CLASS;
     td.appendChild(valueSpan);

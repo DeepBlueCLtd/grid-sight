@@ -32,6 +32,15 @@ const GS_OWNED_SELECTOR = [
   '[data-gs-slider-readout]',
   '[data-gs-lozenge-id]',
   '[data-gs-vc-kind]',
+  // Cell-annotation note text (spec 006): the corner marker and the
+  // visually-hidden aria-description node carry the GS-injected note body, which
+  // is NOT author data — exclude it so column typing, search, and aggregates
+  // read the underlying cell value. (The pin button is deliberately NOT listed:
+  // its glyph is a symbol that does not affect numeric detection, and every
+  // cell carries one — matching it here would force cellValue onto its clone
+  // path for every cell and regress sort/aggregate performance.)
+  '.gs-annotation-marker',
+  '.gs-annotation-aria',
 ].join(',');
 
 /* ── Classification ─────────────────────────────────────────────────── */

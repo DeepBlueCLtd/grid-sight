@@ -83,10 +83,32 @@ describe('summary-row — footer rendering (jsdom)', () => {
     expect(cells.every((c) => c.hasAttribute('data-gs-injected'))).toBe(true);
     expect(footRow.hasAttribute('data-gs-injected')).toBe(true);
 
-    const vals = cells.map((c) => c.querySelector('.gs-summary-value')!.textContent);
-    expect(vals[0]).toBe('3'); // count of A, B, C
-    expect(vals[1]).toBe('10'); // 2 + 3 + 5
-    expect(vals[2]).toBe('30'); // 10 + 20 (blank excluded)
+    // Column 0 (Item) is a row-header column (<th> cells) → "Total" caption,
+    // not an aggregate.
+    expect(cells[0].querySelector('.gs-summary-label')!.textContent).toBe('Total');
+    expect(cells[0].querySelector('.gs-summary-value')).toBeNull();
+    // Numeric data columns still aggregate (sum by default).
+    expect(cells[1].querySelector('.gs-summary-value')!.textContent).toBe('10'); // 2 + 3 + 5
+    expect(cells[2].querySelector('.gs-summary-value')!.textContent).toBe('30'); // 10 + 20
+  });
+
+  it('does not aggregate a row-header column even if its labels look numeric', () => {
+    // Numeric-looking row headers (e.g. axis labels) must still be captioned,
+    // not summed.
+    const t = document.createElement('table');
+    t.id = 'num-headers';
+    t.innerHTML =
+      '<thead><tr><th>R</th><th>v</th></tr></thead>' +
+      '<tbody>' +
+      '<tr><th>1000</th><td>4.2</td></tr>' +
+      '<tr><th>2000</th><td>3.6</td></tr>' +
+      '</tbody>';
+    document.body.appendChild(t);
+    applySummaryRow(t);
+    const footRow = t.tFoot!.querySelector('tr.gs-summary-row') as HTMLTableRowElement;
+    expect(footRow.cells[0].querySelector('.gs-summary-label')!.textContent).toBe('Total');
+    expect(footRow.cells[0].querySelector('.gs-summary-value')).toBeNull();
+    expect(footRow.cells[1].querySelector('.gs-summary-value')!.textContent).toBe('7.8');
   });
 
   it('renders a keyboard-operable button control for numeric columns', () => {

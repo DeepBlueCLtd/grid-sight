@@ -397,13 +397,15 @@ export function injectToggle(table: HTMLTableElement): boolean {
         
         if (isActive) {
           table.classList.add(TABLE_ENABLED_CLASS);
-          // Extract table data and analyze column types. Skip Grid-Sight-injected
-          // scaffold rows (e.g. the summary-row <tfoot>, spec 014) — they are not
-          // author data and would otherwise skew column typing and suppress a
-          // column's lozenges (spec 013: scaffold is never the logical grid).
+          // Extract table data and analyze column types. Read the AUTHOR value
+          // (cellValue strips GS-injected UI such as annotation pins/markers and
+          // lozenges) and skip injected scaffold rows (e.g. the summary-row
+          // <tfoot>, spec 014). Using raw textContent here let an annotated
+          // numeric cell ("1200" + note) read as non-numeric and suppress a
+          // column's lozenges (spec 013: scaffold/UI is never the logical grid).
           const rows = Array.from(table.rows)
             .filter(row => !row.hasAttribute('data-gs-injected'))
-            .map(row => Array.from(row.cells).map(cell => cell.textContent || ''));
+            .map(row => Array.from(row.cells).map(cell => cellValue(cell)));
           const { columnTypes } = analyzeTable(rows);
           // Cache column types for the toggle-panel refresh path (spec 012 R-10).
           setColumnTypes(table, columnTypes);

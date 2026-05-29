@@ -29,6 +29,7 @@ const SUMMARY_CSS =
   '.gs-summary-row td{border-top:2px solid #cfd8e3;background:var(--gs-summary-bg,#f7f9fc);' +
   'font-variant-numeric:tabular-nums;white-space:nowrap}' +
   '.gs-summary-value{font-weight:600;margin-right:6px}' +
+  '.gs-summary-label{font-weight:600;color:#456}' +
   '.gs-summary-kind{color:#789;font-size:11px}' +
   '.gs-summary-agg{font:600 10px/1 system-ui,sans-serif;color:#456;background:#e7edf5;' +
   'border:1px solid #c4d0de;border-radius:8px;padding:1px 6px;cursor:pointer}' +

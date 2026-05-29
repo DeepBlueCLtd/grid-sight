@@ -17,17 +17,7 @@
   </style>
 </head>
 <body>
-  <nav style="margin-bottom:16px; padding:8px 0; border-bottom:1px solid #ddd; font-size:14px;">
-    <strong>Grid-Sight demos:</strong>
-    <a href="../../">Home</a> ·
-    <a href="interpolation.html">1. Interpolation</a> ·
-    <a href="alternate-calc-models.html">2. Alternate calc models</a> ·
-    <a href="synced-tables.html">3. Persistent URL</a> ·
-    <a href="../toggle/live-enrichments.html">4. Live toggles — start with everything on</a> ·
-    <a href="../toggle/opt-in-playground.html">5. Opt-in playground — start with nothing on</a> ·
-    <a href="../virtual-columns.html">6. Virtual columns</a> ·
-    <a href="../annotations/index.html">7. Cell annotations</a>
-  </nav>
+  <nav data-gs-demo-nav></nav>
   <h1>Slider · Alternate Calculation Models</h1>
   <p>Each table samples a different formula over the same axes, so values are
      similar in shape but not identical. Add a row slider — both tables show
@@ -79,5 +69,6 @@
       if (b) window.gridSight.registerFormula(b, (r, s) => Math.log10(s) + 25 / Math.sqrt(r) + 2, { expression: 'log₁₀(sl) + 25/√range + 2' });
     });
   </script>
+  <script src="../nav.js"></script>
 </body>
 </html>
