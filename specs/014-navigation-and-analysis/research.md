@@ -93,17 +93,25 @@ the "recompute when the visible set changes" clause while open. Rejected.
 
 **Decision**: Render an inline SVG bar histogram inside the popup content,
 reusing the rendering approach of `src/enrichments/sparkline-svg.ts` (in-DOM
-`<svg>` with `<rect>` bars, no external assets). **10 equal-width bins** over
-[min, max] by default; an all-equal column collapses to a single full bar. Bars
-get an SVG `<title>` (range + count) for a non-colour, screen-reader-legible
-signal.
+`<svg>` with `<rect>` bars, no external assets). The bin count uses a **capped
+square-root rule** — `k = clamp(⌈√n⌉, 5, 12)` over the finite-value count `n`
+(revised from the original fixed-10 during review) — so the chart adapts to the
+data size while staying legible at thumbnail width. An all-equal column
+collapses to a single full bar. Bars get an SVG `<title>` (range + count); bin
+edges get short baseline ticks and each bin's centre value is drawn as small
+upright text just above the baseline (white glyph + navy halo so it reads inside
+a bar or over the gap) — all non-colour, screen-reader-legible, and adding no
+vertical height.
 
-**Rationale**: Fixed 10 bins is predictable, cheap, and adequate for a "shape at
-a glance" read. SVG reuse avoids new rendering code/bytes and stays offline.
+**Rationale**: √n is the cheap, common default (no IQR needed) and predictable;
+the [5, 12] clamp keeps the chart legible and bounds the per-bin label budget at
+thumbnail size. Fixed-10 over-binned small columns; unbounded rules over-binned
+large/skewed ones.
 
-**Alternatives**: Freedman–Diaconis / Sturges adaptive binning — more "correct"
-but more code and variable bar counts that complicate layout. Recorded as a
-possible refinement; not v1.
+**Alternatives**: fixed 10 bins (original; over-bins small columns, mis-serves
+large ones). Freedman–Diaconis / Sturges — more "correct" for skewed data but
+FD explodes the bin count for outlier-heavy columns (would need clamping anyway)
+and adds IQR computation; not worth it for a glanceable mini-chart.
 
 ---
 

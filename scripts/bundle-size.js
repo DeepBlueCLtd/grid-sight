@@ -24,6 +24,8 @@
  *   - 45 KB: raised when 004-outlier merged on top (+~3.7 KB gz: shared
  *            column-statistics, the lozenge/popup/tooltip UI, marker paint,
  *            and gs.o persistence).
+ *   - 50 KB: raised when 014-navigation-and-analysis merged on top of 004-outlier
+ *            (freeze-panes + statistics extension + summary-row + find-in-table).
  *
  * Flags:
  *   --soft   warn-only (does not exit non-zero on overage); use for local
@@ -51,9 +53,11 @@ const BUNDLE = path.resolve(__dirname, '..', 'dist', 'grid-sight.iife.js');
 // 35 → 37 KB when the spec-012 sparkline interactions (US4) + scale toggle
 // (US5) + mock-VRS test globals merged on top of the slider panel, then
 // 37 → 42 KB when 006-cell-annotations merged on top (+~4.4 KB gz), then
-// 42 → 45 KB when 004-outlier merged on top (combined gz ~44.97 KB).
+// 42 → 45 KB when 004-outlier merged on top (combined gz ~44.97 KB), then
+// 45 → 50 KB when 014-navigation-and-analysis merged on top of 004-outlier
+// (freeze-panes + statistics extension + summary-row + find-in-table).
 // Constitution §I 10 KB target unchanged.
-const MAX_GZ_KB = 45;
+const MAX_GZ_KB = 50;
 const CONSTITUTION_TARGET_KB = 10;
 
 const soft = process.argv.includes('--soft');

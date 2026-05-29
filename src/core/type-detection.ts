@@ -31,7 +31,15 @@ export function cleanNumericCell(value: string | number | null | undefined): num
   // Handle empty strings
   const trimmed = value.trim();
   if (!trimmed) return null;
-  
+
+  // Reject identifier-like strings. A genuine number contains no ASCII letters,
+  // so values such as "S-001", "R-1001", "item10" or "N/A" are NOT numbers.
+  // Without this guard the strip-non-digits step below turned "S-001" into -1,
+  // mis-classifying ID columns as numeric (spec 014 review: summary-row summed
+  // them; the slider axis-binder offered spurious axes). Currency symbols,
+  // commas, %, sign and decimals are not letters and still parse.
+  if (/[a-zA-Z]/.test(trimmed)) return null;
+
   // Handle currency symbols and other non-numeric prefixes/suffixes
   // Remove any non-numeric characters except digits, decimal points, commas, and minus
   let numericString = trimmed

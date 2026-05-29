@@ -127,3 +127,36 @@ describe('lozenge placement is order-independent (spec 013)', () => {
     });
   }
 });
+
+describe('sliders lozenge — disabled state when no axis qualifies (spec 014 review)', () => {
+  it('mounts a disabled, focusable sliders lozenge with a reason on a non-axis table', () => {
+    const t = document.createElement('table');
+    t.innerHTML = `
+      <tr><th>Name</th><th>Dept</th><th>Email</th></tr>
+      <tr><th>Alex</th><td>Eng</td><td>alex@x.com</td></tr>
+      <tr><th>Sam</th><td>Ops</td><td>sam@x.com</td></tr>`;
+    t.classList.add('grid-sight-enabled');
+    document.body.appendChild(t);
+
+    injectPlusIcons(t, ['categorical', 'categorical', 'categorical']);
+
+    const s = t.querySelector('[data-gs-lozenge-id="sliders"]') as HTMLButtonElement;
+    expect(s).not.toBeNull();
+    expect(s.getAttribute('aria-disabled')).toBe('true');
+    expect(s.classList.contains('gs-lozenge--disabled')).toBe(true);
+    // Not the native disabled attribute → still Tab-reachable for the tooltip.
+    expect(s.disabled).toBe(false);
+    expect((s.title || '').length).toBeGreaterThan(0);
+    expect(s.getAttribute('aria-label')).toMatch(/slider/i);
+  });
+
+  it('mounts an enabled (interactive) sliders lozenge when an axis qualifies', () => {
+    const t = makeNumericGrid();
+    injectPlusIcons(t, types);
+    const s = t.querySelector('[data-gs-lozenge-id="sliders"]') as HTMLButtonElement;
+    expect(s).not.toBeNull();
+    expect(s.getAttribute('aria-disabled')).not.toBe('true');
+    expect(s.classList.contains('gs-lozenge--disabled')).toBe(false);
+    expect(s.getAttribute('role')).toBe('switch');
+  });
+});

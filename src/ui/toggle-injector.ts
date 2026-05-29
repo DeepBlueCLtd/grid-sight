@@ -15,6 +15,7 @@ import {
   logicalColIndexOf,
   logicalRowIndexOf,
 } from '../core/table-grid';
+import { onVisibleRowsChange, visibleBodyRows } from '../utils/visible-rows';
 import { StatisticsPopup } from './statistics-popup';
 import { FrequencyDialog } from './frequency-dialog';
 import { FrequencyChartDialog } from './frequency-chart-dialog';
@@ -38,6 +39,16 @@ declare global {
 const styleElement = document.createElement('style');
 styleElement.textContent = plusIconStyles;
 document.head.appendChild(styleElement);
+
+// Live subscription that keeps an open statistics popup recomputing over the
+// VISIBLE rows while a filter/sort changes (spec 014). Torn down on close.
+let statsUnsub: (() => void) | null = null;
+
+interface NumericExtract {
+  values: number[];
+  /** Cells seen in scope that were blank / non-numeric (drives missing/%). */
+  missing: number;
+}
 
 // ARIA labels for accessibility
 const ARIA_LABEL = 'Toggle Grid-Sight';
@@ -152,56 +163,49 @@ function handleEnrichmentSelected(event: Event) {
       toggleHeatmap(table, -1, 'table');
     }
   } else if (enrichmentType === 'statistics') {
+    // Build a scope-specific recompute that reads the VISIBLE rows and shows
+    // the (extended) popup. Subscribe to visible-rows changes while the popup
+    // is open so an applied/cleared filter updates it live; unsubscribe on
+    // close. Empty scopes render the popup's empty state — never a throw.
+    let recompute: (() => void) | null = null;
     if (type === 'column') {
-      // `headerIndex` is the column's position among non-injected cells (set by
-      // dispatchEnrichmentEvent). Using it instead of `th.cellIndex` keeps the
-      // stats aligned with the clicked column when a slider has injected cells.
+      // `headerIndex` is the logical column index (set by dispatchEnrichmentEvent),
+      // aligned with the clicked column even when a slider injected cells.
       const columnIndex = headerIndex;
       if (columnIndex >= 0) {
-        try {
-          const values = extractNumericColumnValues(table, columnIndex);
-          const stats = calculateStatistics(values);
-          window._gsStatisticsPopup.show(stats, header);
-        } catch (error) {
-          console.error('Error calculating statistics:', error);
-          alert(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
-        }
+        recompute = () => {
+          const { values, missing } = extractNumericColumnValues(table, columnIndex);
+          window._gsStatisticsPopup!.show(calculateStatistics(values, missing), header);
+        };
       }
     } else if (type === 'row') {
-      // Type assertion for table row
-      const tr = header.closest('tr') as HTMLTableRowElement;
-      if (!tr) {
-        console.error('Could not find row');
-        return;
-      }
-      
-      try {
-        const values = extractNumericRowValues(tr);
-        if (values.length === 0) {
-          alert('No numeric values found in this row');
-          return;
-        }
-        
-        const stats = calculateStatistics(values);
-        window._gsStatisticsPopup.show(stats, header);
-      } catch (error) {
-        console.error('Error calculating statistics for row:', error);
-        alert(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      const tr = header.closest('tr') as HTMLTableRowElement | null;
+      if (tr) {
+        recompute = () => {
+          const { values, missing } = extractNumericRowValues(tr);
+          window._gsStatisticsPopup!.show(calculateStatistics(values, missing), header);
+        };
       }
     } else if (type === 'table') {
+      recompute = () => {
+        const { values, missing } = extractNumericTableValues(table);
+        window._gsStatisticsPopup!.show(calculateStatistics(values, missing), header);
+      };
+    }
+
+    if (recompute) {
+      // Drop any prior subscription (a different lozenge/popup was open).
+      if (statsUnsub) { statsUnsub(); statsUnsub = null; }
       try {
-        const values = extractNumericTableValues(table);
-        if (values.length === 0) {
-          alert('No numeric values found in this table');
-          return;
-        }
-        
-        const stats = calculateStatistics(values);
-        window._gsStatisticsPopup.show(stats, header);
+        recompute();
+        const r = recompute;
+        statsUnsub = onVisibleRowsChange(table, () => r());
       } catch (error) {
-        console.error('Error calculating statistics for table:', error);
-        alert(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        console.error('Error calculating statistics:', error);
       }
+      window._gsStatisticsPopup.onClose(() => {
+        if (statsUnsub) { statsUnsub(); statsUnsub = null; }
+      });
     }
   } else if ((enrichmentType === 'frequency' || enrichmentType === 'frequency-chart')) {
     try {
@@ -294,22 +298,29 @@ function handleEnrichmentSelected(event: Event) {
  * @returns True if the toggle was injected, false otherwise.
  */
 /**
- * Extracts numeric values from a table column
+ * Extracts numeric values from a logical column over the VISIBLE rows, plus the
+ * count of visible cells in that column that were blank / non-numeric.
  */
-function extractNumericColumnValues(table: HTMLTableElement, columnIndex: number): number[] {
+function extractNumericColumnValues(table: HTMLTableElement, columnIndex: number): NumericExtract {
   const values: number[] = [];
-  for (const cell of columnCells(table, columnIndex)) {
+  let missing = 0;
+  for (const row of visibleBodyRows(table)) {
+    const cell = gridCells(row)[columnIndex];
+    if (!cell) continue;
     const value = cleanNumericCell(cellValue(cell));
     if (value !== null) values.push(value);
+    else missing += 1;
   }
-  return values;
+  return { values, missing };
 }
 
 /**
- * Extracts numeric values from a table row
+ * Extracts numeric values from a single table row (excluding a leading row
+ * header), plus the count of its blank / non-numeric data cells.
  */
-function extractNumericRowValues(row: HTMLTableRowElement): number[] {
+function extractNumericRowValues(row: HTMLTableRowElement): NumericExtract {
   const values: number[] = [];
+  let missing = 0;
   const cells = gridCells(row);
 
   // Skip the first cell if it's a row header.
@@ -318,28 +329,32 @@ function extractNumericRowValues(row: HTMLTableRowElement): number[] {
   for (let i = startIndex; i < cells.length; i++) {
     const value = cleanNumericCell(cellValue(cells[i]));
     if (value !== null) values.push(value);
+    else missing += 1;
   }
 
-  return values;
+  return { values, missing };
 }
 
 /**
- * Extracts all numeric values from a table body, excluding headers
+ * Extracts all numeric values from the VISIBLE body rows (excluding row
+ * headers), plus the count of blank / non-numeric data cells.
  */
-function extractNumericTableValues(table: HTMLTableElement): number[] {
+function extractNumericTableValues(table: HTMLTableElement): NumericExtract {
   const values: number[] = [];
+  let missing = 0;
 
-  for (const row of bodyRows(table)) {
+  for (const row of visibleBodyRows(table)) {
     const cells = gridCells(row);
     // Skip the first cell if it's a row header.
     const cellStartIndex = cells.length > 0 && cells[0].tagName.toLowerCase() === 'th' ? 1 : 0;
     for (let j = cellStartIndex; j < cells.length; j++) {
       const value = cleanNumericCell(cellValue(cells[j]));
       if (value !== null) values.push(value);
+      else missing += 1;
     }
   }
 
-  return values;
+  return { values, missing };
 }
 
 export function injectToggle(table: HTMLTableElement): boolean {
@@ -382,10 +397,15 @@ export function injectToggle(table: HTMLTableElement): boolean {
         
         if (isActive) {
           table.classList.add(TABLE_ENABLED_CLASS);
-          // Extract table data and analyze column types
-          const rows = Array.from(table.rows).map(row => 
-            Array.from(row.cells).map(cell => cell.textContent || '')
-          );
+          // Extract table data and analyze column types. Read the AUTHOR value
+          // (cellValue strips GS-injected UI such as annotation pins/markers and
+          // lozenges) and skip injected scaffold rows (e.g. the summary-row
+          // <tfoot>, spec 014). Using raw textContent here let an annotated
+          // numeric cell ("1200" + note) read as non-numeric and suppress a
+          // column's lozenges (spec 013: scaffold/UI is never the logical grid).
+          const rows = Array.from(table.rows)
+            .filter(row => !row.hasAttribute('data-gs-injected'))
+            .map(row => Array.from(row.cells).map(cell => cellValue(cell)));
           const { columnTypes } = analyzeTable(rows);
           // Cache column types for the toggle-panel refresh path (spec 012 R-10).
           setColumnTypes(table, columnTypes);

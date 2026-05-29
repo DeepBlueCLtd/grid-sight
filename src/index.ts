@@ -108,6 +108,13 @@ import { registerAnnotationsMenuEntry } from './ui/annotation-popup';
 // Outlier marker enrichment (spec 004-outlier)
 import { applyOutliers, tearDownOutliers } from './enrichments/outlier';
 
+// Navigation & analysis tier 1 (spec 014-navigation-and-analysis)
+import { applyFreezePanes, removeFreezePanes } from './enrichments/freeze-panes';
+import { applySummaryRow, removeSummaryRow } from './enrichments/summary-row';
+// Side-effect: registers the find-in-table corner-lozenge behavior.
+import './ui/find-in-table-box';
+import { removeFindUi } from './enrichments/find-in-table';
+
 // Internal InitOptions type. Not exported — see ⚠ note above and
 // specs/012-virtual-columns/research.md §R-13.
 interface InitOptions extends TableProcessorOptions {
@@ -243,6 +250,9 @@ const GridSight = {
       try { unmountFilterChip(table); } catch (e) { /* ignore */ void e; }
       try { tearDownAnnotations(table); } catch (e) { /* ignore */ void e; }
       try { tearDownOutliers(table); } catch (e) { /* ignore */ void e; }
+      try { removeFreezePanes(table); } catch (e) { /* ignore */ void e; }
+      try { removeSummaryRow(table); } catch (e) { /* ignore */ void e; }
+      try { removeFindUi(table); } catch (e) { /* ignore */ void e; }
       try { teardownVisibleRows(table); } catch (e) { /* ignore */ void e; }
       removePlusIcons(table);
       // Remove any virtual-column lozenges that were appended.
@@ -330,6 +340,17 @@ const GridSight = {
     // table content settles (spec 004, SC-003). Gated on the enrichment being
     // in the effective enabled set.
     try { if (isEnrichmentEnabled('outlier')) applyOutliers(table); } catch (e) { void e; }
+
+    // Freeze panes (spec 014) — auto-rendered; gated on the enabled set so it
+    // stays dark when Grid-Sight is globally off (FR-015).
+    if (isEnrichmentEnabled('freeze-panes')) {
+      try { applyFreezePanes(table); } catch (e) { void e; }
+    }
+
+    // Summary row (spec 014) — auto-rendered aggregate footer, same gating.
+    if (isEnrichmentEnabled('summary-row')) {
+      try { applySummaryRow(table); } catch (e) { void e; }
+    }
 
     return processedTable;
   },

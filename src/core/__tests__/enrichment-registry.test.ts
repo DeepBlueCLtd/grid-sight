@@ -60,6 +60,8 @@ describe('enrichment-registry', () => {
       'cumulative', 'sparkline', 'diff-compare',
       // Outlier marker landed via 004-outlier.
       'outlier',
+      // Navigation & analysis tier 1 landed via 014-navigation-and-analysis.
+      'freeze-panes', 'summary-row', 'find-in-table',
     ];
     for (const id of shipped) {
       const e = ENRICHMENT_REGISTRY.find(x => x.id === id);

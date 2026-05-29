@@ -5,6 +5,7 @@ import {
   detectColumnTypes,
   analyzeTable,
   extractTableData,
+  cleanNumericCell,
 } from '../type-detection';
 import type { 
   ColumnType,
@@ -264,5 +265,26 @@ describe('Type Detection', () => {
       const result = extractTableData(table);
       expect(result).toEqual([['A', '', 'C']]);
     });
+  });
+});
+
+describe('cleanNumericCell — identifier rejection (spec 014 review)', () => {
+  it('rejects identifier strings that merely contain digits', () => {
+    // Previously these were stripped to numbers (S-001 → -1), mis-typing ID
+    // columns as numeric. They must now be non-numeric.
+    expect(cleanNumericCell('S-001')).toBeNull();
+    expect(cleanNumericCell('R-1001')).toBeNull();
+    expect(cleanNumericCell('item10')).toBeNull();
+    expect(cleanNumericCell('N/A')).toBeNull();
+    expect(cleanNumericCell('12px')).toBeNull();
+  });
+
+  it('still parses genuine numbers, currency, percent, and signed/decimal values', () => {
+    expect(cleanNumericCell('1200')).toBe(1200);
+    expect(cleanNumericCell('-3.14')).toBe(-3.14);
+    expect(cleanNumericCell('$1,000')).toBe(1000);
+    expect(cleanNumericCell('50%')).toBe(50);
+    expect(cleanNumericCell('1,234.5')).toBe(1234.5);
+    expect(cleanNumericCell('')).toBeNull();
   });
 });

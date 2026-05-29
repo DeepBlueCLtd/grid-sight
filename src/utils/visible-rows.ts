@@ -17,6 +17,7 @@ import {
   restoreOriginalOrder,
 } from './original-order';
 import { makeVisibleRowSnapshot } from './visible-rows-pipeline';
+import { bodyRows } from '../core/table-grid';
 
 /* ── Public types ────────────────────────────────────────────────────── */
 
@@ -135,6 +136,19 @@ export function registerComparatorFactory(
 
 export function getVisibleRows(table: HTMLTableElement): VisibleRowSequence {
   return ensureState(table).lastSequence;
+}
+
+/** The body rows currently VISIBLE — i.e. those that passed every active filter
+ *  (state `'visible'`, excluding `'dimmed'`/`'hidden'`). Falls back to all body
+ *  rows for a table the pipeline never touched. The shared read-channel for
+ *  enrichments that profile/aggregate/search over the visible set (statistics,
+ *  summary-row, find-in-table — spec 014). */
+export function visibleBodyRows(table: HTMLTableElement): HTMLTableRowElement[] {
+  const entries = getVisibleRows(table).current();
+  if (entries.length > 0) {
+    return entries.filter((e) => e.state === 'visible').map((e) => e.rowEl);
+  }
+  return bodyRows(table);
 }
 
 export function onVisibleRowsChange(

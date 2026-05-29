@@ -29,6 +29,7 @@ import { persistVisitorEnrichments } from '../utils/slider-persistence';
 import { mountEnrichments } from './header-utils';
 import { getColumnTypes } from '../core/column-types-cache';
 import { analyzeTable } from '../core/table-detection';
+import { cellValue } from '../core/table-grid';
 
 const ROOT_ATTR = 'data-gs-toggle-panel-root';
 const LABEL_ATTR_PREFIX = 'data-gs-enrichment-toggle';
@@ -195,9 +196,12 @@ function runTearDownAcrossTables(
 function resolveColumnTypes(table: HTMLTableElement) {
   const cached = getColumnTypes(table);
   if (cached) return cached;
-  const rows = Array.from(table.rows).map(row =>
-    Array.from(row.cells).map(cell => cell.textContent || '')
-  );
+  // Read AUTHOR values (cellValue strips GS-injected UI) and skip injected
+  // scaffold rows (e.g. the summary-row <tfoot>, spec 014) so neither annotation
+  // markers nor the footer skew column typing on the panel-rebuild path.
+  const rows = Array.from(table.rows)
+    .filter(row => !row.hasAttribute('data-gs-injected'))
+    .map(row => Array.from(row.cells).map(cell => cellValue(cell)));
   return analyzeTable(rows).columnTypes;
 }
 

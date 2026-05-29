@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Grid-Sight · Summary row (spec 014)</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 920px; margin: 24px auto; padding: 0 16px 80px; color: #222; line-height: 1.5; }
+    h1 { margin-top: 0; }
+    h2 { margin: 32px 0 8px; }
+    .lede { color: #555; max-width: 72ch; }
+    nav { margin-bottom: 16px; padding: 8px 0; border-bottom: 1px solid #ddd; font-size: 14px; }
+    nav strong { margin-right: 8px; }
+    ol.steps { max-width: 70ch; }
+    ol.steps code { background: #f5f7fa; padding: 1px 5px; border-radius: 3px; font-size: 13px; }
+    .layout { display: grid; grid-template-columns: 1fr 240px; gap: 24px; align-items: start; }
+    @media (max-width: 760px) { .layout { grid-template-columns: 1fr; } }
+    .panel-slot { position: sticky; top: 16px; }
+    table { border-collapse: collapse; margin: 16px 0; }
+    th, td { border: 1px solid #ccc; padding: 6px 12px; text-align: right; font-variant-numeric: tabular-nums; }
+    thead th { background: #f4f4f4; }
+    td.cat { text-align: left; }
+    footer { margin-top: 56px; padding-top: 16px; border-top: 1px solid #eee; color: #888; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <nav data-gs-demo-nav></nav>
+
+  <h1>Summary row</h1>
+  <p class="lede">
+    A footer that aggregates each column over the <strong>visible</strong> rows.
+    Numeric columns start on <em>sum</em>; click the little aggregate button to
+    cycle sum → avg → min → max → count. Apply a filter and the footer recomputes;
+    your per-column choices persist across reloads. The footer is injected as a
+    <code>&lt;tfoot&gt;</code> and removes byte-identically when toggled off.
+  </p>
+
+  <script>
+    window.gridSight = { pageConfig: {
+      enrichments: ['summary-row', 'filter', 'sort'],
+      showToggleUi: true,
+    } };
+  </script>
+
+  <h2>Try it</h2>
+  <ol class="steps">
+    <li>The footer shows each numeric column's sum and each text column's count
+      over the visible rows.</li>
+    <li>Click an aggregate button (e.g. on <em>Units</em>) to cycle through
+      sum / avg / min / max / count — your choice is saved per page.</li>
+    <li>Click <strong>GS</strong>, filter <em>Units</em> with the ▽ lozenge, and
+      watch the footer recompute over just the matching rows.</li>
+    <li>Untick <em>Summary row</em> in the panel to remove the footer, then re-tick
+      it — it comes back with your saved aggregate choices, no reload.</li>
+  </ol>
+
+  <div class="layout">
+    <div>
+      <h2>Regional sales</h2>
+      <table id="sales-summary" data-gs-key="regional-sales">
+        <thead>
+          <tr><th>Region</th><th>Units</th><th>Revenue</th><th>Returns</th></tr>
+        </thead>
+        <tbody>
+          <tr><td class="cat">North</td><td>10</td><td>100</td><td>1</td></tr>
+          <tr><td class="cat">South</td><td>20</td><td>200</td><td>3</td></tr>
+          <tr><td class="cat">East</td><td>30</td><td>300</td><td>2</td></tr>
+          <tr><td class="cat">West</td><td>40</td><td>400</td><td>5</td></tr>
+          <tr><td class="cat">Central</td><td>25</td><td>250</td><td>4</td></tr>
+          <tr><td class="cat">Coastal</td><td>35</td><td>350</td><td>2</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <aside class="panel-slot">
+      <div data-gs-toggle-panel></div>
+    </aside>
+  </div>
+
+  <footer>
+    Spec: <code>specs/014-navigation-and-analysis/</code> · No runtime dependencies · Works offline (file://).
+  </footer>
+
+  <script src="../../grid-sight.iife.js"></script>
+  <script src="../nav.js"></script>
+</body>
+</html>

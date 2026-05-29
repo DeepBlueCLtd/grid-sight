@@ -34,6 +34,9 @@ import { unmountFilterChip } from '../enrichments/filter-chip';
 import { tearDownAnnotations, applyAnnotations } from '../enrichments/annotations';
 import { tearDownOutliers, applyOutliers } from '../enrichments/outlier';
 import { removeDirectivesByKind } from '../enrichments/virtual-column';
+import { applyFreezePanes, removeFreezePanes } from '../enrichments/freeze-panes';
+import { applySummaryRow, removeSummaryRow } from '../enrichments/summary-row';
+import { removeFindUi } from '../enrichments/find-in-table';
 
 export type EnrichmentId = string;
 
@@ -130,6 +133,10 @@ const ENTRIES: EnrichmentRegistryEntry[] = [
   { id: 'sort',             label: 'Column sort',       defaultOn: true, shipped: true,  tearDown: clearTableSort },  // spec 002 (landed via 002-003-row-visibility)
   { id: 'sparkline',        label: 'Row sparkline',     defaultOn: true, shipped: true,  tearDown: removeSparklineColumns },  // spec 005 (landed via 012-virtual-columns)
   { id: 'units-toggle',     label: 'Units toggle',      defaultOn: true, shipped: false },  // spec 007
+  // ── Navigation & analysis tier 1 (spec 014) ─────────────────────────
+  { id: 'freeze-panes',     label: 'Freeze panes',      defaultOn: true, shipped: true,  apply: applyFreezePanes, tearDown: removeFreezePanes },  // spec 014
+  { id: 'summary-row',      label: 'Summary row',       defaultOn: true, shipped: true,  apply: applySummaryRow,  tearDown: removeSummaryRow },   // spec 014
+  { id: 'find-in-table',    label: 'Find in table',     defaultOn: true, shipped: true,  tearDown: removeFindUi },  // spec 014 (lozenge-triggered; restores via lozenge rebuild)
 ];
 
 // Boot-time validation.

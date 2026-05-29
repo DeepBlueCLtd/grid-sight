@@ -1011,5 +1011,15 @@
       <tr><td>p998</td><td class="num">8830</td><td>JP</td></tr>
       <tr><td>p999</td><td class="num">6251</td><td>UK</td></tr>
     </tbody></table>
+<!-- Pin the enrichment set to the pre-spec-014 default so this row-visibility
+     SC-002 sort-perf fixture measures the pipeline in isolation: the auto-render
+     summary-row would otherwise recompute 1 000 rows on every sort and inflate
+     the measurement (a feature concern, not a row-visibility regression). -->
+<script>
+  window.gridSight = { pageConfig: { enrichments: [
+    'heatmap','sliders','slider-threshold','statistics','frequency','frequency-chart',
+    'annotations','cumulative','diff-compare','filter','sort','sparkline'
+  ] } };
+</script>
 <script src="../../grid-sight.iife.js"></script>
 </body></html>

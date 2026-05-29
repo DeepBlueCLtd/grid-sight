@@ -36,10 +36,14 @@ a self-contained enrichment increment; US1 alone is a viable MVP.
 
 ## Phase 1: Setup (Shared)
 
-- [ ] T001 Confirm a green baseline and record the bundle delta origin: run
+- [X] T001 Confirm a green baseline and record the bundle delta origin: run
   `yarn test` and `yarn test:e2e` (must be green) and
   `node scripts/bundle-size.js --soft`; note the current gzipped size in the PR
   as the baseline for the ≤ 4 KB combined budget.
+  <!-- BASELINE 2026-05-28: yarn test = 510 pass (66 files); e2e = 77 pass;
+       bundle = 41.24 KB gzipped (enforced ceiling 42 KB → only ~0.76 KB
+       headroom, so the combined ≤4 KB delta will require raising the ceiling
+       per T045). -->
 
 ---
 
@@ -64,37 +68,37 @@ aligned; disable → DOM byte-identical.
 
 ### Tests for US1 (write first, must fail)
 
-- [ ] T002 [P] [US1] Unit test in `src/enrichments/__tests__/freeze-panes.test.ts`:
+- [X] T002 [P] [US1] Unit test in `src/enrichments/__tests__/freeze-panes.test.ts`:
   `applyFreezePanes` tags `headerRow` cells + `gridCells(row)[0]` per row (NOT
   `:first-child` when a slider scaffold is present); corner carries both classes;
   `removeFreezePanes` leaves byte-identical DOM; no-op when no grid rows.
-- [ ] T003 [P] [US1] Storybook story `src/stories/freeze-panes.stories.ts` with a
+- [X] T003 [P] [US1] Storybook story `src/stories/freeze-panes.stories.ts` with a
   `play` asserting the sticky classes/`position` on a scrollable fixture.
-- [ ] T004 [P] [US1] Playwright in `e2e/navigation-and-analysis.spec.ts` (freeze
+- [X] T004 [P] [US1] Playwright in `e2e/navigation-and-analysis.spec.ts` (freeze
   section): header pinned on vertical scroll, key column pinned on horizontal
   scroll, and the disable→enable toggle-panel round-trip restores without reload.
 
 ### Implementation for US1
 
-- [ ] T005 [US1] Implement `src/ui/freeze-panes-styles.ts` `ensureFreezeStyles()`
+- [X] T005 [US1] Implement `src/ui/freeze-panes-styles.ts` `ensureFreezeStyles()`
   — pre-minified injected `<style id=gs-freeze-styles>` scoped under `.gs-freeze`
   (sticky header `top:0`, key `left:0`, corner z-index, opaque backgrounds).
-- [ ] T006 [US1] Implement `src/enrichments/freeze-panes.ts`
+- [X] T006 [US1] Implement `src/enrichments/freeze-panes.ts`
   `applyFreezePanes`/`removeFreezePanes` per `contracts/freeze-panes.md` (key
   column via addressing layer; idempotent; byte-identical teardown). Depends: T005.
-- [ ] T007 [US1] Add the `freeze-panes` entry (`apply`/`tearDown`) to
+- [X] T007 [US1] Add the `freeze-panes` entry (`apply`/`tearDown`) to
   `src/core/enrichment-registry.ts`. Depends: T006. *(shared file)*
-- [ ] T008 [US1] Wire `applyFreezePanes(table)` in `src/index.ts` `processTable`,
+- [X] T008 [US1] Wire `applyFreezePanes(table)` in `src/index.ts` `processTable`,
   gated on `isEnrichmentEnabled('freeze-panes')`. Depends: T006, T007. *(shared file)*
-- [ ] T009 [US1] Update the shipped-id/count assertions in
+- [X] T009 [US1] Update the shipped-id/count assertions in
   `enrichment-registry.test.ts` and `capability-filtering-toggle.spec.ts`.
   Depends: T007. *(shared files)*
-- [ ] T010 [P] [US1] Demo `public/demo/freeze-panes/index.html` — a tall/wide
+- [X] T010 [P] [US1] Demo `public/demo/freeze-panes/index.html` — a tall/wide
   scientific results table in a scroll container, nav bar consistent with
   siblings, `pageConfig.enrichments` includes `freeze-panes`.
-- [ ] T011 [US1] Add a demo card linking the freeze-panes page to
+- [X] T011 [US1] Add a demo card linking the freeze-panes page to
   `public/index.html`. *(shared file)*
-- [ ] T012 [US1] `node scripts/bundle-size.js --soft` (≤ 0.6 KB delta) + a11y
+- [X] T012 [US1] `node scripts/bundle-size.js --soft` (≤ 0.6 KB delta) + a11y
   monochrome check (frozen edge legible without colour; no keyboard regressions).
 
 **Checkpoint**: `freeze-panes` works and toggles independently — shippable MVP.
@@ -113,34 +117,34 @@ recompute over only visible rows.
 
 ### Tests for US2 (write first, must fail)
 
-- [ ] T013 [P] [US2] Extend `src/enrichments/__tests__/statistics.test.ts`:
+- [X] T013 [P] [US2] Extend `src/enrichments/__tests__/statistics.test.ts`:
   `missing`/`missingPct`/`distinct`/`q1`/`q3`/`histogram` correctness; empty
   input returns a zero-count result (no throw); 10-bin edges incl. all-equal
   collapse.
-- [ ] T014 [P] [US2] jsdom popup test: new rows render, inline SVG histogram with
+- [X] T014 [P] [US2] jsdom popup test: new rows render, inline SVG histogram with
   `<title>` per bar, empty-state copy when count 0.
-- [ ] T015 [P] [US2] Playwright (statistics section of
+- [X] T015 [P] [US2] Playwright (statistics section of
   `e2e/navigation-and-analysis.spec.ts`): figures computed over visible rows and
   recompute live when a filter is applied while the popup is open.
 
 ### Implementation for US2
 
-- [ ] T016 [US2] Extend `StatisticsResult` + `calculateStatistics(values,
+- [X] T016 [US2] Extend `StatisticsResult` + `calculateStatistics(values,
   missing?)` in `src/enrichments/statistics.ts` (quantile Q1/Q3 via
   `simple-statistics`, distinct set, 10-bin histogram, no-throw empty result).
-- [ ] T017 [US2] Render the new figures + inline SVG mini histogram + empty state
+- [X] T017 [US2] Render the new figures + inline SVG mini histogram + empty state
   in `src/ui/statistics-popup.ts` (reuse `sparkline-svg` approach; `show`/
   `onClose` signatures unchanged). Depends: T016.
-- [ ] T018 [US2] Switch `extractNumericColumnValues`/`…RowValues`/`…TableValues`
+- [X] T018 [US2] Switch `extractNumericColumnValues`/`…RowValues`/`…TableValues`
   in `src/ui/toggle-injector.ts` to read `getVisibleRows(table).current()` and
   return the missing count; subscribe via `onVisibleRowsChange` while the popup
   is open and unsubscribe in `onClose`. Depends: T016. *(shared file)*
-- [ ] T019 [P] [US2] Demo `public/demo/statistics/index.html` — a numeric table
+- [X] T019 [P] [US2] Demo `public/demo/statistics/index.html` — a numeric table
   with blank cells and a skewed distribution; nav bar; `pageConfig.enrichments`
   includes `statistics`.
-- [ ] T020 [US2] Add a demo card for the statistics page to `public/index.html`.
+- [X] T020 [US2] Add a demo card for the statistics page to `public/index.html`.
   *(shared file)*
-- [ ] T021 [US2] `node scripts/bundle-size.js --soft` (≤ 0.8 KB delta) + a11y
+- [X] T021 [US2] `node scripts/bundle-size.js --soft` (≤ 0.8 KB delta) + a11y
   (histogram `<title>`s, keyboard reach unchanged). *(No id/count test change —
   `statistics` is already a shipped id.)*
 
@@ -159,36 +163,36 @@ and confirm the choice persists.
 
 ### Tests for US3 (write first, must fail)
 
-- [ ] T022 [P] [US3] Unit `src/enrichments/__tests__/summary-row.test.ts`:
+- [X] T022 [P] [US3] Unit `src/enrichments/__tests__/summary-row.test.ts`:
   `aggregate()` math (numeric excludes blank/non-numeric; `count` counts
   non-blank); persistence codec round-trip + malformed-ignored + storage-
   unavailable degrades with one warn; `removeSummaryRow` byte-identical teardown.
-- [ ] T023 [P] [US3] jsdom: footer cells align to logical columns and are
+- [X] T023 [P] [US3] jsdom: footer cells align to logical columns and are
   `data-gs-injected`; aggregate control keyboard-operable; recompute on
   simulated visible-rows change.
-- [ ] T024 [P] [US3] Storybook story `src/stories/summary-row.stories.ts`.
-- [ ] T025 [P] [US3] Playwright (summary section): sum over visible → switch to
+- [X] T024 [P] [US3] Storybook story `src/stories/summary-row.stories.ts`.
+- [X] T025 [P] [US3] Playwright (summary section): sum over visible → switch to
   average → filter recompute → persists across reload → disable→enable round-trip
   restores footer + choices without reload.
 
 ### Implementation for US3
 
-- [ ] T026 [US3] Implement `src/ui/summary-row-control.ts`
+- [X] T026 [US3] Implement `src/ui/summary-row-control.ts`
   `mountAggregateControl(...)` (keyboard-operable chooser).
-- [ ] T027 [US3] Implement `src/enrichments/summary-row.ts`
+- [X] T027 [US3] Implement `src/enrichments/summary-row.ts`
   `applySummaryRow`/`removeSummaryRow`/`aggregate` per `contracts/summary-row.md`
   — inject `data-gs-injected` `<tfoot>`, restore choices via `storageKeyFor`,
   subscribe `onVisibleRowsChange`, persist on change. Depends: T026.
-- [ ] T028 [US3] Add the `summary-row` entry (`apply`/`tearDown`) to
+- [X] T028 [US3] Add the `summary-row` entry (`apply`/`tearDown`) to
   `src/core/enrichment-registry.ts`. Depends: T027. *(shared file)*
-- [ ] T029 [US3] Wire `applySummaryRow(table)` in `src/index.ts` `processTable`,
+- [X] T029 [US3] Wire `applySummaryRow(table)` in `src/index.ts` `processTable`,
   gated on `isEnrichmentEnabled('summary-row')`. Depends: T027, T028. *(shared file)*
-- [ ] T030 [US3] Update id/count assertions in `enrichment-registry.test.ts` and
+- [X] T030 [US3] Update id/count assertions in `enrichment-registry.test.ts` and
   `capability-filtering-toggle.spec.ts`. Depends: T028. *(shared files)*
-- [ ] T031 [P] [US3] Demo `public/demo/summary-row/index.html` — a filterable
+- [X] T031 [P] [US3] Demo `public/demo/summary-row/index.html` — a filterable
   measurement/financial table; nav; `pageConfig.enrichments` includes `summary-row`.
-- [ ] T032 [US3] Add a demo card to `public/index.html`. *(shared file)*
-- [ ] T033 [US3] `node scripts/bundle-size.js --soft` (≤ 1.4 KB delta) + a11y
+- [X] T032 [US3] Add a demo card to `public/index.html`. *(shared file)*
+- [X] T033 [US3] `node scripts/bundle-size.js --soft` (≤ 1.4 KB delta) + a11y
   (non-colour emphasis, keyboard control).
 
 **Checkpoint**: footer aggregates correct under filter/sort and persist.
@@ -206,34 +210,34 @@ removes highlighting.
 
 ### Tests for US4 (write first, must fail)
 
-- [ ] T034 [P] [US4] Unit `src/enrichments/__tests__/find-in-table.test.ts`:
+- [X] T034 [P] [US4] Unit `src/enrichments/__tests__/find-in-table.test.ts`:
   `search` builds an ordered match list over visible-row `cellValue`s
   (case-insensitive); `next`/`prev` wrap; matches exclude scaffolding; `clear`
   removes `gs-find-match`/`gs-find-current` (byte-identical).
-- [ ] T035 [P] [US4] jsdom: box keyboard contract via `installPopupChrome`
+- [X] T035 [P] [US4] jsdom: box keyboard contract via `installPopupChrome`
   (focus-trap, Escape closes, focus returns); counter renders "N of M" / "0
   matches".
-- [ ] T036 [P] [US4] Storybook story `src/stories/find-in-table.stories.ts`.
-- [ ] T037 [P] [US4] Playwright (find section): highlight all + Next/Prev cycle
+- [X] T036 [P] [US4] Storybook story `src/stories/find-in-table.stories.ts`.
+- [X] T037 [P] [US4] Playwright (find section): highlight all + Next/Prev cycle
   with `scrollIntoView` + clear + disable→enable round-trip.
 
 ### Implementation for US4
 
-- [ ] T038 [US4] Implement `src/enrichments/find-in-table.ts`
+- [X] T038 [US4] Implement `src/enrichments/find-in-table.ts`
   `createFindController`/`removeFindUi` per `contracts/find-in-table.md`
   (cell-level highlight; no `<mark>` surgery).
-- [ ] T039 [US4] Implement `src/ui/find-in-table-box.ts` `openFindBox(...)`
+- [X] T039 [US4] Implement `src/ui/find-in-table-box.ts` `openFindBox(...)`
   (search box + counter + prev/next + close via `installPopupChrome`; input
   debounced ~120 ms). Depends: T038.
-- [ ] T040 [US4] Add the `find-in-table` registry entry (`tearDown`) AND a
+- [X] T040 [US4] Add the `find-in-table` registry entry (`tearDown`) AND a
   `registerEnrichment` behavior mounting a table-level (`headerType==='table'`)
   corner lozenge that calls `openFindBox`. Depends: T038, T039. *(shared registry file)*
-- [ ] T041 [US4] Update id/count assertions in `enrichment-registry.test.ts` and
+- [X] T041 [US4] Update id/count assertions in `enrichment-registry.test.ts` and
   `capability-filtering-toggle.spec.ts`. Depends: T040. *(shared files)*
-- [ ] T042 [P] [US4] Demo `public/demo/find-in-table/index.html` — a dense lookup
+- [X] T042 [P] [US4] Demo `public/demo/find-in-table/index.html` — a dense lookup
   table; nav; `pageConfig.enrichments` includes `find-in-table`.
-- [ ] T043 [US4] Add a demo card to `public/index.html`. *(shared file)*
-- [ ] T044 [US4] `node scripts/bundle-size.js --soft` (≤ 1.2 KB delta) + a11y
+- [X] T043 [US4] Add a demo card to `public/index.html`. *(shared file)*
+- [X] T044 [US4] `node scripts/bundle-size.js --soft` (≤ 1.2 KB delta) + a11y
   (current-match non-colour signal, keyboard end-to-end).
 
 **Checkpoint**: all four pieces functional and independently toggleable.
@@ -242,18 +246,18 @@ removes highlighting.
 
 ## Phase 7: Polish & Cross-Cutting
 
-- [ ] T045 Combined bundle gate: `node scripts/bundle-size.js` (hard) — confirm
+- [X] T045 Combined bundle gate: `node scripts/bundle-size.js` (hard) — confirm
   the total delta is ≤ 4 KB and under the enforced 42 KB ceiling. If it would
   breach 42 KB, raise the ceiling explicitly in `scripts/bundle-size.js` +
   `specs/012-capability-filtering/baseline-bundle-size.md` and call it out in
   the PR (constitution §I).
-- [ ] T046 [P] Full suite green: `yarn test` (Vitest + Storybook) and
+- [X] T046 [P] Full suite green: `yarn test` (Vitest + Storybook) and
   `yarn test:e2e` (Playwright).
-- [ ] T047 [P] Run the `quickstart.md` wire-up sanity for one new enrichment to
+- [X] T047 [P] Run the `quickstart.md` wire-up sanity for one new enrichment to
   confirm the integration spine matches reality.
-- [ ] T048 Paste the `docs/adding-an-enrichment.md` checklist into the PR with
+- [X] T048 Paste the `docs/adding-an-enrichment.md` checklist into the PR with
   every item ticked or marked `N/A` for each of the four pieces.
-- [ ] T049 [P] (Optional refactor) If extraction duplication emerged across
+- [X] T049 [P] (Optional refactor) If extraction duplication emerged across
   statistics/summary/find, extract a shared visible-column value+missing reader;
   keep all story suites green.
 

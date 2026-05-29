@@ -47,6 +47,7 @@ const PLUS_ICON_CLASS = 'gs-plus-icon';
 const HEADER_WITH_ICON_CLASS = 'gs-has-plus-icon';
 const LOZENGE_CLASS = 'gs-lozenge';
 const LOZENGE_ACTIVE_CLASS = 'gs-lozenge--active';
+const LOZENGE_DISABLED_CLASS = 'gs-lozenge--disabled';
 
 /** Inject the inline lozenge toggles (H/S/#) on every applicable header.
  *  Replaces the previous "+ → dropdown" UX. Column/row indexing goes through
@@ -109,6 +110,13 @@ interface LozengeSpec {
   isActive: () => boolean;
   /** Apply the action. */
   onClick: () => void;
+  /** Render in a non-interactive disabled state (e.g. an enrichment that is
+   *  enabled but does not apply to this table). The button stays focusable
+   *  (via `aria-disabled`, not the native attribute) so keyboard users can read
+   *  `disabledReason`. */
+  disabled?: boolean;
+  /** Tooltip/accessible-name explaining why the lozenge is disabled. */
+  disabledReason?: string;
 }
 
 /** Detect whether a body cell in this column spans more than one row — if so,
@@ -211,14 +219,26 @@ registerEnrichment({
 registerEnrichment({
   id: 'sliders',
   // Sliders come as a row+col pair, so the toggle lives only on the table
-  // (top-left corner) cluster, and only when an axis qualifies.
-  appliesTo: (ctx) =>
-    ctx.columnType === 'numeric' &&
-    ctx.headerType === 'table' &&
-    sliderApplicable(ctx.table, 'table'),
+  // (top-left corner) cluster. It mounts whenever the enrichment is enabled; if
+  // no axis qualifies it renders disabled with an explanatory tooltip rather
+  // than vanishing (so the corner always shows why sliders are unavailable).
+  appliesTo: (ctx) => ctx.headerType === 'table',
   isActive: (ctx) => sliderIsActive(ctx.table, ctx.headerType),
-  mount: (ctx) =>
-    buildLozenge({
+  mount: (ctx) => {
+    if (!sliderApplicable(ctx.table, 'table')) {
+      return buildLozenge({
+        id: 'sliders',
+        label: 'S',
+        title: sliderTitle(ctx.headerType),
+        isToggle: false,
+        isActive: () => false,
+        onClick: () => {},
+        disabled: true,
+        disabledReason:
+          'Sliders need a numeric, monotonic row or column axis — none in this table',
+      });
+    }
+    return buildLozenge({
       id: 'sliders',
       label: 'S',
       title: sliderTitle(ctx.headerType),
@@ -228,7 +248,8 @@ registerEnrichment({
         toggleSliders(ctx.table, ctx.headerType);
         refreshLozengeStates(ctx.table);
       },
-    }),
+    });
+  },
 });
 
 registerEnrichment({
@@ -384,9 +405,23 @@ function buildLozenge(spec: LozengeSpec): HTMLButtonElement {
   btn.type = 'button';
   btn.className = LOZENGE_CLASS;
   btn.textContent = spec.label;
+  btn.setAttribute('data-gs-lozenge-id', spec.id);
+
+  if (spec.disabled) {
+    // Enabled-but-not-applicable: shown greyed with an explanatory tooltip.
+    // Uses aria-disabled (not the native attribute) so it remains Tab-reachable
+    // and the reason is announced; the click is a no-op.
+    const why = spec.disabledReason ?? spec.title;
+    btn.classList.add(LOZENGE_DISABLED_CLASS);
+    btn.setAttribute('aria-disabled', 'true');
+    btn.title = why;
+    btn.setAttribute('aria-label', why);
+    btn.addEventListener('click', (ev) => ev.stopPropagation());
+    return btn;
+  }
+
   btn.title = spec.title;
   btn.setAttribute('aria-label', spec.title);
-  btn.setAttribute('data-gs-lozenge-id', spec.id);
   if (spec.isToggle) {
     btn.setAttribute('role', 'switch');
     const active = spec.isActive();
@@ -408,6 +443,7 @@ function refreshLozengeStates(table: HTMLTableElement): void {
   lozenges.forEach((btn) => {
     const id = btn.getAttribute('data-gs-lozenge-id');
     if (!id) return;
+    if (btn.getAttribute('aria-disabled') === 'true') return; // not interactive
     const header = btn.closest('th, td') as HTMLTableCellElement | null;
     if (!header) return;
     const type = inferHeaderType(header);
@@ -638,6 +674,10 @@ function ensureLozengeStyles(): void {
       background: #1976d2; color: #fff; border-color: #1976d2;
     }
     .${LOZENGE_ACTIVE_CLASS}:hover { background: #1565c0; border-color: #1565c0; color: #fff; }
+    .${LOZENGE_DISABLED_CLASS}, .${LOZENGE_CLASS}.${LOZENGE_DISABLED_CLASS} {
+      opacity: 0.5; cursor: not-allowed; background: #f2f2f2; color: #999; border-color: #e2e2e2;
+    }
+    .${LOZENGE_DISABLED_CLASS}:hover { background: #f2f2f2; color: #999; border-color: #e2e2e2; }
     .gs-lozenge-cluster { white-space: nowrap; }
   `;
   document.head.appendChild(style);
