@@ -14,6 +14,19 @@
   </style>
 </head>
 <body>
+  <nav style="margin-bottom:16px; padding:8px 0; border-bottom:1px solid #ddd; font-size:14px;">
+    <strong>Grid-Sight demos:</strong>
+    <a href="../../">Home</a> ·
+    <a href="../sliders/interpolation.html">1. Interpolation</a> ·
+    <a href="../sliders/alternate-calc-models.html">2. Alternate calc models</a> ·
+    <a href="../sliders/synced-tables.html">3. Persistent URL</a> ·
+    <a href="../toggle/live-enrichments.html">4. Live toggles — start with everything on</a> ·
+    <a href="../toggle/opt-in-playground.html">5. Opt-in playground — start with nothing on</a> ·
+    <a href="../virtual-columns.html">6. Virtual columns</a> ·
+    <a href="../annotations/index.html">7. Cell annotations</a> ·
+    <a href="measurements.html">8. Outlier marker</a>
+  </nav>
+
   <h1>Measurements — outlier marker</h1>
   <p class="hint">
     Enable Grid-Sight, then click the <code>!</code> lozenge on the
@@ -21,6 +34,13 @@
     cycles <code>2σ → 1σ → 3σ → off</code>. Marked cells show a dashed ring and a
     value/mean/σ tooltip on hover or keyboard focus. The active lozenge exposes a
     “show list” affordance (or press <kbd>Shift</kbd>+<kbd>Enter</kbd>).
+  </p>
+  <p class="hint">
+    The <strong>first</strong> click uses the default <strong>2σ</strong> threshold —
+    the textbook “unusual” cut-off. The <strong>Latency</strong> spike (200) and the
+    <strong>Throughput</strong> spike (1000) both sit beyond 2σ, so they flag on the
+    very first click. On tightly-clustered data with no value past 2σ, the first click
+    correctly marks nothing; click again to relax the threshold to 1σ.
   </p>
   <p class="hint">
     The <strong>Baseline</strong> column is all-equal (σ = 0) so its lozenge is
