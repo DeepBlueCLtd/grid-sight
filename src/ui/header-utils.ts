@@ -12,6 +12,15 @@ import {
 import { colKeyAt } from '../utils/view-state-url';
 import { createSortLozenge } from './sort-lozenge';
 import { createFilterLozenge } from './filter-lozenge';
+import { createOutlierLozenge } from './outlier-lozenge';
+import { openOutlierPopup } from './outlier-popup';
+import {
+  getOutlierThreshold,
+  setOutlierThreshold,
+  getOutlierMarks,
+  qualifiesForOutliers,
+  isColumnInert,
+} from '../enrichments/outlier';
 import { detectSortColumnType } from '../enrichments/sort';
 import { getEffectiveEnabledSet } from '../core/enabled-set-state';
 import {
@@ -313,6 +322,60 @@ registerEnrichment({
         (getVisibleRows(ctx.table).filters.get(ctx.colIndex) as FilterPredicate | undefined) ?? null,
       onChange: (next) => setFilter(ctx.table, ctx.colIndex, next),
     });
+  },
+});
+
+registerEnrichment({
+  id: 'outlier',
+  // Numeric column headers only; suppressed by data-gs-no-outlier (table or
+  // header), a rowspan body cell, or < 3 numeric cells (FR-002/FR-010/FR-022).
+  appliesTo: (ctx) =>
+    ctx.headerType === 'column' &&
+    ctx.columnType === 'numeric' &&
+    !ctx.table.hasAttribute('data-gs-no-outlier') &&
+    !ctx.header.hasAttribute('data-gs-no-outlier') &&
+    !columnHasRowspanBodyCells(ctx.table, ctx.colIndex) &&
+    qualifiesForOutliers(ctx.table, ctx.colIndex),
+  isActive: (ctx) => getOutlierThreshold(ctx.table, ctx.colIndex) !== null,
+  mount: (ctx) => {
+    const columnKey = colKeyAt(ctx.table, ctx.colIndex);
+    const columnLabel = cellValue(ctx.header) || `Column ${ctx.colIndex + 1}`;
+    const inert = isColumnInert(ctx.table, ctx.colIndex);
+    let popupDispose: (() => void) | null = null;
+    const el = createOutlierLozenge({
+      columnIndex: ctx.colIndex,
+      columnKey,
+      inert,
+      columnLabel,
+      getCurrent: () => getOutlierThreshold(ctx.table, ctx.colIndex),
+      onChange: (next) => {
+        setOutlierThreshold(ctx.table, ctx.colIndex, next);
+        if (next === null && popupDispose) popupDispose();
+      },
+      onShowList: () => {
+        // Second activation of the affordance closes the open popup (FR-014).
+        if (popupDispose) {
+          popupDispose();
+          return;
+        }
+        const threshold = getOutlierThreshold(ctx.table, ctx.colIndex);
+        if (threshold === null) return;
+        const anchor =
+          el.querySelector<HTMLElement>('[data-gs-lozenge-id="outlier"]') ?? el;
+        popupDispose = openOutlierPopup({
+          table: ctx.table,
+          columnIndex: ctx.colIndex,
+          columnLabel,
+          threshold,
+          anchor,
+          getMarks: () => getOutlierMarks(ctx.table, ctx.colIndex),
+          onClose: () => {
+            popupDispose = null;
+          },
+        });
+      },
+    });
+    return el;
   },
 });
 

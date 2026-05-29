@@ -32,6 +32,7 @@ import { removeAllSliders, getSliders } from '../enrichments/slider';
 import { setSort, clearFilters } from '../utils/visible-rows';
 import { unmountFilterChip } from '../enrichments/filter-chip';
 import { tearDownAnnotations, applyAnnotations } from '../enrichments/annotations';
+import { tearDownOutliers, applyOutliers } from '../enrichments/outlier';
 import { removeDirectivesByKind } from '../enrichments/virtual-column';
 
 export type EnrichmentId = string;
@@ -125,7 +126,7 @@ const ENTRIES: EnrichmentRegistryEntry[] = [
   { id: 'cumulative',       label: 'Cumulative col.',   defaultOn: true, shipped: true,  tearDown: removeCumulativeColumns },  // spec 008 (landed via 012-virtual-columns)
   { id: 'diff-compare',     label: 'Diff / compare',    defaultOn: true, shipped: true,  tearDown: removeCompareColumns },  // spec 010 column-mode (landed via 012-virtual-columns)
   { id: 'filter',           label: 'Column filter',     defaultOn: true, shipped: true,  tearDown: clearTableFilters },  // spec 003 (landed via 002-003-row-visibility)
-  { id: 'outlier',          label: 'Outlier marker',    defaultOn: true, shipped: false },  // spec 004
+  { id: 'outlier',          label: 'Outlier marker',    defaultOn: true, shipped: true,  tearDown: tearDownOutliers, apply: applyOutliers },  // spec 004
   { id: 'sort',             label: 'Column sort',       defaultOn: true, shipped: true,  tearDown: clearTableSort },  // spec 002 (landed via 002-003-row-visibility)
   { id: 'sparkline',        label: 'Row sparkline',     defaultOn: true, shipped: true,  tearDown: removeSparklineColumns },  // spec 005 (landed via 012-virtual-columns)
   { id: 'units-toggle',     label: 'Units toggle',      defaultOn: true, shipped: false },  // spec 007

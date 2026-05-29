@@ -145,6 +145,10 @@
       <h3>7. Cell annotations</h3>
       <p>Spec 006 — attach a note to any cell. Persists per-document, follows its cell across sort/filter, and lists origin-wide in a cross-document popup.</p>
     </a>
+    <a class="demo-card" href="demo/outlier/measurements.html">
+      <h3>8. Outlier marker — ! flags cells beyond Nσ</h3>
+      <p>Spec 004 — click the <code>!</code> lozenge on a numeric column to flag cells beyond a click-cycled 2σ → 1σ → 3σ threshold, with a value/mean/σ tooltip and a sorted outliers list. Shareable via the URL fragment.</p>
+    </a>
   </div>
 
   <h2>Tables on this page</h2>
@@ -209,7 +213,7 @@
 
   <script>
     // spec 012 — narrow to the shipped enrichments today.
-    window.gridSight = { pageConfig: { enrichments: ['heatmap','sliders','slider-threshold','statistics','frequency','frequency-chart','annotations'] } };
+    window.gridSight = { pageConfig: { enrichments: ['heatmap','sliders','slider-threshold','statistics','frequency','frequency-chart','annotations','outlier'] } };
   </script>
   <script src="grid-sight.iife.js"></script>
   <script>

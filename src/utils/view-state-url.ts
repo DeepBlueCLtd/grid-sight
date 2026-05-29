@@ -14,7 +14,7 @@ import type {
   TableViewDirective,
 } from './visible-rows';
 import { decodeViewState } from './view-state-decode';
-import { headerRow, gridCells } from '../core/table-grid';
+import { headerRow, gridCells, cellValue } from '../core/table-grid';
 export { decodeViewState };
 
 const URL_FRAGMENT_PARAM = 'gs.v';
@@ -22,7 +22,10 @@ const URL_FRAGMENT_PARAM = 'gs.v';
 /* ── Column-key derivation ──────────────────────────────────────────── */
 
 export function colKey(header: HTMLTableCellElement, columnIndex: number): string {
-  const text = (header.textContent ?? '').trim().toLowerCase();
+  // Use the canonical author-text reader (strips GS-injected lozenge clusters)
+  // so the key is stable whether or not enrichment affordances are mounted, and
+  // does not drift as a lozenge glyph changes (e.g. the outlier `!` → `!2`).
+  const text = cellValue(header).toLowerCase();
   const slug = text.replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
   return slug || `c${columnIndex}`;
 }

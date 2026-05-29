@@ -58,6 +58,8 @@ describe('enrichment-registry', () => {
       'annotations',
       // Virtual columns landed via 012-virtual-columns.
       'cumulative', 'sparkline', 'diff-compare',
+      // Outlier marker landed via 004-outlier.
+      'outlier',
     ];
     for (const id of shipped) {
       const e = ENRICHMENT_REGISTRY.find(x => x.id === id);
@@ -67,7 +69,7 @@ describe('enrichment-registry', () => {
   });
 
   it('spec-only enrichments have no tearDown hooks', () => {
-    const specOnly = ['copy-as-csv', 'outlier', 'units-toggle'];
+    const specOnly = ['copy-as-csv', 'units-toggle'];
     for (const id of specOnly) {
       const e = ENRICHMENT_REGISTRY.find(x => x.id === id);
       expect(e?.shipped, `enrichment "${id}" must be spec-only`).toBe(false);

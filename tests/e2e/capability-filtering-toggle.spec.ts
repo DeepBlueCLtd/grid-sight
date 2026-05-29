@@ -54,6 +54,8 @@ test.describe('US2: live enrichment toggle panel', () => {
       'cumulative',
       'sparkline',
       'diff-compare',
+      // Shipped via 004-outlier.
+      'outlier',
     ];
     for (const id of shippedIds) {
       await expect(
