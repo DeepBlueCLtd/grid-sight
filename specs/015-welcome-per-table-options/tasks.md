@@ -185,11 +185,11 @@ via a working link.
 
 **Purpose**: Budget, docs, and whole-feature validation.
 
-- [ ] T031 Measure bundle delta with `node scripts/bundle-size.js --soft`; confirm < 42 KB gz and within the ≤ 1.5 KB budget; if breached, note explicitly in the PR (constitution §I)
+- [X] T031 Measure bundle delta with `node scripts/bundle-size.js --soft`; confirm < 42 KB gz and within the ≤ 1.5 KB budget; if breached, note explicitly in the PR (constitution §I)
 - [X] T032 [P] Document the per-table options API + start-state in `docs/` (and a short note in `docs/architecture/enrichments.md` that gating is now table-aware); reconcile `README.md` feature list if it claims page-only config
 - [X] T033 [P] Add an offline/`file://` smoke assertion to `e2e/welcome-per-table.spec.ts` (or a manual step in `quickstart.md`) confirming the page + every inline demo work with no network (FR-013, SC-007)
-- [ ] T034 Run full suites green: `yarn test` (Vitest + Storybook), `yarn test:e2e` (Playwright), `yarn build` (tsc, zero errors) — the merge gate (constitution §II, SC-009)
-- [ ] T035 Walk `quickstart.md` end-to-end against the built page; fix any drift between the documented contract and actual behaviour
+- [X] T034 Run full suites green: `yarn test` (Vitest + Storybook), `yarn test:e2e` (Playwright), `yarn build` (tsc, zero errors) — the merge gate (constitution §II, SC-009)
+- [X] T035 Walk `quickstart.md` end-to-end against the built page; fix any drift between the documented contract and actual behaviour
 
 ---
 
