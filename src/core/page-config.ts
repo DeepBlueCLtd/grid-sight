@@ -37,6 +37,13 @@ export interface ParsedTableOptionEntry {
   enrichments: Set<string> | undefined;
   /** Whether the table's GS toggle begins active. Defaults to false. */
   startActive: boolean;
+  /**
+   * Ids to auto-apply on load once the table's toggle is active (spec 015
+   * extension). Only the parameterless toggles are supported at apply time
+   * (heatmap, sliders, sparkline); other ids are ignored. `undefined` when the
+   * field was absent. A non-empty set implies the toggle starts active.
+   */
+  activate: Set<string> | undefined;
 }
 
 export interface ParsedPageConfig {
@@ -182,7 +189,21 @@ function parseTableEntries(raw: unknown): ParsedTableOptionEntry[] {
       }
     }
 
-    out.push({ selector: selector.trim(), enrichments, startActive });
+    // `activate` absent → undefined. Normalised like the enrichment lists.
+    let activate: Set<string> | undefined;
+    if ('activate' in entry) {
+      const arr = entry.activate;
+      if (!Array.isArray(arr)) {
+        console.warn(`${WARN_PREFIX} pageConfig.tables[].activate must be an array; ignoring that field.`);
+      } else {
+        activate = normaliseEnrichmentList(
+          arr,
+          'pageConfig.tables[].activate contains non-string entries; dropping.'
+        );
+      }
+    }
+
+    out.push({ selector: selector.trim(), enrichments, startActive, activate });
   }
 
   return out;

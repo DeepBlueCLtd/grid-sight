@@ -30,6 +30,17 @@ Equivalent ESM path: `gridSight.init({ tables: [ … ] })`.
 | `selector` | yes | — | used as-authored; matched via `Element.matches` against `<table>`s |
 | `enrichments` | no | (fall through to page-level) | trim + lowercase + dedup; non-strings dropped (one warning) |
 | `startActive` | no | `false` | `Boolean()`-coerced if non-boolean (one warning) |
+| `activate` | no | (none) | **Extension** — ids to apply on load; trim + lowercase + dedup; non-strings dropped (one warning); non-array ignored (one warning) |
+
+### `activate` extension (auto-apply on load)
+
+`startActive` reveals the lozenges; `activate` additionally **applies** the named
+enrichments on load via the same code path a manual click uses. v1 supports the
+parameterless toggles only — `heatmap` (table-wide), `sliders` (qualifying
+axes), `sparkline` (per-row); other ids are no-ops at apply time. A non-empty
+`activate` implies `startActive`, and the set is narrowed to ids the table
+offers (`activate ∩ enabledSet(T)`). Teardown/re-enable reuse the manual path,
+so byte-identical teardown (FR-024) holds.
 
 ### Malformed input (never throws into host page)
 

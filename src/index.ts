@@ -27,7 +27,7 @@ import {
 
 // Import UI components
 import { injectToggle, activateToggle } from './ui/toggle-injector';
-import { removePlusIcons } from './ui/header-utils';
+import { removePlusIcons, refreshLozengeStates } from './ui/header-utils';
 
 // Row-visibility pipeline (spec 002-003-row-visibility)
 import { teardown as teardownVisibleRows, hydrateTable, serialiseTable, onVisibleRowsChange } from './utils/visible-rows';
@@ -129,6 +129,33 @@ interface InitOptions extends TableProcessorOptions {
 // Activate the heatmap-marker listener once at module load. It is a no-op if no
 // dual-axis sliders are ever added.
 ensureHeatmapMarkerListener();
+
+/**
+ * Spec 015 per-table auto-activate (v1 subset). Apply a parameterless toggle
+ * enrichment on a table whose GS toggle is already active. Only the three
+ * parameterless toggles are supported; any other id is a no-op here — sort /
+ * filter / outlier / cumulative / compare need parameters, statistics /
+ * frequency / find are one-shot popups, and summary-row / freeze-panes /
+ * annotations already auto-render when enabled.
+ */
+function autoApplyEnrichment(table: HTMLTableElement, id: string): void {
+  try {
+    if (id === 'heatmap') {
+      if (!isHeatmapActive(table, -1, 'table')) toggleHeatmap(table, -1, 'table');
+    } else if (id === 'sliders') {
+      for (const axis of ['row', 'col'] as const) {
+        try { sliderAddSlider(table, axis); } catch (e) { void e; /* axis not numeric / already present */ }
+      }
+    } else if (id === 'sparkline') {
+      const directive: SparklineDirective = {
+        id: 'spark', kind: 'sparkline', tableEl: table, scale: 'per-row', style: 'bar',
+      };
+      vcActivate(directive);
+    }
+  } catch (e) {
+    console.warn(`[gridsight] auto-activate "${id}" failed:`, e);
+  }
+}
 
 // Re-export types for external use
 export type { 
@@ -331,8 +358,15 @@ const GridSight = {
       // processTable for every table, so each returns to its authored
       // start-state (R-6). Default is inactive, so unconfigured tables are
       // unchanged (INV-3).
-      if (resolveTableConfig(table).startActive) {
+      const tableCfg = resolveTableConfig(table);
+      // Auto-activating an enrichment implies the toggle is revealed.
+      if (tableCfg.startActive || tableCfg.activate.size > 0) {
         activateToggle(table);
+      }
+      if (tableCfg.activate.size > 0) {
+        for (const id of tableCfg.activate) autoApplyEnrichment(table, id);
+        // Reflect the applied toggles (H / S highlights) in the lozenge cluster.
+        refreshLozengeStates(table);
       }
     } catch (error) {
       console.warn('Failed to inject UI elements:', error);

@@ -28,8 +28,8 @@ const meta: Meta = {
       enrichments: undefined,
       showToggleUi: false,
       tables: [
-        { selector: '#story-sliders', enrichments: new Set(['sliders', 'statistics']), startActive: true },
-        { selector: '#story-heatmap', enrichments: new Set(['heatmap', 'statistics']), startActive: false },
+        { selector: '#story-sliders', enrichments: new Set(['sliders', 'statistics']), startActive: true, activate: undefined },
+        { selector: '#story-heatmap', enrichments: new Set(['heatmap', 'statistics']), startActive: false, activate: undefined },
       ],
     });
 

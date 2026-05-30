@@ -111,6 +111,33 @@ test.describe('US2: four feature sections, distinct sets co-resident', () => {
     expect(overflow).toBeLessThanOrEqual(1);
   });
 
+  test('auto-activate applies the configured enrichment on load (v1 subset)', async ({ page }) => {
+    await gotoWelcome(page);
+    const state = await page.evaluate(() => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const gs = (window as any).gridSight;
+      const byId = (id: string) => document.getElementById(id);
+      const shaded = (id: string) =>
+        Array.from(document.querySelectorAll(`#${id} td`)).some((c) => {
+          const bg = getComputedStyle(c as HTMLElement).backgroundColor;
+          return !!bg && bg !== 'rgba(0, 0, 0, 0)' && bg !== 'transparent' && bg !== 'rgb(255, 255, 255)';
+        });
+      return {
+        sliders: gs.getSliders(byId('demo-sliders')).length,
+        sparks: gs.virtualColumns.list(byId('demo-derived')).filter((d: { kind: string }) => d.kind === 'sparkline').length,
+        heatmapShaded: shaded('demo-visual'),
+        // The nav demo deliberately auto-applies nothing.
+        navVirtualCols: gs.virtualColumns.list(byId('demo-nav')).length,
+        navShaded: shaded('demo-nav'),
+      };
+    });
+    expect(state.sliders).toBeGreaterThan(0);     // #demo-sliders → activate:['sliders']
+    expect(state.sparks).toBeGreaterThan(0);      // #demo-derived → activate:['sparkline']
+    expect(state.heatmapShaded).toBe(true);       // #demo-visual  → activate:['heatmap']
+    expect(state.navVirtualCols).toBe(0);         // #demo-nav     → nothing auto-applied
+    expect(state.navShaded).toBe(false);
+  });
+
   test('each feature section links to its demo page(s) (FR-008)', async ({ page }) => {
     await gotoWelcome(page);
     const sectionLinks = await page.evaluate(() =>

@@ -44,8 +44,8 @@ describe('table-aware lozenge injection (spec 015)', () => {
       enrichments: undefined,
       showToggleUi: false,
       tables: [
-        { selector: '#heat', enrichments: new Set(['heatmap']), startActive: false },
-        { selector: '#slide', enrichments: new Set(['sliders']), startActive: false },
+        { selector: '#heat', enrichments: new Set(['heatmap']), startActive: false, activate: undefined },
+        { selector: '#slide', enrichments: new Set(['sliders']), startActive: false, activate: undefined },
       ],
     });
 
@@ -64,7 +64,7 @@ describe('table-aware lozenge injection (spec 015)', () => {
     setPageConfig({
       enrichments: undefined,
       showToggleUi: false,
-      tables: [{ selector: '#none', enrichments: new Set(), startActive: false }],
+      tables: [{ selector: '#none', enrichments: new Set(), startActive: false, activate: undefined }],
     });
 
     injectPlusIcons(none, NUMERIC);
@@ -77,7 +77,7 @@ describe('table-aware lozenge injection (spec 015)', () => {
     setPageConfig({
       enrichments: new Set(['heatmap']),
       showToggleUi: false,
-      tables: [{ selector: '#matched', enrichments: new Set(['sliders']), startActive: false }],
+      tables: [{ selector: '#matched', enrichments: new Set(['sliders']), startActive: false, activate: undefined }],
     });
 
     injectPlusIcons(matched, NUMERIC);

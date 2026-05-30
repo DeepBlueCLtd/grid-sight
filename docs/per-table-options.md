@@ -39,10 +39,34 @@ The ESM path is symmetric: `gridSight.init({ tables: [ … ] })`.
 |-------|----------|---------|-------|
 | `selector` | yes | — | Any CSS selector; an id is just `#id`. Matched against `<table>` elements with `Element.matches`. |
 | `enrichments` | no | fall through to the page-level set | Ids this table offers. An empty array means "offer none". Trimmed + lowercased + deduped; non-strings dropped. |
-| `startActive` | no | `false` | Whether the table's `GS` toggle begins **active** (enrichments revealed). |
+| `startActive` | no | `false` | Whether the table's `GS` toggle begins **active** (lozenges revealed). |
+| `activate` | no | `[]` | Ids to bring up **already applied** on load (see below). Implies `startActive`. Narrowed to ids the table offers. |
 
 Malformed input never throws into the host page: a non-array `tables`, an entry
-without a string `selector`, or a non-array `enrichments` is warned-and-ignored.
+without a string `selector`, or a non-array `enrichments`/`activate` is
+warned-and-ignored.
+
+## Auto-activating an enrichment
+
+`startActive` only reveals the lozenges; the visitor still clicks one to apply
+the effect. `activate` goes a step further and applies the effect on load:
+
+```js
+{ selector: '#temps', enrichments: ['heatmap', 'statistics'], activate: ['heatmap'] }
+// → #temps loads with a table-wide heatmap already shading the cells.
+```
+
+**Supported ids (v1):** the parameterless toggles — `heatmap` (table-wide),
+`sliders` (all qualifying axes), and `sparkline` (per-row). Other ids are
+ignored at apply time, because they either need parameters (`sort`, `filter`,
+`outlier`, `cumulative`, `diff-compare`), are one-shot popups (`statistics`,
+`frequency`, `find-in-table`), or already auto-render when enabled
+(`summary-row`, `freeze-panes`, `annotations`).
+
+`activate` implies the toggle starts active, and only ids in the table's offered
+`enrichments` are applied. Auto-applied enrichments use the same code path as a
+manual click, so they tear down byte-identically and re-apply on a global
+off → on cycle.
 
 ## Precedence
 

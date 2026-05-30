@@ -25,6 +25,8 @@ export interface FoldedTableOptions {
   enrichments: Set<string> | undefined;
   /** Folded GS-toggle start-state; defaults to false. */
   startActive: boolean;
+  /** Folded set of ids to auto-apply on load, or `undefined` when unset. */
+  activate: Set<string> | undefined;
   /** Whether any per-table entry matched this table. */
   matched: boolean;
 }
@@ -35,6 +37,12 @@ export interface ResolvedTableConfig {
   enrichments: Set<string>;
   /** Whether this table's GS toggle begins active. */
   startActive: boolean;
+  /**
+   * Ids to auto-apply on load, narrowed to those this table actually offers
+   * (an enrichment that is not offered cannot be auto-applied). The apply step
+   * supports only the parameterless toggles; other ids are no-ops there.
+   */
+  activate: Set<string>;
   /** Whether any per-table entry matched (drives global-vs-per-table). */
   matched: boolean;
 }
@@ -62,12 +70,13 @@ export function matchTableEntries(
   entries: readonly ParsedTableOptionEntry[],
 ): FoldedTableOptions {
   if (table.hasAttribute('data-gs-ignore')) {
-    return { enrichments: undefined, startActive: false, matched: false };
+    return { enrichments: undefined, startActive: false, activate: undefined, matched: false };
   }
 
   let matched = false;
   let enrichments: Set<string> | undefined;
   let startActive = false;
+  let activate: Set<string> | undefined;
 
   for (const entry of entries) {
     let isMatch = false;
@@ -82,9 +91,10 @@ export function matchTableEntries(
     matched = true;
     if (entry.enrichments !== undefined) enrichments = new Set(entry.enrichments);
     startActive = entry.startActive;
+    if (entry.activate !== undefined) activate = new Set(entry.activate);
   }
 
-  return { enrichments, startActive, matched };
+  return { enrichments, startActive, activate, matched };
 }
 
 /**
@@ -104,5 +114,13 @@ export function resolveTableConfig(
     pageConfig: input.pageConfig,
     registry: input.registry,
   });
-  return { enrichments, startActive: folded.startActive, matched: folded.matched };
+  // Auto-apply only what this table actually offers — you cannot activate an
+  // enrichment that is not in the resolved set.
+  const activate = new Set<string>();
+  if (folded.activate) {
+    for (const id of folded.activate) {
+      if (enrichments.has(id)) activate.add(id);
+    }
+  }
+  return { enrichments, startActive: folded.startActive, activate, matched: folded.matched };
 }

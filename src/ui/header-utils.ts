@@ -440,8 +440,9 @@ function buildLozenge(spec: LozengeSpec): HTMLButtonElement {
 
 /** Re-evaluate every lozenge's active state on this table. Called after any
  *  toggle so adjacent lozenges (e.g. row-axis slider after table-wide toggle)
- *  reflect the new state. */
-function refreshLozengeStates(table: HTMLTableElement): void {
+ *  reflect the new state. Exported so the spec-015 per-table auto-activate path
+ *  can refresh the H/S highlights after applying an enrichment programmatically. */
+export function refreshLozengeStates(table: HTMLTableElement): void {
   const lozenges = table.querySelectorAll<HTMLButtonElement>(`.${LOZENGE_CLASS}`);
   lozenges.forEach((btn) => {
     const id = btn.getAttribute('data-gs-lozenge-id');

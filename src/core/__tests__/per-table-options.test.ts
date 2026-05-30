@@ -11,7 +11,7 @@ const REGISTRY: readonly EnrichmentRegistryEntry[] = Object.freeze([
 ]);
 
 function entry(partial: Partial<ParsedTableOptionEntry> & { selector: string }): ParsedTableOptionEntry {
-  return { enrichments: undefined, startActive: false, ...partial };
+  return { enrichments: undefined, startActive: false, activate: undefined, ...partial };
 }
 
 function makeTable(html: string): HTMLTableElement {
@@ -151,5 +151,48 @@ describe('resolveTableConfig — resolution through precedence', () => {
       entries: [entry({ selector: '#temps', enrichments: new Set(['heatmap']) })],
     });
     expect(cfg.enrichments).toEqual(new Set(['filter']));
+  });
+});
+
+describe('resolveTableConfig — auto-activate set (spec 015 extension)', () => {
+  const base = {
+    visitorOverride: undefined,
+    pageConfig: { enrichments: undefined },
+    registry: REGISTRY,
+  };
+
+  it('activate is narrowed to ids the table actually offers', () => {
+    const t = makeTable('<table id="t"><tr><td>1</td></tr></table>');
+    const cfg = resolveTableConfig(t, {
+      ...base,
+      entries: [entry({
+        selector: '#t',
+        enrichments: new Set(['heatmap', 'sliders']),
+        activate: new Set(['heatmap', 'sort']), // sort not offered → dropped
+      })],
+    });
+    expect(cfg.activate).toEqual(new Set(['heatmap']));
+  });
+
+  it('activate folds last-match-wins per field', () => {
+    const t = makeTable('<table id="t" class="x"><tr><td>1</td></tr></table>');
+    const cfg = resolveTableConfig(t, {
+      ...base,
+      entries: [
+        entry({ selector: '.x', enrichments: new Set(['heatmap', 'sliders']), activate: new Set(['heatmap']) }),
+        entry({ selector: '#t', activate: new Set(['sliders']) }),
+      ],
+    });
+    // enrichments left standing from the first entry; activate overridden.
+    expect(cfg.activate).toEqual(new Set(['sliders']));
+  });
+
+  it('no activate field → empty set', () => {
+    const t = makeTable('<table id="t"><tr><td>1</td></tr></table>');
+    const cfg = resolveTableConfig(t, {
+      ...base,
+      entries: [entry({ selector: '#t', enrichments: new Set(['heatmap']) })],
+    });
+    expect(cfg.activate).toEqual(new Set());
   });
 });

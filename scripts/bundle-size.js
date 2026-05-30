@@ -55,9 +55,13 @@ const BUNDLE = path.resolve(__dirname, '..', 'dist', 'grid-sight.iife.js');
 // 37 → 42 KB when 006-cell-annotations merged on top (+~4.4 KB gz), then
 // 42 → 45 KB when 004-outlier merged on top (combined gz ~44.97 KB), then
 // 45 → 50 KB when 014-navigation-and-analysis merged on top of 004-outlier
-// (freeze-panes + statistics extension + summary-row + find-in-table).
+// (freeze-panes + statistics extension + summary-row + find-in-table), then
+// 50 → 52 KB when 015-welcome-per-table-options added per-table resolution,
+// the table-aware gate, the extracted toggle activate/deactivate path, and the
+// per-table auto-activate (v1) wiring (combined gz ~50.1 KB; the baseline was
+// already 49.40 KB, leaving the prior 50 KB ceiling with sub-1 KB headroom).
 // Constitution §I 10 KB target unchanged.
-const MAX_GZ_KB = 50;
+const MAX_GZ_KB = 52;
 const CONSTITUTION_TARGET_KB = 10;
 
 const soft = process.argv.includes('--soft');

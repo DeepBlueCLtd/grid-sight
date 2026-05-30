@@ -182,4 +182,21 @@ describe('parsePageConfig — per-table options (spec 015)', () => {
     });
     expect(r.tables.map((t) => t.selector)).toEqual(['#a', '.b']);
   });
+
+  it('absent activate stays undefined', () => {
+    const r = parsePageConfig({ tables: [{ selector: '#a' }] });
+    expect(r.tables[0].activate).toBeUndefined();
+  });
+
+  it('parses + normalises activate like the enrichment list', () => {
+    const r = parsePageConfig({ tables: [{ selector: '#a', activate: ['Heatmap', ' SLIDERS '] }] });
+    expect(r.tables[0].activate).toEqual(new Set(['heatmap', 'sliders']));
+  });
+
+  it('activate non-array → ignores field, keeps entry', () => {
+    const r = parsePageConfig({ tables: [{ selector: '#a', activate: 'heatmap' }] });
+    expect(r.tables[0].activate).toBeUndefined();
+    expect(warnSpy).toHaveBeenCalledOnce();
+    expect(warnSpy.mock.calls[0][0]).toMatch(/tables\[\]\.activate must be an array/);
+  });
 });
