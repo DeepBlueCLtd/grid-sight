@@ -9,7 +9,7 @@ const meta: Meta = {
   render: () => {
     // Reset state between stories.
     setVisitorOverride(undefined);
-    setPageConfig({ enrichments: undefined, showToggleUi: true });
+    setPageConfig({ enrichments: undefined, showToggleUi: true, tables: [] });
     unmountTogglePanel();
     // Clear any persisted URL/storage state from a previous story run.
     if (typeof history !== 'undefined' && typeof location !== 'undefined') {

@@ -26,8 +26,8 @@ import {
 } from './enrichments/heatmap';
 
 // Import UI components
-import { injectToggle } from './ui/toggle-injector';
-import { removePlusIcons } from './ui/header-utils';
+import { injectToggle, activateToggle } from './ui/toggle-injector';
+import { removePlusIcons, refreshLozengeStates } from './ui/header-utils';
 
 // Row-visibility pipeline (spec 002-003-row-visibility)
 import { teardown as teardownVisibleRows, hydrateTable, serialiseTable, onVisibleRowsChange } from './utils/visible-rows';
@@ -96,6 +96,7 @@ import {
   setPageConfig,
   setVisitorOverride,
   isEnrichmentEnabled,
+  resolveTableConfig,
 } from './core/enabled-set-state';
 import { resolveVisitorEnrichments } from './utils/slider-persistence';
 import { clearColumnTypes } from './core/column-types-cache';
@@ -120,12 +121,41 @@ import { removeFindUi } from './enrichments/find-in-table';
 interface InitOptions extends TableProcessorOptions {
   enrichments?: readonly string[];
   showToggleUi?: boolean;
+  /** Per-table options (spec 015); rides on the existing config object. */
+  tables?: readonly unknown[];
   virtualColumns?: { enabled?: boolean; persistInUrl?: boolean; urlParam?: string };
 }
 
 // Activate the heatmap-marker listener once at module load. It is a no-op if no
 // dual-axis sliders are ever added.
 ensureHeatmapMarkerListener();
+
+/**
+ * Spec 015 per-table auto-activate (v1 subset). Apply a parameterless toggle
+ * enrichment on a table whose GS toggle is already active. Only the three
+ * parameterless toggles are supported; any other id is a no-op here — sort /
+ * filter / outlier / cumulative / compare need parameters, statistics /
+ * frequency / find are one-shot popups, and summary-row / freeze-panes /
+ * annotations already auto-render when enabled.
+ */
+function autoApplyEnrichment(table: HTMLTableElement, id: string): void {
+  try {
+    if (id === 'heatmap') {
+      if (!isHeatmapActive(table, -1, 'table')) toggleHeatmap(table, -1, 'table');
+    } else if (id === 'sliders') {
+      for (const axis of ['row', 'col'] as const) {
+        try { sliderAddSlider(table, axis); } catch (e) { void e; /* axis not numeric / already present */ }
+      }
+    } else if (id === 'sparkline') {
+      const directive: SparklineDirective = {
+        id: 'spark', kind: 'sparkline', tableEl: table, scale: 'per-row', style: 'bar',
+      };
+      vcActivate(directive);
+    }
+  } catch (e) {
+    console.warn(`[gridsight] auto-activate "${id}" failed:`, e);
+  }
+}
 
 // Re-export types for external use
 export type { 
@@ -168,6 +198,11 @@ const GridSight = {
       showToggleUi: options.showToggleUi !== undefined
         ? !!options.showToggleUi
         : parsedPage.showToggleUi,
+      // Per-table options (spec 015) ride on the existing config object; an
+      // ESM `init({ tables })` override takes precedence over pageConfig.tables.
+      tables: options.tables !== undefined
+        ? parsePageConfig({ tables: options.tables }).tables
+        : parsedPage.tables,
     };
     setPageConfig(merged);
 
@@ -317,6 +352,22 @@ const GridSight = {
     try {
       // Inject toggle which will handle the enrichment menu
       injectToggle(table);
+      // Per-table start-state (spec 015 R-5/R-6): if this table's resolved
+      // config asks for it, reveal its enrichments on load via the SAME path a
+      // manual GS click uses. On a global disable→enable cycle init() re-runs
+      // processTable for every table, so each returns to its authored
+      // start-state (R-6). Default is inactive, so unconfigured tables are
+      // unchanged (INV-3).
+      const tableCfg = resolveTableConfig(table);
+      // Auto-activating an enrichment implies the toggle is revealed.
+      if (tableCfg.startActive || tableCfg.activate.size > 0) {
+        activateToggle(table);
+      }
+      if (tableCfg.activate.size > 0) {
+        for (const id of tableCfg.activate) autoApplyEnrichment(table, id);
+        // Reflect the applied toggles (H / S highlights) in the lozenge cluster.
+        refreshLozengeStates(table);
+      }
     } catch (error) {
       console.warn('Failed to inject UI elements:', error);
     }
@@ -338,17 +389,17 @@ const GridSight = {
 
     // Outlier markers — restore any persisted `gs.o` directives before the
     // table content settles (spec 004, SC-003). Gated on the enrichment being
-    // in the effective enabled set.
-    try { if (isEnrichmentEnabled('outlier')) applyOutliers(table); } catch (e) { void e; }
+    // in the effective enabled set for THIS table (spec 015 per-table aware).
+    try { if (isEnrichmentEnabled('outlier', table)) applyOutliers(table); } catch (e) { void e; }
 
     // Freeze panes (spec 014) — auto-rendered; gated on the enabled set so it
-    // stays dark when Grid-Sight is globally off (FR-015).
-    if (isEnrichmentEnabled('freeze-panes')) {
+    // stays dark when Grid-Sight is globally off (FR-015), per-table aware.
+    if (isEnrichmentEnabled('freeze-panes', table)) {
       try { applyFreezePanes(table); } catch (e) { void e; }
     }
 
     // Summary row (spec 014) — auto-rendered aggregate footer, same gating.
-    if (isEnrichmentEnabled('summary-row')) {
+    if (isEnrichmentEnabled('summary-row', table)) {
       try { applySummaryRow(table); } catch (e) { void e; }
     }
 

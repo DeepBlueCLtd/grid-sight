@@ -235,6 +235,13 @@ function appendCellsForDirective(
 
   // Header — first header row carries the label, spacer cells on others.
   const thead = table.tHead;
+  // A table without an explicit <thead> keeps its header in the first <tbody>
+  // row (the logical grid treats it as the header — spec 013). Without handling
+  // this, the label <th> was never created: `thead` was null, so the body loop
+  // dropped a stray data <td> into the de-facto header row and the appended
+  // column showed no title (and several were indistinguishable). Insert the
+  // labelled <th> into that implied header row instead.
+  let impliedHeaderRow: HTMLTableRowElement | null = null;
   if (thead) {
     let firstHeader = true;
     for (let i = 0; i < thead.rows.length; i++) {
@@ -258,6 +265,27 @@ function appendCellsForDirective(
         }
       }
     }
+  } else {
+    const tbody0 = table.tBodies[0];
+    impliedHeaderRow = tbody0
+      ? Array.from(tbody0.rows).find((r) => !isScaffold(r)) ?? null
+      : null;
+    if (impliedHeaderRow) {
+      const th = document.createElement('th');
+      th.setAttribute('scope', 'col');
+      th.setAttribute('data-gs-virtual-column', directive.kind);
+      th.setAttribute('data-gs-virtual-column-id', directive.id);
+      th.textContent = renderer.headerText(directive);
+      insertCellAt(impliedHeaderRow, th, insertBeforeIdx);
+      headerCells.push(th);
+      if (renderer.renderHeaderExtras) {
+        try {
+          renderer.renderHeaderExtras(directive, th);
+        } catch (err) {
+          console.error('virtual-column renderHeaderExtras error', err);
+        }
+      }
+    }
   }
 
   // Body
@@ -268,6 +296,9 @@ function appendCellsForDirective(
     for (let i = 0; i < tbody.rows.length; i++) {
       const row = tbody.rows[i];
       if (isScaffold(row)) continue;
+      // The implied header row already carries the label <th>; don't also give
+      // it a data cell.
+      if (row === impliedHeaderRow) continue;
       const td = document.createElement('td');
       td.setAttribute('data-gs-virtual-column', directive.kind);
       td.setAttribute('data-gs-virtual-column-id', directive.id);

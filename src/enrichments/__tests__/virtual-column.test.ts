@@ -91,6 +91,43 @@ describe('virtual-column scaffold', () => {
     expect(table.tHead!.rows[0].cells[4].getAttribute('data-gs-virtual-column')).toBe('cumulative');
   });
 
+  it('labels the column header on a table with no explicit <thead>', () => {
+    // Regression: tables whose header lives in the first <tbody> row (no
+    // <thead>) previously got a stray data <td> in the header row and the
+    // appended column showed no title.
+    const host = document.createElement('div');
+    host.innerHTML =
+      '<table>' +
+      '<tr><th>Name</th><th>Num1</th><th>Num2</th><th>Num3</th></tr>' +
+      '<tr><td>row-0</td><td>1</td><td>2</td><td>3</td></tr>' +
+      '<tr><td>row-1</td><td>2</td><td>4</td><td>6</td></tr>' +
+      '</table>';
+    const table = host.querySelector('table') as HTMLTableElement;
+    document.body.appendChild(table);
+    expect(table.tHead).toBeNull();
+
+    const before = table.outerHTML;
+    activateDirective({
+      id: 'cum-num1',
+      kind: 'cumulative',
+      tableEl: table,
+      sourceColKey: 'num1',
+      mode: 'sum',
+      activationIndex: 0,
+    });
+
+    const headerRow = table.tBodies[0].rows[0];
+    const labelCell = headerRow.cells[headerRow.cells.length - 1];
+    expect(labelCell.tagName).toBe('TH');
+    expect(labelCell.textContent).toBe('Σ num1');
+    expect(labelCell.getAttribute('data-gs-virtual-column')).toBe('cumulative');
+    // Data rows get a data cell, not a header.
+    expect(table.tBodies[0].rows[1].cells[4].tagName).toBe('TD');
+
+    removeDirective('cum-num1');
+    expect(table.outerHTML).toBe(before);
+  });
+
   it('removeDirective restores byte-identical DOM (snapshot diff)', () => {
     const table = makeTable(3, 4);
     const before = table.outerHTML;
