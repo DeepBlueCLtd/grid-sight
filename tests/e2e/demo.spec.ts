@@ -27,15 +27,15 @@ test.describe('Grid-Sight landing page', () => {
     await page.waitForLoadState('domcontentloaded');
     await page.waitForFunction(() => !!(window as any).gridSight);
 
-    // All three sample tables present.
-    await expect(page.locator('#plain-table')).toBeVisible();
-    await expect(page.locator('#featured-table')).toBeVisible();
-    await expect(page.locator('#contact-table')).toBeVisible();
+    // Representative sample tables present (spec 015 welcome redesign).
+    await expect(page.locator('#reference-raw')).toBeVisible();
+    await expect(page.locator('#demo-sliders')).toBeVisible();
+    await expect(page.locator('#demo-nav')).toBeVisible();
 
-    // Plain table opts out — no GS toggle.
-    await expect(page.locator('#plain-table .grid-sight-toggle')).toHaveCount(0);
-    // Featured table is auto-detected — has the GS toggle.
-    await expect(page.locator('#featured-table .grid-sight-toggle')).toHaveCount(1);
+    // The reference table opts out (data-gs-ignore) — no GS toggle.
+    await expect(page.locator('#reference-raw .grid-sight-toggle')).toHaveCount(0);
+    // A demo table is auto-detected — has the GS toggle.
+    await expect(page.locator('#demo-sliders .grid-sight-toggle')).toHaveCount(1);
 
     // Demo cards link to the seven published demos shown on the landing page.
     const cardTitles = await page.locator('.demo-card h3').allTextContents();
@@ -51,25 +51,27 @@ test.describe('Grid-Sight landing page', () => {
     ]));
   });
 
-  test('GS toggle injects lozenges on the featured table', async ({ page }) => {
+  test('GS toggle injects lozenges on a start-inactive table', async ({ page }) => {
     await page.goto('http://localhost:3014/grid-sight/');
     await page.waitForFunction(() => !!(window as any).gridSight);
 
-    const gsToggle = page.locator('#featured-table .grid-sight-toggle').first();
+    // #start-inactive ships hidden (startActive:false); clicking GS reveals it.
+    const gsToggle = page.locator('#start-inactive .grid-sight-toggle').first();
+    await expect(page.locator('#start-inactive .gs-lozenge')).toHaveCount(0);
     await gsToggle.click();
-    await expect(page.locator('#featured-table .gs-lozenge').first()).toBeVisible();
+    await expect(page.locator('#start-inactive .gs-lozenge').first()).toBeVisible();
   });
 
   test('page-level toggle disables and re-enables Grid-Sight', async ({ page }) => {
     await page.goto('http://localhost:3014/grid-sight/');
     await page.waitForFunction(() => !!(window as any).gridSight);
-    await expect(page.locator('#featured-table .grid-sight-toggle')).toHaveCount(1);
+    await expect(page.locator('#demo-sliders .grid-sight-toggle')).toHaveCount(1);
 
     await page.click('#gs-page-toggle');
-    await expect(page.locator('#featured-table .grid-sight-toggle')).toHaveCount(0);
+    await expect(page.locator('#demo-sliders .grid-sight-toggle')).toHaveCount(0);
 
     await page.click('#gs-page-toggle');
-    await expect(page.locator('#featured-table .grid-sight-toggle')).toHaveCount(1);
+    await expect(page.locator('#demo-sliders .grid-sight-toggle')).toHaveCount(1);
   });
 
   test('all eight demo pages linked from the landing page are reachable', async ({ page }) => {
