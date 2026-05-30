@@ -96,12 +96,12 @@ any table.
 
 ### Tests for User Story 1
 
-- [ ] T016 [P] [US1] In `e2e/welcome-per-table.spec.ts`, add a US1 test: hero heading + problem statement + all five principles are present and visible with Grid-Sight disabled (FR-001, FR-002)
+- [X] T016 [P] [US1] In `e2e/welcome-per-table.spec.ts`, add a US1 test: hero heading + problem statement + all five principles are present and visible with Grid-Sight disabled (FR-001, FR-002)
 
 ### Implementation for User Story 1
 
-- [ ] T017 [US1] Rewrite the top of `public/index.html`: replace the sliders-only lede with a hero (what GS is + problem it solves) and a plain-language principles block (offline/air-gapped, zero deps, progressive, accessible, byte-identical teardown), per `contracts/welcome-page.md` §1
-- [ ] T018 [US1] Add the welcome-page CSS for the hero/principles (warm-but-technical styling), keeping it inline and offline-safe (no fetched fonts/icons)
+- [X] T017 [US1] Rewrite the top of `public/index.html`: replace the sliders-only lede with a hero (what GS is + problem it solves) and a plain-language principles block (offline/air-gapped, zero deps, progressive, accessible, byte-identical teardown), per `contracts/welcome-page.md` §1
+- [X] T018 [US1] Add the welcome-page CSS for the hero/principles (warm-but-technical styling), keeping it inline and offline-safe (no fetched fonts/icons)
 
 **Checkpoint**: Intro reads well standalone (SC-001); page still loads offline.
 
@@ -120,14 +120,14 @@ alternates on wide screens and stacks on narrow screens.
 
 ### Tests for User Story 2
 
-- [ ] T019 [P] [US2] Create `src/stories/per-table-options.stories.ts` — a Storybook story composing two tables with distinct enrichment sets + one start-active/one start-inactive, with a `play` interaction asserting different lozenges appear
-- [ ] T020 [P] [US2] In `e2e/welcome-per-table.spec.ts`, add US2 tests: all four feature areas have a live operable table; two tables show different lozenge sets simultaneously (SC-005); wide-screen alternation (CSS order) and mobile stacking with no horizontal overflow (SC-003); each section links to its demo page(s) (FR-008)
+- [X] T019 [P] [US2] Create `src/stories/per-table-options.stories.ts` — a Storybook story composing two tables with distinct enrichment sets + one start-active/one start-inactive, with a `play` interaction asserting different lozenges appear
+- [X] T020 [P] [US2] In `e2e/welcome-per-table.spec.ts`, add US2 tests: all four feature areas have a live operable table; two tables show different lozenge sets simultaneously (SC-005); wide-screen alternation (CSS order) and mobile stacking with no horizontal overflow (SC-003); each section links to its demo page(s) (FR-008)
 
 ### Implementation for User Story 2
 
-- [ ] T021 [US2] Add the four feature sections to `public/index.html` (sliders & interpolation; visual analysis; navigation & search; derived data & notes), each: heading + narrative + ≥1 demo table with a stable `id` + links to the area's existing demo pages (FR-003, FR-006, FR-007, FR-008)
-- [ ] T022 [US2] Add the alternating two-column CSS grid + mobile `@media` stacking, alternation via CSS `order`/`:nth-of-type` only so DOM/tab order stays narrative-then-table (R-10, FR-004, FR-005, a11y)
-- [ ] T023 [US2] Configure `window.gridSight.pageConfig.tables` in `public/index.html` so each demo table offers exactly its section's enrichment(s) and starts active; re-register the slider demo's formula once the IIFE loads (R-11, contract §1)
+- [X] T021 [US2] Add the four feature sections to `public/index.html` (sliders & interpolation; visual analysis; navigation & search; derived data & notes), each: heading + narrative + ≥1 demo table with a stable `id` + links to the area's existing demo pages (FR-003, FR-006, FR-007, FR-008)
+- [X] T022 [US2] Add the alternating two-column CSS grid + mobile `@media` stacking, alternation via CSS `order`/`:nth-of-type` only so DOM/tab order stays narrative-then-table (R-10, FR-004, FR-005, a11y)
+- [X] T023 [US2] Configure `window.gridSight.pageConfig.tables` in `public/index.html` so each demo table offers exactly its section's enrichment(s) and starts active; re-register the slider demo's formula once the IIFE loads (R-11, contract §1)
 
 **Checkpoint**: All four areas operable inline; distinct sets co-resident; layout
 responsive (US2 complete, builds on US4).
@@ -149,13 +149,13 @@ hidden, and clicking a GS toggle flips it without reload.
 ### Tests for User Story 3
 
 - [X] T024 [P] [US3] Create `src/ui/__tests__/toggle-injector.start-state.test.ts` — `activateToggle`/`deactivateToggle`: active class + `aria-expanded` flip, plus-icons injected/removed, and **byte-identical teardown** after activate→deactivate (FR-024, INV-4)
-- [ ] T025 [P] [US3] In `e2e/welcome-per-table.spec.ts`, add US3 tests: one table starts active (lozenges visible on load) and one starts inactive; clicking a GS toggle reveals/hides in place; global toggle off→on restores each table to its configured start-state (FR-009–FR-011, R-6)
+- [X] T025 [P] [US3] In `e2e/welcome-per-table.spec.ts`, add US3 tests: one table starts active (lozenges visible on load) and one starts inactive; clicking a GS toggle reveals/hides in place; global toggle off→on restores each table to its configured start-state (FR-009–FR-011, R-6)
 
 ### Implementation for User Story 3
 
 - [X] T026 [US3] Extract `activateToggle(table)`/`deactivateToggle(table)` from the inline click handler in `src/ui/toggle-injector.ts` and have the click handler call them (single shared path; export both) (R-5, contract §4)
 - [X] T027 [US3] In `src/index.ts`, after `injectToggle(table)`, call `activateToggle(table)` iff `resolveTableConfig(table).startActive`; on global re-enable, re-apply each table's configured start-state (R-5, R-6) (depends on T026, T012)
-- [ ] T028 [US3] In `public/index.html`, add the global-toggle region with narrative framing it as a non-destructive overlay, and place a start-active table beside a start-inactive one as the live start-state contrast (FR-009, FR-011, contract §1 items 3–4)
+- [X] T028 [US3] In `public/index.html`, add the global-toggle region with narrative framing it as a non-destructive overlay, and place a start-active table beside a start-inactive one as the live start-state contrast (FR-009, FR-011, contract §1 items 3–4)
 
 **Checkpoint**: Global toggle round-trips and is explained; start-state contrast
 visible and interactive (SC-004, SC-008).
@@ -171,11 +171,11 @@ via a working link.
 
 ### Tests for User Story 5
 
-- [ ] T029 [P] [US5] In `e2e/welcome-per-table.spec.ts`, add a US5 test asserting every existing demo page URL (the 12 from today's grid) is linked and the links resolve (no orphaned demo) (FR-012, SC-006)
+- [X] T029 [P] [US5] In `e2e/welcome-per-table.spec.ts`, add a US5 test asserting every existing demo page URL (the 12 from today's grid) is linked and the links resolve (no orphaned demo) (FR-012, SC-006)
 
 ### Implementation for User Story 5
 
-- [ ] T030 [US5] Add a consolidated "more demos" index section near the bottom of `public/index.html` linking all 12 existing demo pages (preserving today's reachable set), complementing the per-section links from US2 (FR-012)
+- [X] T030 [US5] Add a consolidated "more demos" index section near the bottom of `public/index.html` linking all 12 existing demo pages (preserving today's reachable set), complementing the per-section links from US2 (FR-012)
 
 **Checkpoint**: Zero orphaned demos (SC-006).
 
@@ -187,7 +187,7 @@ via a working link.
 
 - [ ] T031 Measure bundle delta with `node scripts/bundle-size.js --soft`; confirm < 42 KB gz and within the ≤ 1.5 KB budget; if breached, note explicitly in the PR (constitution §I)
 - [ ] T032 [P] Document the per-table options API + start-state in `docs/` (and a short note in `docs/architecture/enrichments.md` that gating is now table-aware); reconcile `README.md` feature list if it claims page-only config
-- [ ] T033 [P] Add an offline/`file://` smoke assertion to `e2e/welcome-per-table.spec.ts` (or a manual step in `quickstart.md`) confirming the page + every inline demo work with no network (FR-013, SC-007)
+- [X] T033 [P] Add an offline/`file://` smoke assertion to `e2e/welcome-per-table.spec.ts` (or a manual step in `quickstart.md`) confirming the page + every inline demo work with no network (FR-013, SC-007)
 - [ ] T034 Run full suites green: `yarn test` (Vitest + Storybook), `yarn test:e2e` (Playwright), `yarn build` (tsc, zero errors) — the merge gate (constitution §II, SC-009)
 - [ ] T035 Walk `quickstart.md` end-to-end against the built page; fix any drift between the documented contract and actual behaviour
 
