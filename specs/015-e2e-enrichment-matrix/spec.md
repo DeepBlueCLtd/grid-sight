@@ -73,9 +73,10 @@ once.
 
 **Independent Test**: Run the permutation suite alone against
 `public/demo/toggle/opt-in-playground.html`. It enables representative
-combinations (e.g. `summary-row` + `sort` + `filter` + sliders + virtual columns
-+ annotations + `find-in-table`), asserts each still behaves correctly under the
-others, and asserts byte-identical teardown when the combination is torn down.
+combinations (e.g. `summary-row`, `sort`, `filter`, sliders, virtual columns,
+annotations, and `find-in-table`), asserts each still behaves correctly under
+the others, and asserts byte-identical teardown when the combination is torn
+down.
 
 **Acceptance Scenarios**:
 
