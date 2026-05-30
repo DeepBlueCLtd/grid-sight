@@ -203,7 +203,7 @@
         </p>
       </div>
       <div class="feature__demo">
-        <p class="demo-caption">Drag the row/column sliders. Formula: <code>√sl − √R/100 + 2</code></p>
+        <p class="demo-caption">Click the <strong>S</strong> lozenge to attach the row &amp; column sliders, then drag them. Formula: <code>√sl − √R/100 + 2</code></p>
         <table id="demo-sliders">
           <tr><th></th>  <th>10</th><th>20</th><th>30</th><th>40</th><th>50</th></tr>
           <tr><th>1000</th> <td>4.8</td><td>6.2</td><td>7.2</td><td>8.0</td><td>8.8</td></tr>
@@ -428,6 +428,14 @@
   <script>
     window.gridSight = {
       pageConfig: {
+        // Page-level default for any table NOT matched by a per-table entry
+        // below — the union of enrichments the demos use. Every demo table is
+        // matched (or data-gs-ignore'd), so this is just a sane fallback.
+        enrichments: [
+          'sliders', 'statistics', 'heatmap', 'outlier', 'summary-row',
+          'sort', 'filter', 'find-in-table', 'freeze-panes',
+          'cumulative', 'sparkline', 'diff-compare', 'annotations'
+        ],
         tables: [
           { selector: '#demo-sliders', enrichments: ['sliders', 'statistics'], startActive: true },
           { selector: '#demo-visual',  enrichments: ['heatmap', 'outlier', 'statistics', 'summary-row'], startActive: true },
