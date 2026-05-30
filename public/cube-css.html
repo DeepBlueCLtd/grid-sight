@@ -42,8 +42,9 @@
       transform: translateZ(-160px) rotateX(-18deg) rotateY(-26deg) scale(1);
       will-change: transform;
     }
-    /* Smooth glide only while snapping to a picked face — never during a drag. */
-    .cube.is-snapping { transition: transform .8s cubic-bezier(.22, .61, .36, 1); }
+    /* Smooth glide only while snapping to a picked face — never during a drag.
+       The spin lives on each .face (see script), so the transition does too. */
+    .cube.is-snapping .face { transition: transform .8s cubic-bezier(.22, .61, .36, 1); }
 
     .face {
       position: absolute; width: 320px; height: 320px;
@@ -233,9 +234,27 @@
       var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
       var autoSpin = !reduce;                       // gentle idle rotation
 
+      // The cube spin is applied to EACH face's own transform (spin × placement)
+      // rather than as a rotation on the parent .cube. A rotated face that is a
+      // preserve-3d *grandchild* (face inside a rotated cube) drops out of
+      // Chromium pointer hit-testing once it turns ~90° — so only the front/back
+      // faces would be clickable. Putting the full transform on the face itself
+      // (the same thing Three.js's CSS3DRenderer does) keeps every front-facing
+      // face hit-testable. The .cube keeps only depth offset + zoom.
+      var PLACE = {
+        front:  'rotateY(0deg) translateZ(160px)',
+        right:  'rotateY(90deg) translateZ(160px)',
+        back:   'rotateY(180deg) translateZ(160px)',
+        left:   'rotateY(-90deg) translateZ(160px)',
+        top:    'rotateX(90deg) translateZ(160px)',
+        bottom: 'rotateX(-90deg) translateZ(160px)'
+      };
+      var faceEls = Array.prototype.slice.call(cube.querySelectorAll('.face'));
+      function faceKey(f) { var m = f.className.match(/f-(front|right|back|left|top|bottom)/); return m && m[1]; }
       function apply() {
-        cube.style.transform =
-          'translateZ(-160px) rotateX(' + rx + 'deg) rotateY(' + ry + 'deg) scale(' + scale + ')';
+        cube.style.transform = 'translateZ(-160px) scale(' + scale + ')';
+        var spin = 'rotateX(' + rx + 'deg) rotateY(' + ry + 'deg) ';
+        faceEls.forEach(function (f) { var k = faceKey(f); if (k) f.style.transform = spin + PLACE[k]; });
       }
       apply();
 
@@ -278,9 +297,12 @@
 
       // Face picker — snap the chosen face flat to the camera so its table is
       // head-on and comfortable to use.
+      // Snap angle that brings each face flat to the camera (cancels its
+      // placement rotation). Top/bottom use rotateX, so their signs mirror the
+      // placement: top is placed at rotateX(90deg), so spin rotateX(-90deg).
       var ANGLES = {
         front: [0, 0], right: [0, -90], back: [0, 180],
-        left: [0, 90], top: [90, 0], bottom: [-90, 0]
+        left: [0, 90], top: [-90, 0], bottom: [90, 0]
       };
       picker.addEventListener('click', function (e) {
         var b = e.target.closest('button'); if (!b) return;
