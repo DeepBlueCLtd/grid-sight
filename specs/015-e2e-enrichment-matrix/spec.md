@@ -125,6 +125,39 @@ pairing misbehaves).
 
 ---
 
+### User Story 4 - Fast, isolated, cross-browser e2e execution (Priority: P4)
+
+As a maintainer, I want the whole e2e suite to run in parallel against a single
+shared preview server, across the three major browser engines, within an enforced
+wall-clock budget — so that the multiplicative matrix and permutation coverage
+stays fast, catches engine-specific defects, and cannot silently balloon CI time.
+
+**Why this priority**: The matrix multiplies case counts, so without parallelism
+the suite's wall-clock grows past what reviewers tolerate. This story is the
+infrastructure that keeps the first three sustainable; it is sequenced last
+because the coverage stories deliver the protection, and this makes it affordable
+and trustworthy across browsers.
+
+**Independent Test**: Run `yarn test:e2e` and confirm it executes with more than
+one worker against one shared server (no per-file server boot), passes on
+Chromium, Firefox, and WebKit, and that an artificially slow suite trips the
+runtime gate.
+
+**Acceptance Scenarios**:
+
+1. **Given** the e2e suite, **When** it runs, **Then** all specs (existing and
+   new) execute against a single shared preview server with `fullyParallel` and
+   more than one worker, and the whole suite is green.
+2. **Given** specs run concurrently, **When** two specs touch the same persistence
+   or page state, **Then** they remain isolated (no shared port assumptions, no
+   cross-spec ordering dependency) and do not flake.
+3. **Given** the matrix and permutation suites, **When** CI runs them, **Then**
+   they pass on Chromium, Firefox, and WebKit.
+4. **Given** the e2e suite wall-clock exceeds the agreed budget, **When** CI runs,
+   **Then** the build fails on the runtime gate rather than silently slowing.
+
+---
+
 ### Edge Cases
 
 - **Identifier-looking strings** (`S-001`, `2024-01`, phone numbers, ZIP codes):
@@ -135,9 +168,16 @@ pairing misbehaves).
   mixed content compute over the valid values and report the inapplicable or
   partial state as defined.
 - **Runtime budget**: a full power-set sweep of all offered enrichments is
-  combinatorially large; the permutation layer must use representative /
-  pairwise combinations, not every subset, while the suite still completes within
-  the project's e2e time budget.
+  combinatorially large; the permutation layer uses **maximal pairwise**
+  combinations (every pair, plus a curated rich combo) — never the full subset
+  power set — and runtime is kept affordable by parallel execution and bounded by
+  the runtime gate rather than by trimming which pairs are covered.
+- **Parallel isolation**: two specs running concurrently must not collide on a
+  shared port, localStorage key, or URL state; an un-isolated spec that passed
+  serially could flake under parallelism.
+- **Engine differences**: a lozenge or teardown behaviour correct on Chromium may
+  differ on Firefox/WebKit; the cross-browser run must surface that rather than
+  assume parity.
 - **Inapplicable but enabled**: an enrichment toggled on for a table it cannot act
   on must present its defined disabled/inapplicable affordance — not act, throw,
   or vanish.
@@ -181,6 +221,18 @@ pairing misbehaves).
 - **FR-012**: Where the existing demo fixtures lack data that meaningfully
   exercises an offered enrichment, the feature MAY enrich those fixtures (or add
   minimal ones) so each pairing has a non-trivial assertion.
+- **FR-013**: The entire e2e suite (existing specs plus the new matrix and
+  permutation specs) MUST run against a **single shared preview server** — the
+  per-file `beforeAll` preview pattern is removed — and MUST execute with
+  `fullyParallel` and more than one worker, all green.
+- **FR-014**: Each spec MUST be parallel-safe: no hard-coded shared port, no
+  reliance on another spec's state or execution order, and any per-page
+  persistence (localStorage/URL) isolated so concurrent specs do not interfere.
+- **FR-015**: The matrix and permutation suites MUST run on **Chromium, Firefox,
+  and WebKit** Playwright projects and pass on all three.
+- **FR-016**: CI MUST **fail the build** when the full e2e suite wall-clock
+  exceeds an agreed budget (a runtime hard gate), so coverage growth cannot
+  silently inflate CI time.
 
 ### Key Entities
 
@@ -212,20 +264,35 @@ pairing misbehaves).
   new executed matrix case with zero edits to existing test files.
 - **SC-005**: A demo offering an enrichment with no defined expectation cannot
   pass silently — it fails or is explicitly flagged.
-- **SC-006**: The complete e2e suite remains green and completes within the
-  project's existing e2e runtime budget (no more than a modest, agreed increase
-  attributable to representative-rather-than-exhaustive combination coverage).
+- **SC-006**: Coverage is prioritized over raw speed: combination coverage is
+  maximal pairwise (still not the full power set) over each surface's offered
+  enrichments and tables, **excluding** large/perf fixtures that have their own
+  dedicated specs. Runtime is kept affordable by parallel execution (SC-007) and
+  bounded by the runtime gate (SC-009) rather than by trimming coverage.
+- **SC-007**: The complete e2e suite runs against a single shared preview server
+  with `fullyParallel` enabled and more than one worker, and is green.
+- **SC-008**: The matrix and permutation suites pass on Chromium, Firefox, and
+  WebKit.
+- **SC-009**: A runtime gate fails the build when the full e2e suite wall-clock
+  exceeds the agreed budget.
 
 ## Assumptions
 
-- The existing per-enrichment e2e specs remain; this feature adds the matrix and
-  permutation layers alongside them rather than replacing them.
+- The existing per-enrichment e2e specs remain in place behaviourally, but ALL of
+  them are migrated off their per-file `beforeAll` preview onto one shared
+  Playwright `webServer` so the suite can run `fullyParallel`; the
+  `capability-filtering` demo→effective-set cases are folded into the discovery
+  harness (its Set-equality precedence assertions preserved).
 - Each demo's offered enrichment set is discoverable from its existing page
   configuration and/or the registry (both already exist in the codebase).
 - The opt-in playground at `public/demo/toggle/opt-in-playground.html` is the
   canonical surface for combination testing.
-- "Representative / pairwise" combination coverage (not the full power set) is an
-  acceptable trade-off, per the issue's runtime note.
+- Combination coverage is **maximal pairwise** (every pair over a surface's
+  offered enrichments and tables) plus a curated rich combo — not the full power
+  set; perf/large fixtures are excluded from the matrix.
+- The concrete e2e wall-clock budget for the runtime gate (FR-016/SC-009) is
+  agreed and recorded during planning; Firefox + WebKit are added as Playwright
+  projects alongside the existing Chromium one.
 - Demo fixtures may be enriched or added where current data does not meaningfully
   exercise an offered enrichment; this stays within the demos/test scope.
 - This work was surfaced during the spec-014 (#48) review and is explicitly
