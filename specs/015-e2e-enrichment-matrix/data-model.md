@@ -1,87 +1,76 @@
 # Phase 1 Data Model: End-to-End Enrichment Coverage Matrix
 
-These are **test-domain** entities (TypeScript types in `tests/e2e/helpers/`),
-not runtime library types. No `src/` model changes.
+Test-domain entities (TypeScript types in `tests/e2e/helpers/`). No `src/` model
+changes. Reuses the real `EnrichmentId` type from
+`src/core/enrichment-registry.ts` rather than re-declaring `string`.
 
 ## DemoPage
 
-A discovered demo HTML page under test.
-
 | Field | Type | Notes |
 |-------|------|-------|
-| `relPath` | `string` | Path relative to `public/`, e.g. `demo/summary-row/index.html`. |
-| `url` | `string` | Full preview URL, `http://localhost:<port>/<base>/<relPath>`. |
-| `offered` | `EnrichmentId[]` | Read at runtime: `pageConfig.enrichments` if non-empty, else all `enrichmentIds`. |
-| `tableIds` | `string[]` | Ids of enriched `<table>` elements on the page (DOM-read). |
-| `hasToggleUi` | `boolean` | Whether `[data-gs-toggle-panel-root]` is present (drives weak vs. full driving). |
+| `relPath` | `string` | Relative to `public/`, e.g. `demo/summary-row/index.html`. |
+| `url` | `(baseUrl: string) => string` | Built from the shared `webServer` baseURL. |
+| `offered` | `EnrichmentId[]` | Runtime: `pageConfig.enrichments` if non-empty, else all `enrichmentIds`. |
+| `tableIds` | `string[]` | Enriched `<table>` ids (DOM-read). |
+| `hasToggleUi` | `boolean` | `[data-gs-toggle-panel-root]` present. |
 
-**Discovery rule**: glob `public/demo/**/*.html`, keep files containing
-`window.gridSight` and at least one `<table>`, exclude `*fixture*.html`.
+**Discovery rule** (D2/D13): glob `public/demo/**/*.html`; keep files with
+`window.gridSight` + a `<table>`; exclude `*fixture*.html` and large/perf fixtures
+(row count over threshold, or a denylist incl. `perf-1000.html`).
 
 ## EnrichmentId
 
-The stable string id of a registered enrichment (e.g. `summary-row`, `heatmap`,
-`find-in-table`). Authoritative list = `window.gridSight.enrichmentIds`.
+Imported from `src/core/enrichment-registry.ts`. Authoritative runtime list =
+`window.gridSight.enrichmentIds`.
 
-## EnrichmentClass (test metadata)
-
-Declared once in `helpers/applicability.ts`; guarded by a meta-check so every
-shipped id is classified (FR-009).
+## ColumnOracle *(curated fixture only — authored, strong layer)*
 
 | Field | Type | Notes |
 |-------|------|-------|
-| `id` | `EnrichmentId` | |
-| `scope` | `'numeric' \| 'categorical' \| 'any' \| 'table'` | Column applicability / table-level (e.g. `find-in-table`). |
-| `headerType` | `'row' \| 'column' \| 'table'` | Where its affordance mounts. |
-| `stateful` | `boolean` | If true, also assert toggle-off→on round-trip restore (FR-006). |
+| `header` | `string` | Column header text, e.g. `Sample ID`. Must resolve in `#matrix-table` (D11 guard). |
+| `kind` | `'numeric' \| 'categorical' \| 'identifier'` | `identifier` ⇒ MUST stay text (e.g. `S-001`); never summed. |
+| `annotated` | `boolean` | Cells carry an annotation marker yet MUST keep sort/filter affordances. |
 
-## ColumnOracle (curated fixture ground truth)
-
-Authored expectation for `public/demo/matrix/index.html` columns — the
-independent oracle that catches mis-typing (SC-002).
+## MatrixCase *(conceptual — realized as a `test.step`, not a top-level test; D1)*
 
 | Field | Type | Notes |
 |-------|------|-------|
-| `header` | `string` | Column header text, e.g. `Sample ID`. |
-| `kind` | `'numeric' \| 'categorical' \| 'identifier'` | `identifier` ⇒ MUST be treated as text (e.g. `S-001`), never summed. |
-| `annotated` | `boolean` | If true, cells carry an annotation marker yet MUST keep sort/filter affordances. |
+| `page` | `DemoPage` | One Playwright `test()` per page. |
+| `enrichment` | `EnrichmentId` | One `test.step` per offered enrichment. |
+| `layer` | `'weak' \| 'strong'` | Weak = runtime-derived (D4); strong = curated fixture oracle. |
+| `expected` | `'active' \| 'inapplicable'` | Weak: derived from rendered lozenge state. Strong: from `ColumnOracle`. |
 
-## MatrixCase
+**Per-step state machine** (D7): `snapshot(before) → enable → assert(expected) →
+disable → assert(no gs-* artifacts) → enable → assert(round-trip == before)`.
 
-One (demo × offered-enrichment) assertion, generated, not hand-written.
+## CombinationCase *(opt-in playground; D12)*
+
+| Field | Type | Notes |
+|-------|------|-------|
+| `members` | `EnrichmentId[]` | A pairwise pair, or the curated rich combo. |
+| `interactionAsserts` | fn[] | Concrete cross-behaviour (D10): filter→summary recompute; sort→aggregate stable; find highlights survive filter. |
+| `teardownInvariant` | `'byte-identical'` | Disabling all members restores the table (relative round-trip). |
+
+## PrecedenceCase *(migrated from capability-filtering; D6/11A)*
 
 | Field | Type | Notes |
 |-------|------|-------|
 | `page` | `DemoPage` | |
-| `enrichment` | `EnrichmentId` | |
-| `expected` | `'active' \| 'inapplicable'` | Derived per table column from `EnrichmentClass` + (for the curated fixture) `ColumnOracle`. |
-| `assertion` | weak \| strong | Weak for general demos; strong (value-level) for the curated fixture. |
+| `expectedEnabled` | `Set<EnrichmentId>` | Asserted by **Set-equality** vs `enrichmentIds.filter(isEnrichmentEnabled)` — exactly these, no extras. |
 
-**State transition per case**: `resting → enabled → (assert) → disabled → assert
-byte-identical`; for `stateful` enrichments, additionally `disabled → enabled →
-assert restored`.
+## Harness pure functions *(Vitest-unit-tested; D9)*
 
-## CombinationCase
-
-One multi-enrichment interaction assertion on the opt-in playground.
-
-| Field | Type | Notes |
-|-------|------|-------|
-| `members` | `EnrichmentId[]` | A pairwise pair, or the curated "rich" combo. |
-| `perMemberAssert` | per-id check | Each member behaves while the others are active. |
-| `teardownInvariant` | `'byte-identical'` | Disabling all members restores the table exactly (FR-006). |
-
-## ApplicabilityExpectation (resolution)
-
-Function, not stored data: `expectationFor(page, enrichment, column?) →
-'active' | 'inapplicable' | GAP`. Returns `GAP` (⇒ explicit test failure, FR-009)
-when a curated-fixture pairing has no `ColumnOracle`/`EnrichmentClass` entry.
+| Function | Signature | Tested for |
+|----------|-----------|-----------|
+| `pairwise` | `(ids: T[]) => [T,T][]` | completeness, no dup/self-pair, order stability |
+| `discoverDemoPages` filter | `(files, contents) => DemoPage[]` | excludes fixtures/perf/table-less |
+| `normalizeForCompare` | `(html: string) => string` | normalizes benign diffs; **never strips `gs-*`** |
 
 ## Relationships
 
 ```text
-DemoPage 1───* MatrixCase *───1 EnrichmentId
-EnrichmentId 1───1 EnrichmentClass
-DemoPage(matrix fixture) 1───* ColumnOracle
+DemoPage 1───* MatrixCase(step) *───1 EnrichmentId(=src type)
+DemoPage(matrix fixture) 1───* ColumnOracle        (authored, strong)
+DemoPage 0..1───1 PrecedenceCase                   (migrated)
 opt-in-playground 1───* CombinationCase *───* EnrichmentId
 ```

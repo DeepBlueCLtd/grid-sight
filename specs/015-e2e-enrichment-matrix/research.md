@@ -1,168 +1,191 @@
 # Phase 0 Research: End-to-End Enrichment Coverage Matrix
 
-All Technical Context items are resolved from the existing codebase; there are no
-open `NEEDS CLARIFICATION` markers. Decisions below record the design choices and
-the alternatives weighed.
+All Technical Context items resolve from the existing codebase; no open
+`NEEDS CLARIFICATION`. Decisions below incorporate the `/speckit-review` outcomes
+(numbered to match the review: 1A, 2C, 3A, 4B, 5A, 6A, 7A, 8A, 9A, 10A, 11A, 12A,
+13B, 14A) plus the three scope additions (parallel migration, cross-browser,
+runtime gate).
 
-## D1 — Demo discovery: filesystem glob vs. hand-listed paths
+## D1 — Test granularity under runtime discovery *(review 1A)*
 
-**Decision**: Discover demo pages by globbing `public/demo/**/*.html` at
-test-collection time (Node `fs`), filtering to pages that set `window.gridSight`
-(a cheap substring check of the file contents), and excluding non-page fixtures
-by convention (e.g. `*fixture*.html`, files with no `<table>`).
+- **Decision**: One Playwright `test()` per discovered demo (the file list is
+  sync-known at collection time); loop the demo's offered enrichments as
+  `test.step` inside, after reading the offered set at runtime.
+- **Rationale**: Playwright registers tests at collection time, but the offered set
+  is only known after the page loads (D3). Per-demo tests with per-enrichment steps
+  give clean reporting without statically parsing HTML.
+- **Alternatives considered**:
 
-**Rationale**: FR-007/FR-008 require the matrix to extend itself when a demo is
-added. The existing suite hand-lists paths (`demo.spec.ts`,
-`capability-filtering.spec.ts` Pattern 1/2), which is exactly the rot that
-produced issue #50. A glob removes the duplicated list.
+  - Static-parse `pageConfig.enrichments` from HTML to emit per-pairing tests —
+    duplicates the empty-means-all merge rule; rejected.
+  - Parameterize off the full `enrichmentIds` — many trivially-inapplicable tests;
+    rejected.
 
-**Alternatives considered**:
+## D2 — Demo discovery: filesystem glob *(US3)*
 
-- *Hand-listed case array* (current pattern): rejected — does not self-extend;
-  the maintenance burden is the root cause being fixed.
-- *Read a manifest file*: rejected — adds a second source of truth to keep in
-  sync; the filesystem already is the truth.
+- **Decision**: Glob `public/demo/**/*.html` at collection time; keep files that
+  contain `window.gridSight` and a `<table>`; exclude `*fixture*.html` and
+  large/perf fixtures (D14).
+- **Rationale**: Self-extends as demos are added (FR-007/008); removes the
+  hand-listed case arrays that caused issue #50.
+- **Alternatives considered**:
 
-## D2 — Offered enrichment set per demo: runtime `pageConfig` vs. static parse
+  - Hand-listed paths (current pattern) — the rot being fixed; rejected.
+  - Manifest file — second source of truth; rejected.
 
-**Decision**: After navigating, read the offered set in-page:
-`window.gridSight.pageConfig.enrichments` when non-empty, else the full
-`window.gridSight.enrichmentIds` (empty array = "all opt-in", per
-`opt-in-playground.html`). Confirmed preserved at runtime: `src/index.ts:667`
-merges the author's `pageConfig` back onto the exported `GridSight` object.
+## D3 — Offered set: runtime `pageConfig` *(US3)*
 
-**Rationale**: Single source of truth that matches what the library actually
-applied. Avoids re-implementing the empty-means-all merge rule in the test.
+- **Decision**: Read in-page — `pageConfig.enrichments` if non-empty, else
+  `enrichmentIds`. Preserved at runtime (`src/index.ts:667`).
+- **Rationale**: Single source of truth matching what the library applied.
+- **Alternatives considered**: static parse — duplicates merge semantics; rejected.
 
-**Alternatives considered**:
+## D4 — Two-tier applicability oracle *(review 2C + 5A)*
 
-- *Static-parse the `<script>` block*: rejected — duplicates the merge semantics
-  and misses the empty-means-all case.
+- **Decision**: **Weak layer** (general demos): derive the expected outcome from
+  the running library at runtime — assert the rendered lozenge state (active vs
+  `gs-lozenge--disabled`) is internally consistent and that enabling never throws.
+  **Strong layer** (curated `public/demo/matrix/` fixture only): assert against an
+  **authored** `ColumnOracle` (which columns are numeric / categorical /
+  identifier, which are annotated).
+- **Rationale**: 2C removes the hand-maintained `ENRICHMENT_CLASSES`/`appliesTo`
+  mirror that could silently drift. But applying 2C to the curated fixture would be
+  circular — the test would expect whatever (possibly wrong) type the library
+  inferred, so the #48 regression could never fail. SC-002 requires the strong
+  layer's oracle to be **independent** of the code under test.
+- **Alternatives considered**:
 
-## D3 — Applicability oracle: authored ground truth vs. derived from the library
+  - 2C everywhere (incl. fixture) — drops SC-002 protection; rejected.
+  - Weak-only, no fixture — loses the targeted `S-001` catch; rejected.
+  - Hand-declared classes everywhere — drift risk the review flagged; rejected.
 
-**Decision**: Two tiers.
+## D5 — Lozenge placement awareness *(review 3A)*
 
-- **General demos**: assert the *weak* oracle — enabling each offered enrichment
-  must not throw, must render its affordance/lozenge where the library reports it
-  applies (`data-gs-lozenge-id="<id>"` presence), and must tear down
-  byte-identically. This is fully derived and self-extending.
-- **Curated matrix fixture** (`public/demo/matrix/index.html`): assert the
-  *strong* oracle against **authored** column-type ground truth (which columns
-  are numeric, categorical, or identifier-text such as `S-001`, and which cells
-  are annotated). The fixture's expectation table lives next to the spec.
+- **Decision**: `hasActiveLozenge`/`hasDisabledLozenge` consult the enrichment's
+  header type (table-level corner vs per-column) when locating
+  `[data-gs-lozenge-id]`. `find-in-table` mounts a corner/table-level lozenge
+  (`src/enrichments/find-in-table.ts:22,139`); column enrichments mount per-column.
+- **Rationale**: A flat subtree query risks false positives/negatives across
+  placements.
+- **Alternatives considered**: query-anywhere (looser); separate helpers
+  (more surface) — rejected in favour of one placement-aware helper.
 
-**Rationale**: The #48 defect was the library mis-classifying a column's type. A
-test whose expectation is derived from that same typing would inherit the bug and
-never fail (circular oracle). SC-002 demands the regression be caught, so the
-identifier/annotated expectations must be authored independently. Keeping the
-authored oracle to one curated fixture bounds the maintenance cost.
+## D6 — Fold capability-filtering into the harness *(review 4B + 11A)*
 
-**Alternatives considered**:
+- **Decision**: Migrate `capability-filtering.spec.ts`'s demo→effective-set cases
+  into the discovery harness; **explicitly port its Set-equality precedence
+  assertions** (config precedence: exactly the configured ids are enabled, no
+  extras) so that coverage is preserved, not dropped.
+- **Rationale**: Removes the duplicated hand list (the #50 anti-pattern) while
+  keeping the unique precedence guarantee that the behaviour matrix doesn't cover.
+- **Alternatives considered**: leave both (drift); drop precedence (coverage loss)
+  — rejected.
 
-- *Derive all expectations from `appliesTo`/column typing*: rejected — circular;
-  cannot catch a typing regression.
-- *Author expectations for every demo*: rejected — high upkeep and redundant; the
-  weak oracle + one curated fixture covers SC-001/SC-002 at far lower cost.
+## D7 — Teardown verification *(review 6A + 7A)*
 
-## D4 — Inapplicable-state oracle (enabled-but-inapplicable)
+- **Decision**: **Relative round-trip** — snapshot the data table's `outerHTML`
+  immediately *before* toggling enrichment X; toggle off→on; compare to that
+  snapshot. Plus: assert no residual `gs-*` artifacts for X while it is off, and a
+  **normalized** `outerHTML` compare (the normalizer never strips `gs-*`, so it
+  cannot hide a leak).
+- **Rationale**: Demos ship enrichments default-on, so there is no absolute
+  "enrichment-free" baseline; a relative round-trip is well-defined for every demo
+  and matches the proven `navigation-and-analysis.spec.ts:88` pattern. The
+  targeted-artifact assertion is the robust backstop; raw byte-equality alone is
+  brittle (attribute order, `style=""` vs removed, RAF timing).
+- **Alternatives considered**: absolute baseline (undefined for default-on demos);
+  raw byte-equality (flaky); targeted-only (may miss a stray node) — rejected.
 
-**Decision**: For numeric-only enrichments enabled on text/categorical columns,
-assert the library's defined disabled affordance (e.g. the disabled corner
-lozenge `gs-lozenge--disabled` introduced in spec 014) is present and that no
-*active* result was produced (no summed identifier footer, no spurious numeric
-slider). The set of "numeric-only" enrichments is declared once in the harness
-(`applicability.ts`) as test metadata, since the registry exposes no global
-numeric/categorical flag (each enrichment decides in its `appliesTo(ctx)`).
+## D8 — Doc refresh *(review 8A)*
 
-**Rationale**: Directly encodes the issue's "enabled-but-inapplicable" requirement
-and the `S-001`/spurious-slider regression as explicit negative assertions.
+- **Decision**: `quickstart.md` and `contracts/test-helpers.md` are rewritten to
+  drop `ENRICHMENT_CLASSES`/`assertEveryIdClassified` (2C) and to describe the
+  capability-filtering migration (4B) and the webServer/cross-browser/gate model.
+- **Rationale**: Stale onboarding docs would mislead the implementer.
 
-**Alternatives considered**:
+## D9 — Unit-test the pure helpers *(review 9A)*
 
-- *Infer numeric-only from the registry*: rejected — no such metadata exists; the
-  predicate is per-enrichment and column-contextual. A small declared list is
-  clearer and is itself guarded by FR-009 (a registered enrichment with no
-  classification fails the meta-check).
+- **Decision**: Vitest units for the pairwise generator, demo glob/filter, and the
+  `outerHTML` normalizer (`tests/e2e/helpers/__tests__/`).
+- **Rationale**: These are the most logic-dense, most-likely-wrong parts; a wrong
+  generator should fail a fast unit test, not be inferred from a slow matrix.
 
-## D5 — Byte-identical teardown verification
+## D10 — Interaction depth for permutations *(review 10A)*
 
-**Decision**: `teardown-snapshot.ts` captures a table's `outerHTML` (after the
-library's initial enrichment-free render, before enabling) and compares it to the
-`outerHTML` after enabling → disabling (and, separately, after a toggle-off→on
-round-trip for stateful enrichments). Compare after a `requestAnimationFrame`
-flush. This follows the spec-013/014 invariant already asserted piecemeal in
-`navigation-and-analysis.spec.ts` (lozenge `toHaveCount(0)`, `.not.toHaveClass`),
-but generalizes it to a full structural equality.
+- **Decision**: Concrete cross-behaviour assertions, not mere coexistence: apply a
+  filter and re-read the `summary-row` aggregate over visible rows; sort and
+  confirm the aggregate is stable; confirm `find-in-table` highlights survive a
+  filter; joint teardown byte-identical.
+- **Rationale**: Proves non-interference (the spec-013 invariant the issue cites),
+  which "both lozenges present" does not.
 
-**Rationale**: A single reusable assertion catches incomplete teardown across all
-enrichments rather than re-deriving per-enrichment class/attribute checks.
+## D11 — Fixture↔oracle consistency guard *(review 12A)*
 
-**Alternatives considered**:
+- **Decision**: A guard asserts every authored `ColumnOracle.header` resolves to a
+  real column in `#matrix-table`.
+- **Rationale**: Renaming a fixture column would silently orphan the oracle.
 
-- *Per-enrichment class/count checks only* (current style): kept as a fallback for
-  enrichments whose "resting" DOM legitimately differs (e.g. injected toggle
-  panel), but the default is full `outerHTML` equality on the data table(s).
+## D12 — Combination strategy *(review 13B + FR-010)*
 
-## D6 — Combination strategy: pairwise vs. power set
+- **Decision**: **Maximal pairwise** — every pair over a surface's offered
+  enrichments and tables — plus one curated rich combo. Never the full power set.
+- **Rationale**: User prioritized coverage; pairwise stays O(n²) (not O(2ⁿ)) so it
+  honours FR-010's "no power set," while parallelism + the runtime gate keep it
+  affordable.
+- **Alternatives considered**: bounded representative pairwise (less coverage);
+  full power set (forbidden) — rejected.
 
-**Decision**: On the opt-in playground, generate **pairwise** combinations of the
-offered enrichments plus one or two hand-picked "rich" combinations from the issue
-(`summary-row` + `sort` + `filter` + sliders + virtual columns + annotations +
-`find-in-table`). Assert each member behaves and the joint teardown is
-byte-identical.
+## D13 — Exclude perf/large fixtures *(review 14A)*
 
-**Rationale**: SC-006 / the issue's runtime note explicitly reject the full power
-set (2^n). Pairwise coverage catches the vast majority of interaction defects at
-O(n²) rather than O(2^n), and the curated rich combo exercises the spec-013
-cross-enrichment invariant the issue calls out.
+- **Decision**: Discovery excludes large/perf fixtures (e.g.
+  `public/demo/row-visibility/perf-1000.html`, or any table over a row threshold);
+  they keep their dedicated specs (`virtual-column-perf.spec.ts`).
+- **Rationale**: Per-enrichment `outerHTML` round-trips on a 1000-row table ×16
+  enrichments is a runtime cliff and redundant.
 
-**Alternatives considered**:
+## D14 — Global webServer + parallel migration *(scope addition; FR-013/014)*
 
-- *Full power set*: rejected — combinatorial blow-up; violates the runtime budget.
-- *Only the one rich combo*: rejected — misses systematic pair interactions and
-  would not self-extend as enrichments are added.
+- **Decision**: Replace the per-file `beforeAll` `vite preview` in **all ~38**
+  e2e specs with **one** Playwright `webServer` (single `vite preview`) declared in
+  `playwright.config.ts`; set `fullyParallel: true` and `workers > 1`; each spec
+  uses `baseURL` instead of a hardcoded port. Specs are made parallel-safe by
+  namespacing/clearing `localStorage` and URL state per test (FR-014).
+- **Rationale**: The suite is serial today precisely because per-file servers race
+  on ports; a single shared server removes the race and unlocks parallelism, which
+  is what makes the multiplied matrix affordable. (Survey: 38/39 specs boot their
+  own server on ports 3010–3140.)
+- **Alternatives considered**:
 
-## D7 — Preview server lifecycle: one shared server vs. per-spec
+  - New specs only on the shared server, rest serial — user rejected (mixed model,
+    partial speedup); rejected.
+  - Keep serial, no migration — matrix wall-clock unacceptable; rejected.
+- **Risk/mitigation**: large blast radius — migrate in one mechanical pass, run the
+  full suite green before/after; isolate flakiness via `isolation.ts`.
 
-**Decision**: A single `preview-server.ts` helper starts one `vite preview` on a
-dedicated port (e.g. 3160) in each new spec's `beforeAll` and closes it in
-`afterAll`, matching the existing per-file pattern but reused across the two new
-specs. The suite remains serial (`workers: 1`, `fullyParallel: false`) per the
-Playwright config's documented rationale.
+## D15 — Cross-browser projects *(scope addition; FR-015)*
 
-**Rationale**: Page navigation (`goto`) is cheap; the cost is server startup.
-Reusing one server per spec keeps the matrix fast without touching the global
-config's serial guarantee.
+- **Decision**: Add `firefox` and `webkit` projects alongside `chromium` in
+  `playwright.config.ts`; the matrix + permutation specs run on all three (other
+  specs may stay chromium-scoped via project filters to bound runtime). Browser
+  binaries installed via `npx playwright install firefox webkit` (CI step, not a
+  package dep).
+- **Rationale**: Directly serves Principle V; surfaces engine-specific lozenge/
+  teardown differences the Chromium-only suite hides.
+- **Risk**: a real Firefox/WebKit library defect → minimal `src` fix or filed
+  follow-up (the only path by which this feature might touch `src`).
 
-**Alternatives considered**:
+## D16 — Runtime hard gate *(scope addition; FR-016)*
 
-- *Refactor to a global `webServer`*: out of scope and risks destabilizing the
-  whole suite; the config comments explicitly defer that until the suite is large.
+- **Decision**: `scripts/e2e-runtime-gate` measures the full suite wall-clock (from
+  the Playwright JSON/`list` reporter or a wrapping timer) and exits non-zero above
+  an **agreed budget** recorded in the script + the spec; wired into `test:e2e`/CI.
+- **Rationale**: Coverage-first (D12) + no implicit budget = silent CI inflation;
+  the gate makes SC-006/SC-009 enforceable.
+- **Open value to set during tasks**: the concrete budget number (seconds),
+  measured from the post-migration parallel baseline.
 
-## D8 — Driving the toggle panel
+## D17 — Offline guard *(Principle VI)*
 
-**Decision**: Use the real toggle panel selectors confirmed in
-`src/ui/toggle-panel.ts`: root `[data-gs-toggle-panel-root]`, per-enrichment
-`input[type=checkbox][value="<id>"]` (and label `[data-gs-enrichment-toggle="<id>"]`).
-Helpers `setEnrichment(page, id, on)` call `.check()/.uncheck()` then `raf(page)`.
-Demos under test must have `showToggleUi: true` (or the harness enables it via the
-matrix fixture); demos that ship without the panel are asserted at the
-applied-state level only.
-
-**Rationale**: Exercises the same path a user takes (the issue's requirement:
-"enable each enrichment the page offers via the toggle panel").
-
-**Alternatives considered**:
-
-- *Call `processTable`/internal APIs directly*: rejected — bypasses the toggle
-  path the issue specifically wants covered.
-
-## D9 — Offline guard
-
-**Decision**: Register a Playwright route/`requestfailed`+`request` listener that
-fails the test if any request targets a non-local origin during a case (Principle
-VI). Local `vite preview` and `data:`/`blob:` are allowed.
-
-**Rationale**: Cheap, always-on enforcement that the fixtures and library stay
-air-gapped — a constitutional hard minimum.
+- **Decision**: Per-test listener fails on any non-local request; local preview /
+  `data:` / `blob:` allowed.
+- **Rationale**: Cheap always-on enforcement of air-gap (a hard minimum).

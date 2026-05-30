@@ -5,51 +5,60 @@
 
 ## Summary
 
-Close the e2e coverage gap from issue #50 by adding two **test-only** layers plus
-a self-extending harness, with **no change to shipped library behaviour**:
+Close the issue #50 coverage gap with three test layers and the infrastructure to
+keep them affordable and trustworthy:
 
-1. A **per-demo matrix** that, for every demo page, enables each enrichment the
-   page offers (via the real toggle panel) and asserts either correct *active*
-   behaviour or the correct *enabled-but-inapplicable* state, then asserts
-   byte-identical teardown.
-2. A **per-permutation interaction sweep** on the opt-in playground that enables
-   representative (pairwise) combinations and asserts each member still behaves
-   under the others, with byte-identical joint teardown.
-3. A **data-driven harness**: the demo set is discovered by globbing
-   `public/demo/**/*.html`, and each demo's offered enrichment set is read at
-   runtime from `window.gridSight.pageConfig.enrichments` (or, when empty, the
-   full `window.gridSight.enrichmentIds`). Adding a demo or offering a new
-   enrichment extends coverage with no test-file edits.
+1. **Per-demo matrix** (US1) — for every discovered demo, enable each offered
+   enrichment via the real toggle panel and assert correct *active* behaviour or
+   the correct *enabled-but-inapplicable* state, then assert byte-identical
+   teardown. A curated fixture carries an **authored** column-type oracle
+   (identifier `S-001`, annotated-numeric) that catches the #48 mis-typing class.
+2. **Per-permutation sweep** (US2) — maximal pairwise combinations + a curated
+   rich combo on the opt-in playground, asserting concrete cross-behaviour (filter
+   recomputes a summary; sort leaves an aggregate stable) and joint byte-identical
+   teardown.
+3. **Self-extending harness** (US3) — demos discovered by globbing
+   `public/demo/**/*.html`; offered set read at runtime from
+   `window.gridSight.pageConfig.enrichments` (empty ⇒ full `enrichmentIds`).
+4. **Fast, isolated, cross-browser execution** (US4) — migrate **all** ~38 e2e
+   specs off per-file `beforeAll` previews onto **one global Playwright
+   `webServer`**, run `fullyParallel` with >1 worker, add **Firefox + WebKit**
+   projects, and add a **runtime hard gate** failing CI over the agreed wall-clock
+   budget.
 
-The defect oracle that catches the #48 class (identifier columns like `S-001`
-mis-typed as numeric; annotated numeric cells losing sort/filter affordances)
-lives on a **curated matrix fixture** with authored column-type ground truth, so
-the test asserts independently of the library's own typing.
+The applicability oracle is **two-tier** (review 2C + 5A): the weak layer derives
+expected state from the running library at runtime; the strong layer (curated
+fixture only) uses authored column kinds so the typing regression can actually
+fail (SC-002). Teardown uses a **relative round-trip** snapshot + targeted-artifact
++ normalized compare (review 6A/7A).
 
 ## Technical Context
 
-**Language/Version**: TypeScript 5.x (Playwright `.spec.ts`), Node 18+ for
-test-collection-time filesystem globbing.
-**Primary Dependencies**: `@playwright/test` (existing), `vite` preview server
-(existing). **No new runtime or dev dependency.**
-**Storage**: `localStorage` is used by some enrichments (summary-row choices,
-slider state, annotations); the harness clears it between cases for determinism.
-N/A otherwise.
-**Testing**: Playwright e2e under `tests/e2e/` (the new specs); the project's
-Vitest suite is unaffected.
-**Target Platform**: Evergreen Chromium via Playwright (the only configured
-project), served from a local `vite preview` — offline, no network.
-**Project Type**: Browser library — this feature adds test infrastructure and
-demo fixtures only; `src/` is not modified.
-**Performance Goals**: The full e2e suite stays within its current runtime
-budget. New specs use **one** shared preview server and **pairwise** (not
-power-set) combinations (SC-006).
-**Constraints**: Offline / air-gapped (Principle VI); zero runtime-bundle delta
-(Principle I); byte-identical teardown invariant (FR-004/FR-006); no `.skip` to
-ship (Principle II) — undefined expectations fail loudly (FR-009).
-**Scale/Scope**: ~13 demo directories, 16 shipped enrichment ids, the opt-in
-playground, and one curated matrix fixture; pairwise combinations over the
-playground's offered set.
+**Language/Version**: TypeScript 5.x (Playwright `.spec.ts` + Vitest unit tests);
+Node 18+ for filesystem globbing at collection time.
+**Primary Dependencies**: `@playwright/test` 1.56 (existing), `vite` preview
+(existing), Vitest (existing). **No new runtime or production dependency.** New
+browser *binaries* (Firefox, WebKit) installed via `npx playwright install` — not
+package deps.
+**Storage**: `localStorage`/URL state used by some enrichments; the harness clears
+and namespaces it per test for parallel isolation (FR-014).
+**Testing**: Playwright e2e (`tests/e2e/`), with Vitest units for the harness's
+pure helpers (review 9A). The library's own Vitest/Storybook suites are unchanged.
+**Target Platform**: Chromium, Firefox, WebKit (evergreen) via Playwright, served
+from one local `vite preview` `webServer` — offline, no network.
+**Project Type**: Browser library — this feature is test infrastructure + demo
+fixtures. `src/` is not modified **except** where a genuine cross-browser library
+defect is surfaced by the new Firefox/WebKit runs (then a minimal fix or a filed
+follow-up, per Principle V).
+**Performance Goals**: Coverage-first (maximal pairwise, perf fixtures excluded);
+wall-clock kept affordable by parallelism and enforced by the runtime gate
+(SC-006/007/009).
+**Constraints**: Offline (Principle VI); zero runtime-bundle delta (Principle I);
+parallel-safe specs (FR-014); byte-identical teardown (FR-004/006); no `.skip` to
+ship (Principle II).
+**Scale/Scope**: ~13 demo dirs, 16 shipped enrichment ids, the opt-in playground,
+one curated fixture; **~38 existing specs migrated** to the shared server; 3
+browser projects.
 
 ## Constitution Check
 
@@ -57,16 +66,18 @@ playground's offered set.
 
 | Principle | Assessment |
 |-----------|------------|
-| **I. Lightweight & Minimal Dependencies** | ✅ PASS — test-only. No `src/` change, no runtime/dev dependency, zero bundle delta. The harness reads existing runtime surfaces (`pageConfig`, `enrichmentIds`, `isEnrichmentEnabled`) and DOM lozenges; it does **not** require new test hooks on `window.gridSight`. |
-| **II. Test Discipline** | ✅ PASS — this feature *is* tests; it strengthens the merge-time net. No `.skip`; FR-009 surfaces missing expectations as explicit failures, not silent passes. Must be green at merge. |
-| **III. Accessibility by Default** | ✅ PASS (light) — harness drives controls via the real toggle panel and prefers role/label/`value`-based selectors; an a11y reachability assertion on toggles is in scope, but no UI is added. |
+| **I. Lightweight & Minimal Dependencies** | ✅ PASS — test-only; no `src/` change by default, zero bundle delta, no new package dependency (browser binaries are dev tooling, not deps). |
+| **II. Test Discipline** | ✅ PASS — strengthens the net. The parallel migration touches ~38 specs; **all must stay green** (the migration's acceptance bar). No `.skip`; FR-009 fails loudly on undefined expectations; harness pure logic gets Vitest units (9A). |
+| **III. Accessibility by Default** | ✅ PASS (light) — drives the real toggle panel via role/label/`value` selectors; asserts `aria-disabled` on inapplicable lozenges. No UI added. |
 | **IV. Progressive Enhancement** | ✅ N/A — no library/distribution change. |
-| **V. Cross-Browser** | ✅ PASS — runs on the existing Chromium project; no new browser-specific API used. |
-| **VI. Offline-First** | ✅ PASS — runs against local `vite preview`; fixtures embed all data and fetch nothing. A guard asserts no network requests leave the page during a case. |
-| **Performance/Distribution** | ✅ PASS — zero bundle delta; e2e runtime bounded by single shared server + pairwise combos (SC-006). |
-| **Workflow** | ⚠ Deviation (justified): constitution prefers `<issue#>-<slug>` branches, but the harness pins this work to `claude/pending-tasks-NGcyT`. Spec directory `015-e2e-enrichment-matrix` retains traceability. Recorded in Complexity Tracking. |
+| **V. Cross-Browser Compatibility** | ✅ PASS — **strengthened**: the matrix now actively runs on Firefox + WebKit (FR-015), which is exactly this principle's intent. Real defects it surfaces are legitimate fixes/follow-ups. |
+| **VI. Offline-First** | ✅ PASS — one local `vite preview` webServer; fixtures fetch nothing; an offline assertion guards each case. |
+| **Performance/Distribution** | ✅ PASS — zero bundle delta. e2e wall-clock is now *governed* by the runtime gate (FR-016) rather than left implicit. |
+| **Workflow** | ⚠ Deviation (justified): branch is harness-pinned `claude/pending-tasks-NGcyT`, not `<issue#>-<slug>`. Recorded in Complexity Tracking. |
 
-**Gate result: PASS** (one justified workflow deviation; no principle violation).
+**Gate result: PASS** (one justified workflow deviation). The parallel migration's
+blast radius (~38 files) is a complexity item, tracked below, not a principle
+violation.
 
 ## Project Structure
 
@@ -74,51 +85,64 @@ playground's offered set.
 
 ```text
 specs/015-e2e-enrichment-matrix/
-├── plan.md              # This file (/speckit-plan output)
-├── research.md          # Phase 0 — decisions & rationale
+├── plan.md              # This file
+├── research.md          # Phase 0 — decisions (incl. all 14 review decisions)
 ├── data-model.md        # Phase 1 — test-domain entities
 ├── quickstart.md        # Phase 1 — run + extend the matrix
-├── contracts/           # Phase 1 — helper API + fixture contract
-│   ├── test-helpers.md
-│   └── matrix-fixture.md
-├── checklists/
-│   └── requirements.md  # (from /speckit-specify)
+├── contracts/
+│   ├── test-helpers.md      # helper API
+│   ├── matrix-fixture.md    # curated fixture contract
+│   └── e2e-runner.md        # webServer + projects + runtime gate contract
+├── checklists/requirements.md
 └── tasks.md             # Phase 2 — /speckit-tasks (NOT created here)
 ```
 
 ### Source Code (repository root)
 
-This feature touches **tests and demo fixtures only** — no `src/` changes.
-
 ```text
+playwright.config.ts                 # MODIFIED — global webServer (one vite preview),
+                                     #   fullyParallel:true, workers>1, projects:
+                                     #   [chromium, firefox, webkit]; testDir tests/e2e
+
 tests/e2e/
 ├── helpers/
 │   ├── mock-vrs.ts                  # existing
-│   ├── preview-server.ts            # NEW — shared vite preview lifecycle (one port)
-│   ├── toggle-panel.ts              # NEW — open panel, set enrichment on/off by id, raf
-│   ├── demo-discovery.ts            # NEW — glob public/demo/**/*.html; read offered set
-│   ├── teardown-snapshot.ts         # NEW — capture/compare byte-identical table outerHTML
-│   └── applicability.ts             # NEW — expected active/inapplicable oracle + lozenge reads
-├── enrichment-matrix.spec.ts        # NEW — US1: per-demo × per-offered-enrichment
-├── enrichment-permutations.spec.ts  # NEW — US2: pairwise combos on opt-in playground
-└── (existing specs unchanged)
+│   ├── demo-discovery.ts           # NEW — glob+filter demos; readPageProfile (pure + page)
+│   ├── toggle-panel.ts             # NEW — open panel, setEnrichment(id,on), raf,
+│   │                               #   hasActiveLozenge/hasDisabledLozenge (headerType-aware, 3A)
+│   ├── teardown.ts                 # NEW — relative round-trip snapshot + targeted-artifact
+│   │                               #   + normalized compare (6A/7A)
+│   ├── applicability.ts            # NEW — runtime-derived weak oracle (2C);
+│   │                               #   pairwise generator (pure)
+│   ├── isolation.ts                # NEW — per-test localStorage/URL namespacing (FR-014)
+│   └── __tests__/                  # NEW — Vitest units for pure helpers (9A):
+│       ├── pairwise.test.ts
+│       ├── demo-discovery.test.ts
+│       └── teardown-normalize.test.ts
+├── enrichment-matrix.spec.ts        # NEW — US1: test per demo, test.step per enrichment (1A);
+│                                    #   folds capability-filtering precedence asserts (4B/11A)
+├── enrichment-permutations.spec.ts  # NEW — US2: pairwise + rich combo, interaction asserts (10A)
+├── capability-filtering.spec.ts     # MODIFIED/REMOVED — cases migrated into matrix (4B)
+├── capability-filtering-toggle.spec.ts # MODIFIED — onto shared server
+└── (~36 other specs)                # MODIFIED — drop beforeAll preview, use baseURL
 
-public/demo/
-├── matrix/
-│   └── index.html                   # NEW — curated fixture: numeric + categorical +
-│                                    #        identifier (S-001) + annotated-numeric columns,
-│                                    #        offering the full enrichment set
-└── (existing demos unchanged; fixtures enriched only where data is too thin — FR-012)
+scripts/
+└── e2e-runtime-gate.(js|ts)         # NEW — measure suite wall-clock, fail over budget (FR-016)
+
+public/demo/matrix/
+└── index.html                       # NEW — curated fixture (authored oracle, 5A)
 ```
 
-**Structure Decision**: Single-project library layout. All new code is under
-`tests/e2e/` (helpers + two specs) and `public/demo/matrix/` (one curated
-fixture). The harness derives the demo list from the filesystem and the offered
-set from each page's runtime `pageConfig`, so the matrix self-extends (FR-007/008).
+**Structure Decision**: Single-project library layout. The big move is converting
+the e2e suite from "every spec boots its own preview on a unique hardcoded port"
+to "one shared `webServer` + `baseURL`, fully parallel." This unblocks parallelism
+(otherwise the per-file servers race — the exact reason the suite is serial today)
+and is the prerequisite for the matrix's multiplied case count to stay affordable.
 
 ## Complexity Tracking
 
 | Violation | Why Needed | Simpler Alternative Rejected Because |
 |-----------|------------|--------------------------------------|
-| Branch is `claude/pending-tasks-NGcyT`, not `50-e2e-enrichment-matrix` per constitution §Workflow | The remote-execution harness pins all work to this designated branch; deviating would push to an unauthorized branch | A constitution-named branch would violate the harness branch directive; spec dir `015-…` preserves issue/traceability instead |
-| One curated fixture carries authored column-type ground truth (not fully derived) | The #48 defect was the library *mis-typing* a column; a derived oracle would inherit the same bug and never fail | Deriving expected types from the library under test is circular — it cannot catch a typing regression, defeating SC-002 |
+| Parallel migration touches ~38 existing spec files | FR-013 requires one shared webServer + `fullyParallel`; the current per-file `beforeAll` servers race under parallelism (the documented reason for `workers:1`) | "New specs only" parallelism was offered and rejected by the user — a mixed serial/parallel model leaves the suite slow and the per-file server pattern in place |
+| One curated fixture carries authored column-type ground truth | The #48 defect was the library *mis-typing*; a derived oracle inherits the bug (SC-002 needs an independent oracle) | Deriving expected types from the code under test is circular — cannot catch a typing regression |
+| Branch `claude/pending-tasks-NGcyT` not `50-…` per §Workflow | Harness pins all work to this branch | Constitution-named branch would violate the harness branch directive; spec dir `015-…` preserves traceability |
