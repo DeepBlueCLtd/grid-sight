@@ -131,7 +131,9 @@ function renderMarkersForTable(table: HTMLTableElement): void {
 /** Apply annotations to a table when Grid-Sight is enabled and the
  *  `annotations` enrichment is in the effective enabled set. Idempotent. */
 export function applyAnnotations(table: HTMLTableElement): void {
-  if (!isEnrichmentEnabled('annotations')) return;
+  // Spec 015: gate is table-scoped — a per-table config can withhold
+  // annotations from this specific table.
+  if (!isEnrichmentEnabled('annotations', table)) return;
   ensureAnnotationStyles();
   hydrateOnce();
 

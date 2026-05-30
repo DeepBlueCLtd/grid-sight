@@ -76,6 +76,58 @@ describe('resolveEnabledSet — unknown id filtering', () => {
   });
 });
 
+describe('resolveEnabledSet — per-table tier (spec 015)', () => {
+  it('per-table set wins over page config when no visitor override', () => {
+    const out = resolveEnabledSet({
+      visitorOverride: undefined,
+      perTableEnrichments: new Set(['heatmap']),
+      pageConfig: { enrichments: new Set(['sliders']) },
+      registry: REGISTRY,
+    });
+    expect(out).toEqual(new Set(['heatmap']));
+  });
+
+  it('visitor override still wins over the per-table set (precedence)', () => {
+    const out = resolveEnabledSet({
+      visitorOverride: new Set(['sliders']),
+      perTableEnrichments: new Set(['heatmap']),
+      pageConfig: { enrichments: new Set(['filter']) },
+      registry: REGISTRY,
+    });
+    expect(out).toEqual(new Set(['sliders']));
+  });
+
+  it('undefined per-table tier falls through to page config (INV-1)', () => {
+    const out = resolveEnabledSet({
+      visitorOverride: undefined,
+      perTableEnrichments: undefined,
+      pageConfig: { enrichments: new Set(['sliders']) },
+      registry: REGISTRY,
+    });
+    expect(out).toEqual(new Set(['sliders']));
+  });
+
+  it('empty per-table set honoured as "offer none" (not fall-through)', () => {
+    const out = resolveEnabledSet({
+      visitorOverride: undefined,
+      perTableEnrichments: new Set(),
+      pageConfig: { enrichments: new Set(['heatmap']) },
+      registry: REGISTRY,
+    });
+    expect(out.size).toBe(0);
+  });
+
+  it('drops unknown ids at the per-table tier (INV-2)', () => {
+    const out = resolveEnabledSet({
+      visitorOverride: undefined,
+      perTableEnrichments: new Set(['heatmap', 'not-a-real-id']),
+      pageConfig: { enrichments: undefined },
+      registry: REGISTRY,
+    });
+    expect(out).toEqual(new Set(['heatmap']));
+  });
+});
+
 describe('resolveEnabledSet — output isolation', () => {
   it('output is a fresh Set, not aliased to input', () => {
     const visitor = new Set(['heatmap']);

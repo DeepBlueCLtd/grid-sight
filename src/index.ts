@@ -345,17 +345,17 @@ const GridSight = {
 
     // Outlier markers — restore any persisted `gs.o` directives before the
     // table content settles (spec 004, SC-003). Gated on the enrichment being
-    // in the effective enabled set.
-    try { if (isEnrichmentEnabled('outlier')) applyOutliers(table); } catch (e) { void e; }
+    // in the effective enabled set for THIS table (spec 015 per-table aware).
+    try { if (isEnrichmentEnabled('outlier', table)) applyOutliers(table); } catch (e) { void e; }
 
     // Freeze panes (spec 014) — auto-rendered; gated on the enabled set so it
-    // stays dark when Grid-Sight is globally off (FR-015).
-    if (isEnrichmentEnabled('freeze-panes')) {
+    // stays dark when Grid-Sight is globally off (FR-015), per-table aware.
+    if (isEnrichmentEnabled('freeze-panes', table)) {
       try { applyFreezePanes(table); } catch (e) { void e; }
     }
 
     // Summary row (spec 014) — auto-rendered aggregate footer, same gating.
-    if (isEnrichmentEnabled('summary-row')) {
+    if (isEnrichmentEnabled('summary-row', table)) {
       try { applySummaryRow(table); } catch (e) { void e; }
     }
 

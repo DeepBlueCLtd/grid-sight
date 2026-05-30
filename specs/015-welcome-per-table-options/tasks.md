@@ -30,7 +30,7 @@ build on it; US1 and US5 are page-only and independent.
 
 **Purpose**: Baseline and scaffolding shared by later phases.
 
-- [ ] T001 Confirm baseline green before changes: run `yarn test` and `yarn build` (record current bundle size from `node scripts/bundle-size.js --soft` as the delta baseline)
+- [X] T001 Confirm baseline green before changes: run `yarn test` and `yarn build` (record current bundle size from `node scripts/bundle-size.js --soft` as the delta baseline)
 - [ ] T002 [P] Create stub module `src/core/per-table-options.ts` exporting `resolveTableConfig(table)` and `matchTableEntries(table)` signatures + the `ResolvedTableConfig` type (no logic yet), per `contracts/per-table-options.md`
 - [ ] T003 [P] Create empty Playwright spec skeleton `e2e/welcome-per-table.spec.ts` with `test.describe` blocks named for US2/US3/US5 scenarios (skipped placeholders)
 
@@ -46,8 +46,8 @@ lives in US4.
 
 **⚠️ CRITICAL**: US4 cannot begin until this phase is complete.
 
-- [ ] T004 Extend `ParsedPageConfig` in `src/core/page-config.ts` with `tables: ParsedTableOptionEntry[]` and define the `ParsedTableOptionEntry` type (`selector: string`, `enrichments: Set<string> | undefined`, `startActive: boolean`) per `data-model.md`
-- [ ] T005 Implement `pageConfig.tables` parsing + normalisation in `parsePageConfig` (`src/core/page-config.ts`): array guard, per-entry `selector` validation, `enrichments` trim/lowercase/dedup + non-string drop, `startActive` boolean coercion — each distinct warning once, never throw (R-9 / data-model validation rules)
+- [X] T004 Extend `ParsedPageConfig` in `src/core/page-config.ts` with `tables: ParsedTableOptionEntry[]` and define the `ParsedTableOptionEntry` type (`selector: string`, `enrichments: Set<string> | undefined`, `startActive: boolean`) per `data-model.md`
+- [X] T005 Implement `pageConfig.tables` parsing + normalisation in `parsePageConfig` (`src/core/page-config.ts`): array guard, per-entry `selector` validation, `enrichments` trim/lowercase/dedup + non-string drop, `startActive` boolean coercion — each distinct warning once, never throw (R-9 / data-model validation rules)
 
 **Checkpoint**: Config parsing accepts and normalises `tables`; resolver shape ready.
 
@@ -66,19 +66,19 @@ start-state, while an unmatched table follows the page-level config.
 
 ### Tests for User Story 4 (write first, ensure they FAIL)
 
-- [ ] T006 [P] [US4] Extend `src/core/__tests__/page-config.test.ts` — `tables` parsing: valid entries, missing/empty `selector` dropped, `enrichments` normalisation, `startActive` coercion, malformed `tables` warn-and-ignore
-- [ ] T007 [P] [US4] Create `src/core/__tests__/per-table-options.test.ts` — selector matching (id `#x` and CSS `.cls`/structural), declaration-order **last-match-wins per field** (R-7), `data-gs-ignore` excluded (R-8), no-match returns `matched:false`
-- [ ] T008 [P] [US4] Extend `src/core/__tests__/effective-enabled-set.test.ts` — per-table tier precedence (visitor > per-table > page > defaults) and unknown-id drop at the per-table tier (INV-2)
-- [ ] T009 [P] [US4] Create `src/ui/__tests__/header-utils.per-table.test.ts` — two tables with different per-table enrichment sets receive different lozenge clusters; an unmatched table matches today's global behaviour (INV-1)
+- [X] T006 [P] [US4] Extend `src/core/__tests__/page-config.test.ts` — `tables` parsing: valid entries, missing/empty `selector` dropped, `enrichments` normalisation, `startActive` coercion, malformed `tables` warn-and-ignore
+- [X] T007 [P] [US4] Create `src/core/__tests__/per-table-options.test.ts` — selector matching (id `#x` and CSS `.cls`/structural), declaration-order **last-match-wins per field** (R-7), `data-gs-ignore` excluded (R-8), no-match returns `matched:false`
+- [X] T008 [P] [US4] Extend `src/core/__tests__/effective-enabled-set.test.ts` — per-table tier precedence (visitor > per-table > page > defaults) and unknown-id drop at the per-table tier (INV-2)
+- [X] T009 [P] [US4] Create `src/ui/__tests__/header-utils.per-table.test.ts` — two tables with different per-table enrichment sets receive different lozenge clusters; an unmatched table matches today's global behaviour (INV-1)
 
 ### Implementation for User Story 4
 
-- [ ] T010 [US4] Add a `perTableEnrichments?: Set<string>` tier to `resolveEnabledSet` in `src/core/effective-enabled-set.ts`: visitor wins, else per-table (intersected with known ids), else page, else defaults (R-3, contract §2)
-- [ ] T011 [US4] Implement `src/core/per-table-options.ts`: `matchTableEntries(table, entries)` via `Element.matches`, fold last-match-wins per field, and `resolveTableConfig(table)` returning `{enrichments, startActive, matched}` (depends on T004, T010)
-- [ ] T012 [US4] Make `src/core/enabled-set-state.ts` table-aware: store parsed `tables`; add optional `table` arg to `getEffectiveEnabledSet`/`isEnrichmentEnabled`; cache `ResolvedTableConfig` in a `WeakMap`; invalidate cache on `setPageConfig`/`setVisitorOverride` (R-4, contract §3) (depends on T011)
-- [ ] T013 [US4] Pass the in-scope `table` to `getEffectiveEnabledSet(table)` in `src/ui/header-utils.ts` (`addLozengesToHeader`) so injection is per-table (depends on T012)
-- [ ] T014 [US4] In `src/index.ts`: wire `init()` to set the parsed `tables` into `enabled-set-state`, and pass `table` to the `isEnrichmentEnabled('outlier'|'freeze-panes'|'summary-row', table)` auto-render gates (depends on T012)
-- [ ] T015 [US4] Audit `isEnrichmentEnabled(id)` callers in `src/enrichments/slider.ts`, `slider-threshold.ts`, `annotations.ts`: pass `table` where the decision is table-scoped, leave page-global where intended; add a brief comment noting which (depends on T012)
+- [X] T010 [US4] Add a `perTableEnrichments?: Set<string>` tier to `resolveEnabledSet` in `src/core/effective-enabled-set.ts`: visitor wins, else per-table (intersected with known ids), else page, else defaults (R-3, contract §2)
+- [X] T011 [US4] Implement `src/core/per-table-options.ts`: `matchTableEntries(table, entries)` via `Element.matches`, fold last-match-wins per field, and `resolveTableConfig(table)` returning `{enrichments, startActive, matched}` (depends on T004, T010)
+- [X] T012 [US4] Make `src/core/enabled-set-state.ts` table-aware: store parsed `tables`; add optional `table` arg to `getEffectiveEnabledSet`/`isEnrichmentEnabled`; cache `ResolvedTableConfig` in a `WeakMap`; invalidate cache on `setPageConfig`/`setVisitorOverride` (R-4, contract §3) (depends on T011)
+- [X] T013 [US4] Pass the in-scope `table` to `getEffectiveEnabledSet(table)` in `src/ui/header-utils.ts` (`addLozengesToHeader`) so injection is per-table (depends on T012)
+- [X] T014 [US4] In `src/index.ts`: wire `init()` to set the parsed `tables` into `enabled-set-state`, and pass `table` to the `isEnrichmentEnabled('outlier'|'freeze-panes'|'summary-row', table)` auto-render gates (depends on T012)
+- [X] T015 [US4] Audit `isEnrichmentEnabled(id)` callers in `src/enrichments/slider.ts`, `slider-threshold.ts`, `annotations.ts`: pass `table` where the decision is table-scoped, leave page-global where intended; add a brief comment noting which (depends on T012)
 
 **Checkpoint**: Two tables on one page expose different enrichment sets driven
 solely by per-table options (SC-005); unmatched tables unchanged (SC-009).

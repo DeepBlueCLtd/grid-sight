@@ -134,7 +134,10 @@ function addLozengesToHeader(
   if (header.querySelector(`.${LOZENGE_CLASS}, .${PLUS_ICON_CLASS}`)) return;
 
   const columnType = inferHeaderColumnType(table, header, type);
-  const enabled = getEffectiveEnabledSet();
+  // Per-table aware (spec 015): resolve the enabled set for THIS table so two
+  // tables on one page can offer different enrichment clusters. An unmatched
+  // table resolves to the page-global set (INV-1, no regression).
+  const enabled = getEffectiveEnabledSet(table);
 
   // One pass: every shipped + enabled + applicable enrichment descriptor
   // (classic lozenges and virtual columns alike) contributes its affordance.
