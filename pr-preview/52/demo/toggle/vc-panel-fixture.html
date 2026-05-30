@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Grid-Sight · e2e fixture · VC + toggle panel</title>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 24px; }
+    table { border-collapse: collapse; }
+    th, td { border: 1px solid #ccc; padding: 6px 10px; text-align: right; }
+    th:first-child, td:first-child { text-align: left; }
+  </style>
+</head>
+<body>
+  <!-- e2e fixture only (intentionally NOT linked from the demo nav): pairs the
+       spec-012 toggle panel with an explicit-<thead> numeric table so the
+       panel ↔ virtual-column-lozenge refresh path can be exercised. The shipped
+       panel demos use implicit-thead slider tables, which never grow VC
+       lozenges. -->
+  <script>window.gridSight = { pageConfig: { showToggleUi: true } };</script>
+
+  <table id="vc-table">
+    <thead><tr><th>Region</th><th>Q1</th><th>Q2</th><th>Q3</th></tr></thead>
+    <tbody>
+      <tr><th scope="row">North</th><td>10</td><td>20</td><td>30</td></tr>
+      <tr><th scope="row">South</th><td>15</td><td>25</td><td>35</td></tr>
+      <tr><th scope="row">East</th><td>12</td><td>22</td><td>32</td></tr>
+    </tbody>
+  </table>
+
+  <div data-gs-toggle-panel></div>
+
+  <script src="../../grid-sight.iife.js"></script>
+</body>
+</html>
