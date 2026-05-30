@@ -148,13 +148,13 @@ hidden, and clicking a GS toggle flips it without reload.
 
 ### Tests for User Story 3
 
-- [ ] T024 [P] [US3] Create `src/ui/__tests__/toggle-injector.start-state.test.ts` — `activateToggle`/`deactivateToggle`: active class + `aria-expanded` flip, plus-icons injected/removed, and **byte-identical teardown** after activate→deactivate (FR-024, INV-4)
+- [X] T024 [P] [US3] Create `src/ui/__tests__/toggle-injector.start-state.test.ts` — `activateToggle`/`deactivateToggle`: active class + `aria-expanded` flip, plus-icons injected/removed, and **byte-identical teardown** after activate→deactivate (FR-024, INV-4)
 - [ ] T025 [P] [US3] In `e2e/welcome-per-table.spec.ts`, add US3 tests: one table starts active (lozenges visible on load) and one starts inactive; clicking a GS toggle reveals/hides in place; global toggle off→on restores each table to its configured start-state (FR-009–FR-011, R-6)
 
 ### Implementation for User Story 3
 
-- [ ] T026 [US3] Extract `activateToggle(table)`/`deactivateToggle(table)` from the inline click handler in `src/ui/toggle-injector.ts` and have the click handler call them (single shared path; export both) (R-5, contract §4)
-- [ ] T027 [US3] In `src/index.ts`, after `injectToggle(table)`, call `activateToggle(table)` iff `resolveTableConfig(table).startActive`; on global re-enable, re-apply each table's configured start-state (R-5, R-6) (depends on T026, T012)
+- [X] T026 [US3] Extract `activateToggle(table)`/`deactivateToggle(table)` from the inline click handler in `src/ui/toggle-injector.ts` and have the click handler call them (single shared path; export both) (R-5, contract §4)
+- [X] T027 [US3] In `src/index.ts`, after `injectToggle(table)`, call `activateToggle(table)` iff `resolveTableConfig(table).startActive`; on global re-enable, re-apply each table's configured start-state (R-5, R-6) (depends on T026, T012)
 - [ ] T028 [US3] In `public/index.html`, add the global-toggle region with narrative framing it as a non-destructive overlay, and place a start-active table beside a start-inactive one as the live start-state contrast (FR-009, FR-011, contract §1 items 3–4)
 
 **Checkpoint**: Global toggle round-trips and is explained; start-state contrast

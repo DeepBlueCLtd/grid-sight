@@ -26,7 +26,7 @@ import {
 } from './enrichments/heatmap';
 
 // Import UI components
-import { injectToggle } from './ui/toggle-injector';
+import { injectToggle, activateToggle } from './ui/toggle-injector';
 import { removePlusIcons } from './ui/header-utils';
 
 // Row-visibility pipeline (spec 002-003-row-visibility)
@@ -96,6 +96,7 @@ import {
   setPageConfig,
   setVisitorOverride,
   isEnrichmentEnabled,
+  resolveTableConfig,
 } from './core/enabled-set-state';
 import { resolveVisitorEnrichments } from './utils/slider-persistence';
 import { clearColumnTypes } from './core/column-types-cache';
@@ -324,6 +325,15 @@ const GridSight = {
     try {
       // Inject toggle which will handle the enrichment menu
       injectToggle(table);
+      // Per-table start-state (spec 015 R-5/R-6): if this table's resolved
+      // config asks for it, reveal its enrichments on load via the SAME path a
+      // manual GS click uses. On a global disable→enable cycle init() re-runs
+      // processTable for every table, so each returns to its authored
+      // start-state (R-6). Default is inactive, so unconfigured tables are
+      // unchanged (INV-3).
+      if (resolveTableConfig(table).startActive) {
+        activateToggle(table);
+      }
     } catch (error) {
       console.warn('Failed to inject UI elements:', error);
     }
