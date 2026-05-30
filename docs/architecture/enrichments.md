@@ -108,16 +108,25 @@ populated purely by self-registration: `annotations`, `copy-as-csv`,
 
 ## 4. Capability filtering (unchanged by this model)
 
-Resolution precedence (spec 012-capability-filtering, R-3):
+Resolution precedence (spec 012-capability-filtering, R-3; extended by spec
+015-welcome-per-table-options):
 
 ```text
-visitor override  >  page config  >  library defaults (defaultOn)
+visitor override  >  per-table options  >  page config  >  library defaults (defaultOn)
 ```
 
-- `core/effective-enabled-set.ts` — the pure resolver.
-- `core/enabled-set-state.ts` — module-scoped holder; `isEnrichmentEnabled(id)`
-  / `getEffectiveEnabledSet()`. Lazy first-access compute avoids load-order
-  cycles.
+- `core/effective-enabled-set.ts` — the pure resolver. The optional
+  `perTableEnrichments` tier sits between visitor and page; when omitted,
+  resolution is byte-for-byte the pre-015 behaviour.
+- `core/per-table-options.ts` — matches a table against `pageConfig.tables`
+  (by id/CSS selector), folds matches last-match-wins per field, and resolves
+  the per-table enrichment set. `data-gs-ignore` tables never match.
+- `core/enabled-set-state.ts` — module-scoped holder; **table-aware**
+  `isEnrichmentEnabled(id, table?)` / `getEffectiveEnabledSet(table?)`. With no
+  table (or a table matched by no entry) it returns the page-global set; with a
+  matched table it returns that table's resolved set (cached per table in a
+  `WeakMap`, rebuilt on `setPageConfig`/`setVisitorOverride`). Lazy first-access
+  compute avoids load-order cycles.
 - `ui/toggle-panel.ts` — the runtime opt-in panel. Renders one checkbox per
   **shipped** descriptor; on change, runs `tearDown` for newly-disabled ids and
   re-runs `mountEnrichments`.
