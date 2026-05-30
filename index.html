@@ -42,6 +42,16 @@
       border: 1px solid #f4d9bf; border-radius: 999px; padding: 3px 12px; margin-bottom: 18px;
     }
 
+    /* ── Hero cube (the show-stopper, beside the hero copy) ──── */
+    .hero__grid { display: grid; grid-template-columns: 1.05fr 0.95fr; gap: 36px; align-items: center; }
+    .hero__cube { min-width: 0; }
+    .hero__cube iframe { display: block; width: 100%; height: 480px; border: 0; background: transparent; }
+    .hero__cube-cap { margin: 2px 0 0; font-size: 0.82rem; color: var(--muted); text-align: center; }
+    @media (max-width: 880px) {
+      .hero__grid { grid-template-columns: 1fr; gap: 12px; }
+      .hero__cube iframe { height: 420px; }
+    }
+
     /* ── Principles ───────────────────────────────────────── */
     .principles { padding: 40px 0; border-bottom: 1px solid var(--line); }
     .principles h2 { font-size: 1.4rem; margin: 0 0 6px; }
@@ -140,17 +150,30 @@
 
   <!-- ═══ 1. Hero + principles (FR-001, FR-002) ═══ -->
   <header class="hero">
-    <div class="wrap">
-      <span class="badge">Progressive table enrichment</span>
-      <h1>Grid-Sight</h1>
-      <p class="tagline">Make the HTML tables you already have explorable — without rebuilding them.</p>
-      <p class="problem">
-        Grid-Sight attaches to an ordinary <code>&lt;table&gt;</code> on page load and layers in
-        interactive analysis — sliders and interpolation, heatmaps and outliers, sort/filter/find,
-        derived columns and cell notes — entirely in the browser. Your markup, server, and data
-        pipeline stay exactly as they are; turn Grid-Sight off and the original table returns,
-        byte-for-byte.
-      </p>
+    <div class="wrap hero__grid">
+      <div class="hero__text">
+        <span class="badge">Progressive table enrichment</span>
+        <h1>Grid-Sight</h1>
+        <p class="tagline">Make the HTML tables you already have explorable — without rebuilding them.</p>
+        <p class="problem">
+          Grid-Sight attaches to an ordinary <code>&lt;table&gt;</code> on page load and layers in
+          interactive analysis — sliders and interpolation, heatmaps and outliers, sort/filter/find,
+          derived columns and cell notes — entirely in the browser. Your markup, server, and data
+          pipeline stay exactly as they are; turn Grid-Sight off and the original table returns,
+          byte-for-byte.
+        </p>
+      </div>
+      <!-- Show-stopper: six live, interactive Grid-Sight tables on the faces of a
+           rotatable CSS cube. Embedded as an isolated iframe so it runs its own
+           Grid-Sight instance (no id clashes with the demos below). Zero deps,
+           same-origin only — the page stays offline-clean. -->
+      <div class="hero__cube">
+        <iframe src="cube-css.html" title="Grid-Sight — six live tables on a rotatable cube" loading="eager"></iframe>
+        <p class="hero__cube-cap">
+          Six live tables, one per face — drag to rotate, scroll to zoom, pick a face.
+          <a href="cube-css.html" target="_blank" rel="noopener">Open full screen →</a>
+        </p>
+      </div>
     </div>
   </header>
 
