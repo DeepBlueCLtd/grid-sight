@@ -120,6 +120,8 @@ import { removeFindUi } from './enrichments/find-in-table';
 interface InitOptions extends TableProcessorOptions {
   enrichments?: readonly string[];
   showToggleUi?: boolean;
+  /** Per-table options (spec 015); rides on the existing config object. */
+  tables?: readonly unknown[];
   virtualColumns?: { enabled?: boolean; persistInUrl?: boolean; urlParam?: string };
 }
 
@@ -168,6 +170,11 @@ const GridSight = {
       showToggleUi: options.showToggleUi !== undefined
         ? !!options.showToggleUi
         : parsedPage.showToggleUi,
+      // Per-table options (spec 015) ride on the existing config object; an
+      // ESM `init({ tables })` override takes precedence over pageConfig.tables.
+      tables: options.tables !== undefined
+        ? parsePageConfig({ tables: options.tables }).tables
+        : parsedPage.tables,
     };
     setPageConfig(merged);
 

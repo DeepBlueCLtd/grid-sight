@@ -16,7 +16,7 @@ import { setPageConfig, setVisitorOverride } from '../../core/enabled-set-state'
 beforeEach(() => {
   document.body.innerHTML = '';
   setVisitorOverride(undefined);
-  setPageConfig({ enrichments: undefined, showToggleUi: false });
+  setPageConfig({ enrichments: undefined, showToggleUi: false, tables: [] });
 });
 
 function makeTable(): HTMLTableElement {

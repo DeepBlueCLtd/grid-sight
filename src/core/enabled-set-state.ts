@@ -14,7 +14,7 @@ import { resolveEnabledSet } from './effective-enabled-set';
 import type { ParsedPageConfig } from './page-config';
 
 let currentSet: Set<string> | null = null;
-let currentPageConfig: ParsedPageConfig = { enrichments: undefined, showToggleUi: false };
+let currentPageConfig: ParsedPageConfig = { enrichments: undefined, showToggleUi: false, tables: [] };
 let currentVisitorOverride: Set<string> | undefined = undefined;
 
 function ensureSet(): Set<string> {
