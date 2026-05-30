@@ -203,7 +203,7 @@
         </p>
       </div>
       <div class="feature__demo">
-        <p class="demo-caption">Click the <strong>S</strong> lozenge to attach the row &amp; column sliders, then drag them. Formula: <code>√sl − √R/100 + 2</code></p>
+        <p class="demo-caption">The row &amp; column sliders are attached on load — drag them to read between the cells. Formula: <code>√sl − √R/100 + 2</code></p>
         <table id="demo-sliders">
           <tr><th></th>  <th>10</th><th>20</th><th>30</th><th>40</th><th>50</th></tr>
           <tr><th>1000</th> <td>4.8</td><td>6.2</td><td>7.2</td><td>8.0</td><td>8.8</td></tr>
@@ -233,7 +233,7 @@
         </p>
       </div>
       <div class="feature__demo">
-        <p class="demo-caption">The lozenges are revealed — click <strong>H</strong> on a header to shade it as a heatmap, <strong>!</strong> to flag outliers, or <strong>#</strong> for a stats popup.</p>
+        <p class="demo-caption">A table-wide heatmap is shading the cells on load. Click <strong>!</strong> to flag outliers, <strong>#</strong> for a stats popup, or <strong>H</strong> to toggle the heatmap off.</p>
         <table id="demo-visual">
           <tr><th>Site</th><th>Jan</th><th>Feb</th><th>Mar</th><th>Apr</th></tr>
           <tr><th>North</th><td>118</td><td>122</td><td>131</td><td>140</td></tr>
@@ -262,7 +262,7 @@
         </p>
       </div>
       <div class="feature__demo">
-        <p class="demo-caption">Click a column header's sort/filter lozenges to reorder or narrow rows, or the corner <strong>find</strong> lozenge to search; the header row and key column stay frozen as you scroll.</p>
+        <p class="demo-caption">This demo starts with nothing applied — switch a feature on yourself: click a column header's sort/filter lozenges to reorder or narrow rows, or the corner <strong>find</strong> lozenge to search. The header row and key column stay frozen as you scroll.</p>
         <table id="demo-nav" class="text">
           <tr><th>Name</th><th>Department</th><th>Region</th><th>Tenure</th></tr>
           <tr><td>Alex Morgan</td><td>Engineering</td><td>North</td><td>4</td></tr>
@@ -292,7 +292,7 @@
         </p>
       </div>
       <div class="feature__demo">
-        <p class="demo-caption">Click the corner <strong>Σ</strong> / <strong>⌇</strong> / <strong>Δ</strong> lozenges to append derived columns; hover a cell and click its pin to attach a note.</p>
+        <p class="demo-caption">A <strong>⌇</strong> sparkline column is appended on load. Click the corner <strong>Σ</strong> / <strong>Δ</strong> lozenges to add more derived columns; hover a cell and click its pin to attach a note.</p>
         <table id="demo-derived">
           <tr><th>Quarter</th><th>Product A</th><th>Product B</th><th>Product C</th></tr>
           <tr><th>Q1</th><td>120</td><td>90</td><td>60</td></tr>
@@ -437,10 +437,14 @@
           'cumulative', 'sparkline', 'diff-compare', 'annotations'
         ],
         tables: [
-          { selector: '#demo-sliders', enrichments: ['sliders', 'statistics'], startActive: true },
-          { selector: '#demo-visual',  enrichments: ['heatmap', 'outlier', 'statistics', 'summary-row'], startActive: true },
+          // `activate` brings an enrichment up already applied on load (v1
+          // supports the parameterless toggles: heatmap, sliders, sparkline).
+          { selector: '#demo-sliders', enrichments: ['sliders', 'statistics'], startActive: true, activate: ['sliders'] },
+          { selector: '#demo-visual',  enrichments: ['heatmap', 'outlier', 'statistics', 'summary-row'], startActive: true, activate: ['heatmap'] },
+          // The navigation demo deliberately starts with nothing applied — the
+          // visitor switches a feature on themselves.
           { selector: '#demo-nav',     enrichments: ['sort', 'filter', 'find-in-table', 'freeze-panes'], startActive: true },
-          { selector: '#demo-derived', enrichments: ['cumulative', 'sparkline', 'diff-compare', 'annotations'], startActive: true },
+          { selector: '#demo-derived', enrichments: ['cumulative', 'sparkline', 'diff-compare', 'annotations'], startActive: true, activate: ['sparkline'] },
           { selector: '#start-active',   enrichments: ['heatmap', 'statistics'], startActive: true },
           { selector: '#start-inactive', enrichments: ['heatmap', 'statistics'], startActive: false }
         ]
