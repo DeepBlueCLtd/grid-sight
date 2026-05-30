@@ -29,8 +29,8 @@ keep them affordable and trustworthy:
 The applicability oracle is **two-tier** (review 2C + 5A): the weak layer derives
 expected state from the running library at runtime; the strong layer (curated
 fixture only) uses authored column kinds so the typing regression can actually
-fail (SC-002). Teardown uses a **relative round-trip** snapshot + targeted-artifact
-+ normalized compare (review 6A/7A).
+fail (SC-002). Teardown uses a **relative round-trip** snapshot, a
+targeted-artifact check, and a normalized compare (review 6A/7A).
 
 ## Technical Context
 
