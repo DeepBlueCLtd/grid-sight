@@ -22,9 +22,25 @@ not have today: the ability to configure **different tables on the same page
 differently**. At present, configuration is strictly page-wide (one enrichment
 list applies to every table; the only per-table control is `data-gs-ignore`,
 which opts a table out entirely). This feature adds **per-table options**
-addressed by **id or CSS selector**, including a **per-table start-state**
-(begin enabled or disabled, default off) so each inline demo can showcase a
-distinct, self-contained slice of functionality.
+addressed by **id or CSS selector**, including a **per-table start-state** so
+each inline demo can showcase a distinct, self-contained slice of functionality.
+
+**Terminology — two distinct layers.** A reader can confuse "Grid-Sight on/off"
+with "enrichments shown". They are different:
+
+- **Grid-Sight attached to a table** — Grid-Sight has detected and is managing
+  the table, shown by the small **"GS" corner toggle button**. Whether
+  Grid-Sight is attached at all is governed by the existing global enable/
+  disable control, table detection, and `data-gs-ignore`. This feature does
+  **not** change that.
+- **Enrichments revealed (the GS toggle's active state)** — the per-table "GS"
+  button has two states. Today it starts **inactive**, so a managed table shows
+  the GS button but no lozenges/enrichment affordances until the visitor clicks
+  GS; clicking flips it **active** and the lozenges appear. The new **per-table
+  start-state** option controls *which of these two states the GS button begins
+  in for a given table* — **default off (inactive)**, exactly as today. Setting
+  it on means that table loads with its enrichments already revealed, as if the
+  GS button had been clicked. It does not attach or detach Grid-Sight.
 
 The two parts are intentionally bundled: the page is the motivating consumer of
 the capability, and the capability is reusable by any host page beyond this one.
@@ -75,7 +91,10 @@ narrative **alternating** down the page. The visitor can directly operate the
 feature in each table (move a slider, click a heatmap lozenge, sort/filter,
 search, add a virtual column, annotate a cell, etc.) without leaving the page.
 On a narrow screen the two columns stack vertically. Each section links out to
-the related full demo pages for deeper exploration.
+the related full demo pages for deeper exploration. So that the feature is
+visible without the visitor having to discover the "GS" button, most inline
+demo tables load with their GS toggle already active (enrichments revealed) —
+which is exactly what the per-table start-state option (Story 4) enables.
 
 **Why this priority**: This is the second half of the core experience — letting
 visitors *feel* the value, not just read about it. It depends on the per-table
@@ -114,17 +133,21 @@ The page keeps a global "Grid-Sight enabled" control and the raw-vs-enriched
 contrast, but instead of a bare checkbox it is **woven into the narrative** so
 the visitor understands *why* it exists: Grid-Sight is a non-destructive overlay
 that can be turned off to reveal the untouched table. Separately, the page
-**demonstrates the new start-state option**: at least one inline table is
-configured to begin in the raw, un-enriched state (default off) and the visitor
-can enable it on demand, seeing the before/after transition for themselves.
+**demonstrates the new per-table start-state option**: the page shows both
+states side by side — at least one table whose GS toggle starts **inactive**
+(enrichments hidden until the visitor clicks GS, the default) and at least one
+whose GS toggle starts **active** (enrichments already revealed on load) — so
+the visitor sees the difference and can flip a GS toggle themselves.
 
 **Why this priority**: Reinforces the "progressive, non-destructive" principle
 viscerally and exercises the new start-state capability in front of the visitor.
 Valuable but secondary to having the intro and inline demos at all.
 
 **Independent Test**: Toggle the global control and observe the whole page move
-between raw and enriched; separately, find the start-disabled table, confirm it
-begins raw, enable it, and confirm it enriches without a page reload.
+between attached and fully raw; separately, confirm one table loads with
+enrichments already revealed (GS toggle active) and another loads with
+enrichments hidden (GS toggle inactive), and that clicking a table's GS toggle
+flips its state without a page reload.
 
 **Acceptance Scenarios**:
 
@@ -134,13 +157,16 @@ begins raw, enable it, and confirm it enriches without a page reload.
    the original table.
 2. **Given** the global control is enabled, **When** the visitor turns it off,
    **Then** every Grid-Sight-managed table on the page returns to its raw
-   appearance; turning it back on restores the enrichments.
-3. **Given** a table configured to start disabled (default off), **When** the
-   page first loads, **Then** that table is shown raw (no lozenges/enrichment)
-   while other tables configured to start enabled are already enriched.
-4. **Given** a start-disabled table, **When** the visitor enables it (via the
-   provided control/affordance), **Then** it becomes enriched in place without a
-   full page reload.
+   appearance (GS button and any revealed enrichments removed); turning it back
+   on restores them.
+3. **Given** one table configured with start-state **on** and another with
+   start-state **off (default)**, **When** the page first loads, **Then** the
+   first table already shows its enrichments revealed (GS toggle active) while
+   the second shows only the GS corner button with enrichments hidden.
+4. **Given** a table whose GS toggle starts inactive, **When** the visitor
+   clicks its GS toggle, **Then** that table's enrichments are revealed in place
+   without a full page reload (and clicking again hides them) — i.e. the
+   start-state only sets the initial position of an otherwise normal toggle.
 
 ---
 
@@ -184,9 +210,10 @@ declared start-state, while an unmatched table follows the page-level config.
    initialises, **Then** it behaves exactly as under the current page-level
    configuration (no regression).
 6. **Given** a per-table entry that sets start-state, **When** the page loads,
-   **Then** the matched table begins enabled or disabled as declared, defaulting
-   to disabled when the per-table entry specifies start-state without an
-   explicit value.
+   **Then** the matched table's GS toggle begins active (enrichments revealed)
+   or inactive (enrichments hidden) as declared, defaulting to **inactive** when
+   start-state is not specified — without changing whether Grid-Sight is
+   attached to the table.
 7. **Given** two per-table entries whose selectors both match the same table,
    **When** options are resolved, **Then** resolution is deterministic and
    documented (see Assumptions), with no ambiguity in the resulting option set.
@@ -226,14 +253,13 @@ reachable via a working link.
 - **Empty enrichment list for a table**: a matched table declared with an empty
   enrichment list offers no enrichments (a valid, distinct state from "not
   matched").
-- **Start-disabled then global-disable then global-enable**: a table that began
-  disabled and was individually enabled should follow the page-wide enable/
-  disable thereafter without losing its identity; the resulting state must be
-  unambiguous (see Assumptions).
-- **Global toggle while a start-disabled table is still raw**: turning the
-  global control on must not force-enable tables that are configured to start
-  (and remain) disabled unless the visitor enabled them — the interaction
-  between the global control and per-table start-state must be unambiguous (see
+- **Start-state vs. visitor's own clicks**: start-state only sets the GS
+  toggle's *initial* position; once the visitor clicks a table's GS toggle, that
+  click governs. Re-running enrichment resolution must not silently snap a
+  toggle back to its start-state.
+- **Global disable then re-enable**: when Grid-Sight is globally disabled then
+  re-enabled, each table's GS toggle returns to its configured start-state
+  (active/inactive) on re-attach; the resulting state must be unambiguous (see
   Assumptions).
 - **Offline / `file://` load**: the entire page, including every inline demo,
   must function with no network access.
@@ -277,11 +303,14 @@ reachable via a working link.
   non-destructive overlay that can be switched off to reveal the original
   tables.
 - **FR-010**: Toggling the global control off MUST return all Grid-Sight-managed
-  tables on the page to their raw appearance, and toggling it on MUST restore
-  the enrichments — without a full page reload.
-- **FR-011**: The page MUST demonstrate the new start-state option live: at
-  least one inline table MUST begin in the raw (disabled) state and offer the
-  visitor a way to enable it in place.
+  tables on the page to their raw appearance (GS toggles and any revealed
+  enrichments removed), and toggling it on MUST re-attach Grid-Sight with each
+  table's GS toggle in its configured start-state — without a full page reload.
+- **FR-011**: The page MUST demonstrate the new per-table start-state option
+  live: at least one inline table MUST load with its GS toggle **active**
+  (enrichments revealed on load) and at least one MUST load with its GS toggle
+  **inactive** (enrichments hidden until the visitor clicks GS), with the
+  visitor able to flip either toggle in place.
 - **FR-012**: All existing demo pages MUST remain reachable from the welcome
   page via working links, including a consolidated index of all demos.
 - **FR-013**: The welcome page MUST render and function fully when loaded
@@ -303,30 +332,36 @@ reachable via a working link.
   it does under the current page-level configuration (no regression).
 - **FR-019**: A table explicitly opted out via `data-gs-ignore` MUST remain
   opted out regardless of any per-table selector that also matches it.
-- **FR-020**: Per-table options MUST be able to specify whether a matched table
-  starts enabled or disabled, defaulting to **disabled** when start-state is
-  specified without an explicit value.
-- **FR-021**: A table configured to start disabled MUST load in its raw,
-  un-enriched state, and MUST be able to become enriched in place (without a
-  full page reload) when subsequently enabled.
+- **FR-020**: Per-table options MUST be able to specify whether a matched
+  table's GS toggle starts **active** (enrichments revealed) or **inactive**
+  (enrichments hidden), defaulting to **inactive** when start-state is not
+  specified. This option MUST NOT affect whether Grid-Sight is attached to the
+  table (the GS corner toggle is present in both cases, exactly as today).
+- **FR-021**: A table whose GS toggle starts inactive MUST show the GS corner
+  toggle with no lozenges/enrichments revealed (today's behaviour); a table
+  whose GS toggle starts active MUST load with its enrichments already revealed,
+  and in both cases the visitor MUST be able to flip the toggle in place without
+  a full page reload.
 - **FR-022**: Introducing per-table start-state MUST NOT change Grid-Sight's
-  existing default behaviour for tables/pages that do not use the option
-  (existing consumers' tables continue to enrich on load as they do today).
+  existing default behaviour for tables/pages that do not use the option (the GS
+  toggle continues to start inactive, with enrichments revealed only on click,
+  exactly as today).
 - **FR-023**: Resolution MUST be deterministic when multiple per-table entries
   match the same table; the resolution rule MUST be documented.
-- **FR-024**: Enabling or disabling any table (individually or via the global
-  control) MUST restore byte-identical original markup for the affected table
-  when it returns to the raw state.
+- **FR-024**: Hiding a table's enrichments (toggling its GS button inactive) and
+  disabling Grid-Sight via the global control MUST each restore byte-identical
+  original markup for the affected table when it returns to the raw state.
 
 ### Key Entities
 
 - **Per-table option entry**: An author-declared association between a table
   matcher (an `id` or CSS selector) and the options that apply to matched
-  tables. Key attributes: the matcher, the enrichment set offered, and the
-  start-state (enabled/disabled, default disabled).
-- **Resolved table configuration**: The effective set of enrichments and the
-  start-state for a single table, after combining visitor override, per-table
-  options, page-level configuration, and library defaults by precedence.
+  tables. Key attributes: the matcher, the enrichment set offered, and the GS
+  toggle start-state (active/inactive, default inactive).
+- **Resolved table configuration**: The effective set of enrichments and the GS
+  toggle start-state for a single table, after combining visitor override,
+  per-table options, page-level configuration, and library defaults by
+  precedence.
 - **Feature section** (welcome page): A unit of the welcome page pairing
   narrative with one or more live sample tables for a feature area, plus links
   to related demo pages.
@@ -347,9 +382,10 @@ reachable via a working link.
 - **SC-003**: On a wide screen, narrative and table sides alternate across
   consecutive feature sections; on a narrow screen, every section stacks to a
   single column with no horizontal overflow.
-- **SC-004**: At least one inline table demonstrably starts in the raw state and
-  becomes enriched in place when the visitor enables it, with no full page
-  reload.
+- **SC-004**: On load, at least one inline table shows its enrichments already
+  revealed (GS toggle active) and at least one shows enrichments hidden (GS
+  toggle inactive); clicking a GS toggle flips its state in place with no full
+  page reload.
 - **SC-005**: Two or more tables on the same page simultaneously expose
   different enrichment sets driven solely by per-table options.
 - **SC-006**: Every existing demo page reachable from today's landing page
@@ -361,7 +397,8 @@ reachable via a working link.
 - **SC-009**: Existing pages that do not use per-table options exhibit no change
   in behaviour (all existing automated suites remain green).
 - **SC-010**: Resolution precedence (visitor > per-table > page > defaults) and
-  start-state default (off) hold for every combination exercised in tests.
+  the GS toggle start-state default (inactive/off) hold for every combination
+  exercised in tests.
 
 ## Assumptions
 
@@ -369,10 +406,16 @@ reachable via a working link.
   session branch `claude/welcome-page-redesign-rVjHn` rather than a newly
   created numbered branch; the spec directory is numbered `015` purely for
   sequential cataloguing.
-- **Library default unchanged**: The existing global default (Grid-Sight
-  enriches detected tables on load) is preserved for any page/table that does
-  not opt into per-table start-state. "Default off" applies specifically to the
-  new per-table start-state option, not to Grid-Sight as a whole.
+- **Start-state is the GS toggle's position, not GS attachment**: The per-table
+  start-state controls only whether a managed table's "GS" toggle begins active
+  (enrichments revealed) or inactive (enrichments hidden). It never attaches or
+  detaches Grid-Sight from a table. Whether Grid-Sight is attached at all remains
+  governed by the global enable/disable control, table detection, and
+  `data-gs-ignore`, unchanged by this feature.
+- **Default unchanged**: The existing default (a managed table's GS toggle
+  starts inactive — enrichments revealed only when the visitor clicks GS) is
+  preserved for any table that does not opt into a per-table start-state.
+  "Default off" means the GS toggle defaults to inactive, exactly as today.
 - **Explicit opt-out wins**: `data-gs-ignore` continues to be an absolute
   opt-out and takes precedence over any per-table selector match.
 - **Deterministic multi-match resolution**: When multiple per-table entries
@@ -380,9 +423,10 @@ reachable via a working link.
   (last-match-wins), mirroring familiar cascade semantics; this will be stated
   in the capability's documentation.
 - **Global control and start-state interaction**: The page-wide enable control
-  reflects and drives the overall enabled state; a table configured to start
-  disabled stays raw until individually enabled or until the visitor uses the
-  global control to enable the page. The precise interaction will be pinned down
+  governs whether Grid-Sight is attached to the page's tables at all. When
+  Grid-Sight is (re-)enabled, each table's GS toggle takes its configured
+  start-state (active/inactive); thereafter the visitor's own clicks on a GS
+  toggle govern its state. The precise re-attach behaviour will be pinned down
   during planning, but the visible behaviour must remain unambiguous and match
   the demonstrated narrative.
 - **Selector matching scope**: CSS selectors are matched against table elements
