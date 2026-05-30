@@ -31,8 +31,8 @@ build on it; US1 and US5 are page-only and independent.
 **Purpose**: Baseline and scaffolding shared by later phases.
 
 - [X] T001 Confirm baseline green before changes: run `yarn test` and `yarn build` (record current bundle size from `node scripts/bundle-size.js --soft` as the delta baseline)
-- [ ] T002 [P] Create stub module `src/core/per-table-options.ts` exporting `resolveTableConfig(table)` and `matchTableEntries(table)` signatures + the `ResolvedTableConfig` type (no logic yet), per `contracts/per-table-options.md`
-- [ ] T003 [P] Create empty Playwright spec skeleton `e2e/welcome-per-table.spec.ts` with `test.describe` blocks named for US2/US3/US5 scenarios (skipped placeholders)
+- [X] T002 [P] Create stub module `src/core/per-table-options.ts` exporting `resolveTableConfig(table)` and `matchTableEntries(table)` signatures + the `ResolvedTableConfig` type (no logic yet), per `contracts/per-table-options.md`
+- [X] T003 [P] Create empty Playwright spec skeleton `e2e/welcome-per-table.spec.ts` with `test.describe` blocks named for US2/US3/US5 scenarios (skipped placeholders)
 
 **Checkpoint**: Baseline recorded; new module + e2e file exist as stubs.
 
