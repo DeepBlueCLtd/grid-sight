@@ -54,12 +54,20 @@ Acceptance: the full suite is green with `fullyParallel: true` and `workers > 1`
 ## Runtime gate (FR-016 / SC-009)
 
 ```text
-scripts/e2e-runtime-gate.(js|ts):
-  input  : suite wall-clock (Playwright reporter JSON or a wrapping timer)
-  budget : E2E_BUDGET_SECONDS (recorded here + in spec.md; set from the
-           post-migration parallel baseline during /speckit-tasks)
-  exit   : non-zero if elapsed > budget  → fails CI
+scripts/e2e-runtime-gate.mjs:
+  input  : suite wall-clock (a wrapping timer around `playwright test`)
+  budget : E2E_BUDGET_SECONDS (default 360 locally; 600 in the CI job)
+  exit   : non-zero if the suite failed OR elapsed > budget  → fails CI
+  usage  : node scripts/e2e-runtime-gate.mjs            # vite build + gate
+           node scripts/e2e-runtime-gate.mjs --no-build # gate a built dist
 ```
+
+**Budget basis**: the post-migration **parallel** baseline measured 2026-05-31
+on this environment is ≈163 s for the full all-projects suite (252 tests:
+chromium for every spec + firefox/webkit for the cross-engine matrix +
+permutation specs). The default 360 s budget carries ~120% headroom; the CI job
+sets 600 s for slower shared runners. The number lives in three places —
+`scripts/e2e-runtime-gate.mjs`, `spec.md` (FR-016), and here — keep them in sync.
 
 - Wired into the `test:e2e` flow (or a dedicated CI step after it).
 - The budget is a single, explicit number — coverage may grow underneath it until

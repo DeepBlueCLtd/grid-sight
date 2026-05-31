@@ -231,32 +231,32 @@ editing specs → a new `test()` appears and runs.
 **Independent Test**: `--project=firefox` and `--project=webkit` pass for the
 matrix and permutation specs; an artificially slow run trips the gate.
 
-- [ ] T033 [US4] Add `firefox` and `webkit` projects to `playwright.config.ts`
+- [x] T033 [US4] Add `firefox` and `webkit` projects to `playwright.config.ts`
   alongside `chromium` (FR-015); run the matrix + permutation specs unfiltered on all
   three; project-scope long-running existing specs to chromium if needed to bound
   runtime. Covers SC-008. *(shared file)* Depends: T019, T024, T029.
-- [ ] T034 [US4] Fix or file: triage any genuine Firefox/WebKit failures the new
+- [x] T034 [US4] Fix or file: triage any genuine Firefox/WebKit failures the new
   cross-engine run surfaces. A **minimal, bounded** `src` fix IS permitted for a real
   library defect (Principle V), but it MUST: be the smallest change that fixes the
   engine bug, re-run `node scripts/bundle-size.js` to confirm it stays under the 10 KB
   ceiling (Principle I — call out any delta in the PR), and land with a regression
   test. If the fix would be large or architectural, file a follow-up issue + project-
   skip with a documented reason instead (no silent `.skip`). Depends: T033.
-- [ ] T035 [US4] Implement `scripts/e2e-runtime-gate.mjs` (FR-016): measure full-suite
+- [x] T035 [US4] Implement `scripts/e2e-runtime-gate.mjs` (FR-016): measure full-suite
   wall-clock (Playwright JSON reporter or a wrapping timer) and exit non-zero above
   `E2E_BUDGET_SECONDS`. Depends: T019.
-- [ ] T036 [US4] Set `E2E_BUDGET_SECONDS` from the post-migration **parallel**
+- [x] T036 [US4] Set `E2E_BUDGET_SECONDS` from the post-migration **parallel**
   baseline (run the full parallel suite, take the measured wall-clock + an agreed
   headroom %); record the number in `scripts/e2e-runtime-gate.mjs` and in
   `spec.md`/`contracts/e2e-runner.md`. Depends: T035, T033.
-- [ ] T037a [US4] Add a **new** e2e CI job (FR-011/015/016): the repo currently has
+- [x] T037a [US4] Add a **new** e2e CI job (FR-011/015/016): the repo currently has
   **no** workflow that runs `yarn test:e2e` — `.github/workflows/storybook-tests.yml`
   installs only `chromium` and runs `yarn test:storybook`. Add a workflow (or a job in
   a new `e2e-tests.yml`) on `pull_request`/`push` to `main` that runs
   `npx playwright install --with-deps chromium firefox webkit` then `yarn test:e2e`,
   uploading `playwright-report/` on failure. Confirm the env network policy permits the
   browser-binary download. Depends: T033.
-- [ ] T037 [US4] Wire the runtime gate into the e2e CI job (T037a) — a step after
+- [x] T037 [US4] Wire the runtime gate into the e2e CI job (T037a) — a step after
   `playwright test`, or fold it into the `test:e2e` script in `package.json`; confirm
   it passes within budget and fails when the budget is artificially lowered.
   Covers SC-009. *(shared files: `package.json`, the e2e workflow)* Depends: T035, T036, T037a.

@@ -29,16 +29,30 @@ export async function activateGridSight(page: Page, tableId: string): Promise<vo
  * wait for the resulting DOM mutation to settle.
  */
 export async function setEnrichment(page: Page, id: EnrichmentId, on: boolean): Promise<boolean> {
-  const checkbox = page.locator(
-    `[data-gs-toggle-panel-root] input[type=checkbox][value="${id}"]`,
+  // Drive the panel checkbox through a single page-level evaluate rather than a
+  // locator. The panel only renders rows for `shipped` enrichments (so an
+  // offered-but-unshipped id like `copy-as-csv` has no control → returns false),
+  // and some enrichments (find-in-table, summary-row) rebuild parts of the
+  // panel/lozenges between calls. A locator's auto-wait then stalls on
+  // WebKit/Firefox when its handle is momentarily detached; querying inside the
+  // page each call sidesteps that and dispatches the same bubbling `change` the
+  // real UI fires, driving the panel's delegated listener.
+  const found = await page.evaluate(
+    ({ enrichmentId, want }) => {
+      const input = document.querySelector<HTMLInputElement>(
+        `[data-gs-toggle-panel-root] input[type=checkbox][value="${enrichmentId}"]`,
+      );
+      if (!input) return false;
+      if (input.checked !== want) {
+        input.checked = want;
+        input.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+      return true;
+    },
+    { enrichmentId: id, want: on },
   );
-  // The panel only renders rows for `shipped` enrichments, so an offered-but-
-  // not-yet-shipped id (e.g. `copy-as-csv`, `units-toggle`) has no control.
-  // Report that rather than hanging on a checkbox that will never appear.
-  if ((await checkbox.count()) === 0) return false;
-  await checkbox.setChecked(on);
   await raf(page);
-  return true;
+  return found;
 }
 
 /** Current checked state of an enrichment's panel checkbox (false if absent). */

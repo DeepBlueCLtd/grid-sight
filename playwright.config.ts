@@ -8,6 +8,16 @@ import { defineConfig, devices } from '@playwright/test';
 const PORT = 4173;
 const BASE = `http://localhost:${PORT}/grid-sight`;
 
+// The new cross-engine coverage layer (spec 015, US4 / FR-015) runs on all three
+// engines. The ~40 pre-existing specs are behaviour-migrated chromium suites; to
+// bound wall-clock we keep running THOSE on chromium only and add firefox/webkit
+// coverage through the matrix + permutation specs, which exercise every shipped
+// enrichment across the demos anyway.
+const CROSS_ENGINE_SPECS = [
+  '**/enrichment-matrix.spec.ts',
+  '**/enrichment-permutations.spec.ts',
+];
+
 export default defineConfig({
   testDir: 'tests/e2e',
   // Only `.spec.ts` are Playwright e2e specs; the harness's pure-helper Vitest
@@ -31,9 +41,20 @@ export default defineConfig({
   },
   projects: [
     {
+      // Chromium runs the whole suite (every migrated spec + the new ones).
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
     },
-    // Firefox + WebKit projects are added in Phase 6 (PR B) once the matrix exists.
+    {
+      // Firefox + WebKit run the cross-engine coverage layer only (FR-015).
+      name: 'firefox',
+      use: { ...devices['Desktop Firefox'] },
+      testMatch: CROSS_ENGINE_SPECS,
+    },
+    {
+      name: 'webkit',
+      use: { ...devices['Desktop Safari'] },
+      testMatch: CROSS_ENGINE_SPECS,
+    },
   ],
 });

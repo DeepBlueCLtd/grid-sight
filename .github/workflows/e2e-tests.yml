@@ -1,0 +1,61 @@
+name: E2E Tests
+
+# The repo had no workflow that ran the Playwright e2e suite — storybook-tests.yml
+# only installs chromium and runs `yarn test:storybook`. This job runs the full
+# e2e suite (every spec on chromium + the cross-engine coverage layer on
+# firefox/webkit) behind the runtime gate (spec 015, FR-011/015/016).
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+# Cancel in-progress runs when new commits are pushed.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  e2e:
+    name: Run E2E Suite (chromium + firefox + webkit)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'yarn'
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Install Playwright browsers
+        # All three engines: the matrix + permutation specs run cross-engine.
+        run: npx playwright install --with-deps chromium firefox webkit
+
+      - name: Build the library + demos
+        run: yarn build
+
+      - name: Run e2e suite behind the runtime gate
+        # The gate runs `playwright test` against the already-built dist and
+        # fails if the wall-clock exceeds E2E_BUDGET_SECONDS (SC-009).
+        run: node scripts/e2e-runtime-gate.mjs --no-build
+        env:
+          CI: 'true'
+          # Headroom over the ~163 s local parallel baseline for shared runners.
+          E2E_BUDGET_SECONDS: '600'
+
+      - name: Upload Playwright report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7

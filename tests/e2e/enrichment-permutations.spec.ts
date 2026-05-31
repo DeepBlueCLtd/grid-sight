@@ -47,6 +47,10 @@ async function gotoPlayground(page: Page): Promise<{ controllable: EnrichmentId[
 /* ───────────────────── Pairwise non-interference + teardown ──────────────── */
 
 test('pairwise: every enabled pair composes without throwing and tears down clean', async ({ page }) => {
+  // 120 pairs × (enable·enable·disable·disable + a round-trip snapshot) is a
+  // heavy sweep; on the slower engines (WebKit ≈ 37 s) it overruns the 30 s
+  // default. Mark it slow so the budget tracks the work rather than flaking.
+  test.slow();
   const { controllable } = await gotoPlayground(page);
   expect(controllable.length).toBeGreaterThan(1);
 
