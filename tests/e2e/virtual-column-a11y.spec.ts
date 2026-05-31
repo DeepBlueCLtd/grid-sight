@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { isolateState } from './helpers/isolation';
 
 /**
  * Spec 012-virtual-columns SC-006: every appended virtual-column cell has a
@@ -7,26 +8,12 @@ import { test, expect } from '@playwright/test';
  * fails if any are missing accessible-name content.
  */
 test.describe('Virtual columns — accessibility audit', () => {
-  let server: any;
-  let port: number;
-
-  test.beforeAll(async () => {
-    port = 3138;
-    const { preview } = await import('vite');
-    server = await preview({
-      preview: { port, open: false },
-      build: { outDir: 'dist' },
-    });
-  });
-
-  test.afterAll(async () => {
-    if (server?.httpServer?.close) {
-      await new Promise<void>((resolve) => server.httpServer.close(() => resolve()));
-    }
+  test.beforeEach(async ({ page }) => {
+    await isolateState(page);
   });
 
   test('every appended cell has a non-empty accessible name', async ({ page }) => {
-    await page.goto(`http://localhost:${port}/grid-sight/demo/virtual-columns.html`);
+    await page.goto('/grid-sight/demo/virtual-columns.html');
     await page.waitForFunction(() => !!(window as any).gridSight);
 
     await page.evaluate(() => {

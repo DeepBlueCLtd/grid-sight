@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { isolateState } from './helpers/isolation';
 
 /**
  * Spec 012-virtual-columns SC-002 / SC-003 perf check on real Chromium.
@@ -8,26 +9,12 @@ import { test, expect } from '@playwright/test';
  * - URL restoration visible within one rAF after first paint (SC-003)
  */
 test.describe('Virtual columns — perf', () => {
-  let server: any;
-  let port: number;
-
-  test.beforeAll(async () => {
-    port = 3139;
-    const { preview } = await import('vite');
-    server = await preview({
-      preview: { port, open: false },
-      build: { outDir: 'dist' },
-    });
-  });
-
-  test.afterAll(async () => {
-    if (server?.httpServer?.close) {
-      await new Promise<void>((resolve) => server.httpServer.close(() => resolve()));
-    }
+  test.beforeEach(async ({ page }) => {
+    await isolateState(page);
   });
 
   test('initial renders + URL restoration fit inside the SC-002 / SC-003 budgets', async ({ page }) => {
-    await page.goto(`http://localhost:${port}/grid-sight/demo/virtual-columns.html`);
+    await page.goto('/grid-sight/demo/virtual-columns.html');
     await page.waitForFunction(() => !!(window as any).gridSight);
 
     // Replace the demo table with a 1 000 × 10 fixture (one label + 10 numeric cols).
@@ -102,7 +89,7 @@ test.describe('Virtual columns — perf', () => {
 
     // SC-003: URL restoration completes within one animation frame after first paint.
     const hash = await page.evaluate(() => location.hash);
-    const restoredUrl = `http://localhost:${port}/grid-sight/demo/virtual-columns.html${hash}`;
+    const restoredUrl = `/grid-sight/demo/virtual-columns.html${hash}`;
     const page2 = await page.context().newPage();
     await page2.goto(restoredUrl);
     const restoreMs = await page2.evaluate(async () => {

@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { isolateState } from './helpers/isolation';
 
 /**
  * Regression test for the enable→disable→enable round-trip (spec 006 / the
@@ -8,20 +9,10 @@ import { test, expect } from '@playwright/test';
  * registry `apply` hook the toggle panel now calls.
  */
 
-const PORT = 3065;
-const URL = `http://localhost:${PORT}/grid-sight/demo/toggle/live-enrichments.html`;
+const URL = '/grid-sight/demo/toggle/live-enrichments.html';
 
-let server: any;
-
-test.beforeAll(async () => {
-  const { preview } = await import('vite');
-  server = await preview({ preview: { port: PORT, open: false }, build: { outDir: 'dist' } });
-});
-
-test.afterAll(async () => {
-  if (server?.httpServer?.close) {
-    await new Promise<void>((resolve) => server.httpServer.close(() => resolve()));
-  }
+test.beforeEach(async ({ page }) => {
+  await isolateState(page);
 });
 
 const cell = '#mixed-table tr:nth-child(2) td:nth-child(2)';

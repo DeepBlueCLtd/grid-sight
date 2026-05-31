@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { isolateState } from './helpers/isolation';
 import { installMockVrs, fireMockVrsEvent } from './helpers/mock-vrs';
 
 /**
@@ -8,26 +9,12 @@ import { installMockVrs, fireMockVrsEvent } from './helpers/mock-vrs';
  * frame.
  */
 test.describe('Virtual columns — pipeline cooperation', () => {
-  let server: any;
-  let port: number;
-
-  test.beforeAll(async () => {
-    port = 3135;
-    const { preview } = await import('vite');
-    server = await preview({
-      preview: { port, open: false },
-      build: { outDir: 'dist' },
-    });
-  });
-
-  test.afterAll(async () => {
-    if (server?.httpServer?.close) {
-      await new Promise<void>((resolve) => server.httpServer.close(() => resolve()));
-    }
+  test.beforeEach(async ({ page }) => {
+    await isolateState(page);
   });
 
   test('AS1: sort moves appended cells with their rows and recomputes cumulative', async ({ page }) => {
-    await page.goto(`http://localhost:${port}/grid-sight/demo/virtual-columns.html`);
+    await page.goto('/grid-sight/demo/virtual-columns.html');
     await page.waitForFunction(() => !!(window as any).gridSight);
     await page.waitForFunction(() => !!(window as any).__gridSightVisibleRows);
 

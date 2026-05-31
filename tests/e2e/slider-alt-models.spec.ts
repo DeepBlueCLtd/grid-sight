@@ -1,24 +1,13 @@
 import { test, expect } from '@playwright/test';
+import { isolateState } from './helpers/isolation';
 
 test.describe('US2: alternate calculation models', () => {
-  let server: any;
-
-  test.beforeAll(async () => {
-    const { preview } = await import('vite');
-    server = await preview({
-      preview: { port: 3011, open: false },
-      build: { outDir: 'dist' },
-    });
-  });
-
-  test.afterAll(async () => {
-    if (server?.httpServer?.close) {
-      await new Promise<void>((resolve) => server.httpServer.close(() => resolve()));
-    }
+  test.beforeEach(async ({ page }) => {
+    await isolateState(page);
   });
 
   test('two tables sync when sliders are added; equation readout reflects formula', async ({ page }) => {
-    await page.goto('http://localhost:3011/grid-sight/demo/sliders/alternate-calc-models.html');
+    await page.goto('/grid-sight/demo/sliders/alternate-calc-models.html');
     await page.waitForFunction(() => !!(window as any).gridSight);
 
     const result = await page.evaluate(() => {
@@ -37,7 +26,7 @@ test.describe('US2: alternate calculation models', () => {
   });
 
   test('equation readout is independent of cell data', async ({ page }) => {
-    await page.goto('http://localhost:3011/grid-sight/demo/sliders/alternate-calc-models.html');
+    await page.goto('/grid-sight/demo/sliders/alternate-calc-models.html');
     await page.waitForFunction(() => !!(window as any).gridSight);
 
     const text = await page.evaluate(() => {

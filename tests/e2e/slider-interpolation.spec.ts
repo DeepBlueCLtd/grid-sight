@@ -1,30 +1,19 @@
 import { test, expect } from '@playwright/test';
+import { isolateState } from './helpers/isolation';
 
 /**
  * End-to-end tests for spec 001 — User Story 1.
  * Loads the offline demo page (`public/demo/sliders/interpolation.html`) via the
- * Vite preview server.
+ * shared Playwright webServer.
  */
 
 test.describe('US1: slider interpolation', () => {
-  let server: any;
-
-  test.beforeAll(async () => {
-    const { preview } = await import('vite');
-    server = await preview({
-      preview: { port: 3010, open: false },
-      build: { outDir: 'dist' },
-    });
-  });
-
-  test.afterAll(async () => {
-    if (server?.httpServer?.close) {
-      await new Promise<void>((resolve) => server.httpServer.close(() => resolve()));
-    }
+  test.beforeEach(async ({ page }) => {
+    await isolateState(page);
   });
 
   test('add → drag → readout updates within one frame', async ({ page }) => {
-    await page.goto('http://localhost:3010/grid-sight/demo/sliders/interpolation.html');
+    await page.goto('/grid-sight/demo/sliders/interpolation.html');
     await page.waitForLoadState('domcontentloaded');
     await page.waitForFunction(() => !!(window as any).gridSight);
 
@@ -53,7 +42,7 @@ test.describe('US1: slider interpolation', () => {
   });
 
   test('exact-header position returns interpolated row average to machine precision', async ({ page }) => {
-    await page.goto('http://localhost:3010/grid-sight/demo/sliders/interpolation.html');
+    await page.goto('/grid-sight/demo/sliders/interpolation.html');
     await page.waitForFunction(() => !!(window as any).gridSight);
     await page.evaluate(() => {
       const tbl = document.getElementById('dyn-table') as HTMLTableElement;
@@ -74,7 +63,7 @@ test.describe('US1: slider interpolation', () => {
   });
 
   test('non-numeric axis is rejected by addSlider', async ({ page }) => {
-    await page.goto('http://localhost:3010/grid-sight/demo/sliders/interpolation.html');
+    await page.goto('/grid-sight/demo/sliders/interpolation.html');
     await page.waitForFunction(() => !!(window as any).gridSight);
 
     const error = await page.evaluate(() => {

@@ -17,6 +17,20 @@ parallel matrix cases without it — so the webServer move + harness helpers lan
 Phase 2 (Foundational), and US4's remaining pieces (cross-browser projects, runtime
 gate) form their own late phase.
 
+## PR split
+
+This feature ships as **two stacked PRs** to keep the ~38-file migration reviewable
+apart from the new matrix behaviour:
+
+- **PR A — Foundational migration** (`claude/pending-tasks-NGcyT`, PR #51): the
+  planning artifacts plus **Phase 1–2** (T001–T019, helpers T007–T009a). Pure
+  de-risking refactor — shared `webServer`, parallel execution, harness helpers,
+  every existing spec migrated. No new matrix behaviour; behaviour-preserving, gated
+  by T019 (full suite parallel-green on chromium) + the helper unit tests.
+- **PR B — Matrix & coverage** (branched off PR A): **Phase 3–7** (T020+) — the
+  per-demo matrix, permutation sweep, self-extending coverage, cross-browser projects,
+  the new e2e CI job, and the runtime gate.
+
 ## Format: `[ID] [P?] [Story] Description`
 
 - **[P]**: Can run in parallel (different files, no dependency on an incomplete task).
@@ -25,7 +39,7 @@ gate) form their own late phase.
 ## Path notes
 
 - Config → `playwright.config.ts`; harness → `tests/e2e/helpers/`; harness units →
-  `tests/e2e/helpers/__tests__/`; new specs → `tests/e2e/`; curated fixture →
+  `tests/unit/e2e-helpers/` (Vitest; see T009a impl note); new specs → `tests/e2e/`; curated fixture →
   `public/demo/matrix/index.html`; runtime gate → `scripts/e2e-runtime-gate.mjs`.
 - **Shared files (NOT [P])**: `playwright.config.ts` (T004 then T033),
   `package.json` scripts (T037), the e2e CI workflow (T002, T037a, T037), and every
@@ -36,14 +50,14 @@ gate) form their own late phase.
 
 ## Phase 1: Setup (Shared)
 
-- [ ] T001 Record the pre-change e2e baseline: run `yarn test:e2e` (serial, chromium)
+- [x] T001 Record the pre-change e2e baseline: run `yarn test:e2e` (serial, chromium)
   and note pass count + wall-clock in the PR as the migration's green baseline; run
   `yarn test` to confirm the Vitest suite is green. No code change.
-- [ ] T002 [P] Install the extra browser engines for local runs:
+- [x] T002 [P] Install the extra browser engines for local runs:
   `npx playwright install firefox webkit`; document the command in
   `specs/015-e2e-enrichment-matrix/quickstart.md` (already present) and in the PR. (CI
   installs them in the new e2e job — T037a.)
-- [ ] T003 Inventory the per-file preview servers: list every spec under `tests/e2e/`
+- [x] T003 Inventory the per-file preview servers: list every spec under `tests/e2e/`
   that defines a `beforeAll` `vite preview` + hardcoded `PORT`/`BASE` (survey: 38 of
   39). Capture the list in a scratch note for the migration phase (T010–T019).
 
@@ -56,33 +70,33 @@ depends on. Nothing in US1–US3 can run until this phase is green.
 
 ### Shared Playwright webServer + parallel migration (FR-013/014) — `contracts/e2e-runner.md`
 
-- [ ] T004 Convert `playwright.config.ts` to a single shared `webServer` (one
+- [x] T004 Convert `playwright.config.ts` to a single shared `webServer` (one
   `vite preview` on a fixed port), set `use.baseURL`, `fullyParallel: true`, and
   `workers > 1`; keep the `chromium` project only for now (Firefox/WebKit added in
   Phase 6). *(shared file)*
-- [ ] T005 Implement `tests/e2e/helpers/isolation.ts` `isolateState(page)`
+- [x] T005 Implement `tests/e2e/helpers/isolation.ts` `isolateState(page)`
   (clear/namespace `localStorage` + URL state) and `installOfflineGuard(page)` (fail
   on any non-local request) per `contracts/test-helpers.md`. Depends: none.
-- [ ] T006 Implement `tests/e2e/helpers/gridsight-window.ts` — the typed
+- [x] T006 Implement `tests/e2e/helpers/gridsight-window.ts` — the typed
   `GridSightWindow` accessor (reusing `EnrichmentId` from
   `src/core/enrichment-registry.ts`) so specs avoid `(window as any)`. Depends: none.
-- [ ] T010 [P] Migrate annotations specs (`annotations*.spec.ts`, 7 files) off their
+- [x] T010 [P] Migrate annotations specs (`annotations*.spec.ts`, 7 files) off their
   `beforeAll` preview to `baseURL` + relative `goto`, add `isolateState` in
   `beforeEach`; each file independently. Depends: T004, T005.
-- [ ] T011 [P] Migrate slider specs (`slider-*.spec.ts`) the same way. Depends: T004, T005.
-- [ ] T012 [P] Migrate virtual-column specs (`virtual-column-*.spec.ts`) the same way.
+- [x] T011 [P] Migrate slider specs (`slider-*.spec.ts`) the same way. Depends: T004, T005.
+- [x] T012 [P] Migrate virtual-column specs (`virtual-column-*.spec.ts`) the same way.
   Depends: T004, T005.
-- [ ] T013 [P] Migrate outlier specs (`outlier*.spec.ts`) the same way. Depends: T004, T005.
-- [ ] T014 [P] Migrate sort/filter specs (`sort*.spec.ts`, `filter.spec.ts`) the same
+- [x] T013 [P] Migrate outlier specs (`outlier*.spec.ts`) the same way. Depends: T004, T005.
+- [x] T014 [P] Migrate sort/filter specs (`sort*.spec.ts`, `filter.spec.ts`) the same
   way. Depends: T004, T005.
-- [ ] T015 [P] Migrate `navigation-and-analysis.spec.ts` the same way. Depends: T004, T005.
-- [ ] T016 [P] Migrate `demo.spec.ts`, `heatmap.spec.ts`, `view-state-url.spec.ts`,
+- [x] T015 [P] Migrate `navigation-and-analysis.spec.ts` the same way. Depends: T004, T005.
+- [x] T016 [P] Migrate `demo.spec.ts`, `heatmap.spec.ts`, `view-state-url.spec.ts`,
   `row-visibility-a11y-smoke.spec.ts` the same way. Depends: T004, T005.
-- [ ] T017 [P] Migrate `capability-filtering-toggle.spec.ts` the same way. Depends: T004, T005.
-- [ ] T018 Migrate any remaining `beforeAll`-preview specs found in T003 not covered
+- [x] T017 [P] Migrate `capability-filtering-toggle.spec.ts` the same way. Depends: T004, T005.
+- [x] T018 Migrate any remaining `beforeAll`-preview specs found in T003 not covered
   by T010–T017; grep to confirm **zero** `import('vite')`/`preview(` remain in
   `tests/e2e/*.spec.ts` except via the config. Depends: T010–T017.
-- [ ] T019 Run the full suite parallel on chromium (`yarn test:e2e`); fix any
+- [x] T019 Run the full suite parallel on chromium (`yarn test:e2e`); fix any
   flakiness exposed by parallelism via `isolateState` (FR-014) until green. This is
   the gate that the migration preserved behaviour. Depends: T018.
 
@@ -93,24 +107,28 @@ depends on. Nothing in US1–US3 can run until this phase is green.
 > the migration once T006 lands. US1 (T024) needs both the migration green (T019)
 > and the helpers (T007–T009) done.
 
-- [ ] T007 [P] Implement `tests/e2e/helpers/demo-discovery.ts`:
+- [x] T007 [P] Implement `tests/e2e/helpers/demo-discovery.ts`:
   `includeDemo(relPath, contents)` (pure — keep gridSight+`<table>` pages, exclude
   `*fixture*` and perf/large per D13), `discoverDemoPages()`, and `readPageProfile`
   (offered = `pageConfig.enrichments || enrichmentIds`). Depends: T006.
-- [ ] T008 [P] Implement `tests/e2e/helpers/toggle-panel.ts`: `raf`,
+- [x] T008 [P] Implement `tests/e2e/helpers/toggle-panel.ts`: `raf`,
   `setEnrichment(page,id,on)`, and placement-aware `hasActiveLozenge`/
   `hasDisabledLozenge` (consult headerType — table-level corner vs column, D5/3A).
   Depends: T006.
-- [ ] T009 [P] Implement `tests/e2e/helpers/teardown.ts`
+- [x] T009 [P] Implement `tests/e2e/helpers/teardown.ts`
   (`snapshotTable`, `expectRoundTrip`, `expectNoArtifacts`, pure
   `normalizeForCompare` that never strips `gs-*`, D7/6A/7A) and
   `tests/e2e/helpers/applicability.ts` (`observedState` weak oracle 2C, pure
   `pairwise<T>` D12). Depends: T006.
-- [ ] T009a [P] Vitest units in `tests/e2e/helpers/__tests__/`: `pairwise.test.ts`
+- [x] T009a [P] Vitest units in `tests/unit/e2e-helpers/`: `pairwise.test.ts`
   (completeness, no self/dup, stable order), `demo-discovery.test.ts` (`includeDemo`
   excludes fixtures/perf/table-less), `teardown-normalize.test.ts`
   (`normalizeForCompare` collapses benign diffs but preserves every `gs-*`
   attr/class/node). Depends: T007, T009. *(satisfies review 9A)*
+  **Impl note**: located under `tests/unit/` (not `tests/e2e/helpers/__tests__/` as the
+  contract sketched) because `vitest.config.ts` excludes `tests/e2e/**` and Playwright's
+  `testMatch` is pinned to `*.spec.ts` — so `*.test.ts` runs only under Vitest, never
+  the Playwright runner.
 
 **Checkpoint**: suite runs parallel & green on chromium; helpers exist and their
 pure logic is unit-tested. US1–US3 unblocked.

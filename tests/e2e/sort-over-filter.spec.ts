@@ -1,23 +1,11 @@
 import { test, expect, type Page } from '@playwright/test';
+import { isolateState } from './helpers/isolation';
 
-const PORT = 3022;
-const URL = `http://localhost:${PORT}/grid-sight/demo/row-visibility/orders.html`;
-const PERF_URL = `http://localhost:${PORT}/grid-sight/demo/row-visibility/perf-1000.html`;
+const URL = '/grid-sight/demo/row-visibility/orders.html';
+const PERF_URL = '/grid-sight/demo/row-visibility/perf-1000.html';
 
-let server: any;
-
-test.beforeAll(async () => {
-  const { preview } = await import('vite');
-  server = await preview({
-    preview: { port: PORT, open: false },
-    build: { outDir: 'dist' },
-  });
-});
-
-test.afterAll(async () => {
-  if (server?.httpServer?.close) {
-    await new Promise<void>((resolve) => server.httpServer.close(() => resolve()));
-  }
+test.beforeEach(async ({ page }) => {
+  await isolateState(page);
 });
 
 async function enableGridSight(page: Page, url = URL): Promise<void> {

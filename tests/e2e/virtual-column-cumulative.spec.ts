@@ -1,29 +1,16 @@
 import { test, expect } from '@playwright/test';
+import { isolateState } from './helpers/isolation';
 
 /**
  * Spec 012-virtual-columns US1: cumulative column lifecycle.
  */
 test.describe('Virtual columns — cumulative', () => {
-  let server: any;
-  let port: number;
-
-  test.beforeAll(async () => {
-    port = 3130;
-    const { preview } = await import('vite');
-    server = await preview({
-      preview: { port, open: false },
-      build: { outDir: 'dist' },
-    });
-  });
-
-  test.afterAll(async () => {
-    if (server?.httpServer?.close) {
-      await new Promise<void>((resolve) => server.httpServer.close(() => resolve()));
-    }
+  test.beforeEach(async ({ page }) => {
+    await isolateState(page);
   });
 
   test('Σ lozenge cycles sum → percent → off with byte-identical detach', async ({ page }) => {
-    await page.goto(`http://localhost:${port}/grid-sight/demo/virtual-columns.html`);
+    await page.goto('/grid-sight/demo/virtual-columns.html');
     await page.waitForFunction(() => !!(window as any).gridSight);
 
     const table = page.locator('#sales-table');
@@ -64,7 +51,7 @@ test.describe('Virtual columns — cumulative', () => {
   });
 
   test('SC-005: combined detach (cum + spark + compare → removeAll) is byte-identical', async ({ page }) => {
-    await page.goto(`http://localhost:${port}/grid-sight/demo/virtual-columns.html`);
+    await page.goto('/grid-sight/demo/virtual-columns.html');
     await page.waitForFunction(() => !!(window as any).gridSight);
 
     const table = page.locator('#sales-table');

@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { isolateState } from './helpers/isolation';
 
 /**
  * End-to-end tests for spec 012 — Story 1.
@@ -10,27 +11,13 @@ import { test, expect } from '@playwright/test';
  * file and run against each existing demo page.
  */
 
-const PORT = 3120;
+test.beforeEach(async ({ page }) => {
+  await isolateState(page);
+});
 
 test.describe('US1: per-page enrichment subset (capability filtering)', () => {
-  let server: any;
-
-  test.beforeAll(async () => {
-    const { preview } = await import('vite');
-    server = await preview({
-      preview: { port: PORT, open: false },
-      build: { outDir: 'dist' },
-    });
-  });
-
-  test.afterAll(async () => {
-    if (server?.httpServer?.close) {
-      await new Promise<void>((resolve) => server.httpServer.close(() => resolve()));
-    }
-  });
-
   test('fixture: pageConfig limits lozenges to the declared set', async ({ page }) => {
-    await page.goto(`http://localhost:${PORT}/grid-sight/demo/capability-filtering/fixture.html`);
+    await page.goto(`/grid-sight/demo/capability-filtering/fixture.html`);
     await page.waitForLoadState('domcontentloaded');
     await page.waitForFunction(() => !!(window as any).gridSight);
 
@@ -65,7 +52,7 @@ test.describe('US1: per-page enrichment subset (capability filtering)', () => {
   });
 
   test('fixture: categorical column shows only enabled enrichments (frequency disabled)', async ({ page }) => {
-    await page.goto(`http://localhost:${PORT}/grid-sight/demo/capability-filtering/fixture.html`);
+    await page.goto(`/grid-sight/demo/capability-filtering/fixture.html`);
     await page.waitForFunction(() => !!(window as any).gridSight);
     await page.locator('#mixed-table .grid-sight-toggle').first().click();
 
@@ -80,22 +67,6 @@ test.describe('US1: per-page enrichment subset (capability filtering)', () => {
 });
 
 test.describe('US3: each existing demo declares an explicit subset', () => {
-  let server: any;
-
-  test.beforeAll(async () => {
-    const { preview } = await import('vite');
-    server = await preview({
-      preview: { port: PORT + 1, open: false },
-      build: { outDir: 'dist' },
-    });
-  });
-
-  test.afterAll(async () => {
-    if (server?.httpServer?.close) {
-      await new Promise<void>((resolve) => server.httpServer.close(() => resolve()));
-    }
-  });
-
   const cases: Array<{ path: string; expected: Set<string> }> = [
     {
       path: '/grid-sight/',
@@ -126,7 +97,7 @@ test.describe('US3: each existing demo declares an explicit subset', () => {
 
   for (const c of cases) {
     test(`demo ${c.path} declares ${Array.from(c.expected).join(',')}`, async ({ page }) => {
-      await page.goto(`http://localhost:${PORT + 1}${c.path}`);
+      await page.goto(`${c.path}`);
       await page.waitForFunction(() => !!(window as any).gridSight);
 
       // The configured enrichments are reflected in isEnrichmentEnabled.

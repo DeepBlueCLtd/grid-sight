@@ -1,21 +1,12 @@
 import { test, expect, type Page } from '@playwright/test';
+import { isolateState } from './helpers/isolation';
 
-const PORT = 3064;
-const BASE = `http://localhost:${PORT}/grid-sight/demo/annotations`;
+const BASE = `/grid-sight/demo/annotations`;
 const DOC_A = `${BASE}/annotations-doc-a.html`;
 const DOC_B = `${BASE}/annotations-doc-b.html`;
 
-let server: any;
-
-test.beforeAll(async () => {
-  const { preview } = await import('vite');
-  server = await preview({ preview: { port: PORT, open: false }, build: { outDir: 'dist' } });
-});
-
-test.afterAll(async () => {
-  if (server?.httpServer?.close) {
-    await new Promise<void>((resolve) => server.httpServer.close(() => resolve()));
-  }
+test.beforeEach(async ({ page }) => {
+  await isolateState(page);
 });
 
 async function annotateFirstCell(page: Page, tableSel: string, text: string): Promise<void> {

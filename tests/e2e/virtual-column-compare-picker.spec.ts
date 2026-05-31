@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { isolateState } from './helpers/isolation';
 
 /**
  * Spec 012-virtual-columns US3: the Δ compare picker affordance driven through
@@ -7,23 +8,12 @@ import { test, expect } from '@playwright/test';
  * candidate header cancels the pick.
  */
 test.describe('Virtual columns — compare picker affordance', () => {
-  let server: any;
-  let port: number;
-
-  test.beforeAll(async () => {
-    port = 3140;
-    const { preview } = await import('vite');
-    server = await preview({ preview: { port, open: false }, build: { outDir: 'dist' } });
-  });
-
-  test.afterAll(async () => {
-    if (server?.httpServer?.close) {
-      await new Promise<void>((resolve) => server.httpServer.close(() => resolve()));
-    }
+  test.beforeEach(async ({ page }) => {
+    await isolateState(page);
   });
 
   async function enable(page: import('@playwright/test').Page) {
-    await page.goto(`http://localhost:${port}/grid-sight/demo/virtual-columns.html`);
+    await page.goto('/grid-sight/demo/virtual-columns.html');
     await page.waitForFunction(() => !!(window as any).gridSight);
     await page.locator('#sales-table .grid-sight-toggle').first().click();
     await page.waitForSelector('#sales-table .gs-vc-lozenge[data-gs-vc-kind="compare"]');

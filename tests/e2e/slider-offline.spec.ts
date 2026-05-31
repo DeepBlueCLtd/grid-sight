@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { isolateState } from './helpers/isolation';
 import path from 'node:path';
 
 /**
@@ -8,6 +9,10 @@ import path from 'node:path';
  */
 
 test.describe('US Polish: slider works fully offline', () => {
+  test.beforeEach(async ({ page }) => {
+    await isolateState(page);
+  });
+
   test('drag a slider on the file:// demo with zero network requests', async ({ page }) => {
     const requests: string[] = [];
     page.on('request', (req) => {

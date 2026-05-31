@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { isolateState } from './helpers/isolation';
 
 /**
  * End-to-end tests for spec 012 — Story 2 (runtime visitor toggle panel).
@@ -8,24 +9,11 @@ import { test, expect } from '@playwright/test';
  * exercise live toggling, persistence, and reload restoration.
  */
 
-const PORT = 3122;
-const DEMO = `http://localhost:${PORT}/grid-sight/demo/toggle/live-enrichments.html`;
+const DEMO = `/grid-sight/demo/toggle/live-enrichments.html`;
 
 test.describe('US2: live enrichment toggle panel', () => {
-  let server: any;
-
-  test.beforeAll(async () => {
-    const { preview } = await import('vite');
-    server = await preview({
-      preview: { port: PORT, open: false },
-      build: { outDir: 'dist' },
-    });
-  });
-
-  test.afterAll(async () => {
-    if (server?.httpServer?.close) {
-      await new Promise<void>((resolve) => server.httpServer.close(() => resolve()));
-    }
+  test.beforeEach(async ({ page }) => {
+    await isolateState(page);
   });
 
   test('panel mounts into [data-gs-toggle-panel] container', async ({ page }) => {

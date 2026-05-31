@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { isolateState } from './helpers/isolation';
 
 /**
  * Validate the published landing page (Grid-Sight on GitHub Pages).
@@ -6,24 +7,12 @@ import { test, expect } from '@playwright/test';
  */
 
 test.describe('Grid-Sight landing page', () => {
-  let server: any;
-
-  test.beforeAll(async () => {
-    const { preview } = await import('vite');
-    server = await preview({
-      preview: { port: 3014, open: false },
-      build: { outDir: 'dist' },
-    });
-  });
-
-  test.afterAll(async () => {
-    if (server?.httpServer?.close) {
-      await new Promise<void>((resolve) => server.httpServer.close(() => resolve()));
-    }
+  test.beforeEach(async ({ page }) => {
+    await isolateState(page);
   });
 
   test('landing page loads and exposes window.gridSight', async ({ page }) => {
-    await page.goto('http://localhost:3014/grid-sight/');
+    await page.goto('/grid-sight/');
     await page.waitForLoadState('domcontentloaded');
     await page.waitForFunction(() => !!(window as any).gridSight);
 
@@ -52,7 +41,7 @@ test.describe('Grid-Sight landing page', () => {
   });
 
   test('GS toggle injects lozenges on the featured table', async ({ page }) => {
-    await page.goto('http://localhost:3014/grid-sight/');
+    await page.goto('/grid-sight/');
     await page.waitForFunction(() => !!(window as any).gridSight);
 
     const gsToggle = page.locator('#featured-table .grid-sight-toggle').first();
@@ -61,7 +50,7 @@ test.describe('Grid-Sight landing page', () => {
   });
 
   test('page-level toggle disables and re-enables Grid-Sight', async ({ page }) => {
-    await page.goto('http://localhost:3014/grid-sight/');
+    await page.goto('/grid-sight/');
     await page.waitForFunction(() => !!(window as any).gridSight);
     await expect(page.locator('#featured-table .grid-sight-toggle')).toHaveCount(1);
 
@@ -85,7 +74,7 @@ test.describe('Grid-Sight landing page', () => {
       '/grid-sight/demo/outlier/measurements.html',
     ];
     for (const p of paths) {
-      const resp = await page.goto('http://localhost:3014' + p);
+      const resp = await page.goto(p);
       expect(resp?.status()).toBe(200);
       await page.waitForFunction(() => !!(window as any).gridSight);
     }
