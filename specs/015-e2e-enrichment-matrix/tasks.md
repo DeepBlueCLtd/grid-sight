@@ -183,7 +183,7 @@ non-interference and joint byte-identical teardown.
 **Independent Test**: run `enrichment-permutations.spec.ts` alone — pairwise combos
 plus the rich combo pass, with concrete cross-behaviour assertions.
 
-- [ ] T029 [US2] Implement `tests/e2e/enrichment-permutations.spec.ts` on
+- [x] T029 [US2] Implement `tests/e2e/enrichment-permutations.spec.ts` on
   `public/demo/toggle/opt-in-playground.html`: generate `pairwise(offered)` combos +
   one curated rich combo (`summary-row`, `sort`, `filter`, sliders, virtual columns,
   annotations, `find-in-table`); for each, enable members, assert concrete
@@ -191,7 +191,7 @@ plus the rich combo pass, with concrete cross-behaviour assertions.
   rows; sort leaves the aggregate stable; `find-in-table` highlights survive a
   filter), then disable all and assert relative round-trip teardown. Covers SC-003.
   Depends: T008, T009.
-- [ ] T029a [US2] Ensure the playground fixture has data that exercises the rich
+- [x] T029a [US2] Ensure the playground fixture has data that exercises the rich
   combo (numeric + categorical + enough rows); enrich
   `public/demo/toggle/opt-in-playground.html` only if needed (FR-012). Depends: T029.
 
