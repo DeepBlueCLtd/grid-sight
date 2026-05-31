@@ -1,3 +1,23 @@
+/**
+ * Demo discovery — how the matrix self-extends (spec 015, US3).
+ *
+ *   public/demo/**.html
+ *        │  walkHtml()                       (Node fs, collection time)
+ *        ▼
+ *   includeDemo(relPath, contents)           (pure, unit-tested)
+ *        │  keep: mounts grid-sight AND has a <table>
+ *        │  drop: *fixture*, perf/large/■■■-row pages (D13)
+ *        ▼
+ *   DemoPage[]  ──►  one test() per page in enrichment-matrix.spec.ts
+ *        │
+ *        ▼  (in-browser, per page)
+ *   readPageProfile(page) ──► { offered, declared, tableIds, hasToggleUi }
+ *        · offered  = pageConfig.enrichments (non-empty) | full registry set
+ *        · declared = the raw pageConfig.enrichments (undefined | [] | list)
+ *
+ * Adding a demo file therefore adds matrix + precedence coverage with no spec
+ * edit (SC-004); the only authored list left is the strong-oracle ColumnOracle.
+ */
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
 import type { Page } from '@playwright/test';
@@ -63,17 +83,28 @@ export function discoverDemoPages(): DemoPage[] {
  * explicit allow-list when present, otherwise the full shipped set.
  */
 export async function readPageProfile(page: Page): Promise<{
+  /** Ceiling of enrichments the page can surface (empty/absent ⇒ full set). */
   offered: EnrichmentId[];
+  /** The raw `pageConfig.enrichments` as authored: undefined, [], or a list. */
+  declared: EnrichmentId[] | undefined;
   tableIds: string[];
   hasToggleUi: boolean;
 }> {
   return page.evaluate(() => {
     const gs = (window as unknown as GridSightWindow).gridSight;
-    const offered = gs.pageConfig?.enrichments ?? [...gs.enrichmentIds];
+    const allow = gs.pageConfig?.enrichments;
+    // An explicit non-empty allow-list wins; an empty (or absent) list means
+    // "offer the full shipped registry set" (matrix-fixture contract).
+    const offered = allow && allow.length > 0 ? allow : [...gs.enrichmentIds];
     const tableIds = Array.from(document.querySelectorAll('table'))
       .map((t) => t.id)
       .filter((id) => id.length > 0);
     const hasToggleUi = !!document.querySelector('[data-gs-toggle-panel-root]');
-    return { offered: [...offered], tableIds, hasToggleUi };
+    return {
+      offered: [...offered],
+      declared: allow ? [...allow] : undefined,
+      tableIds,
+      hasToggleUi,
+    };
   });
 }

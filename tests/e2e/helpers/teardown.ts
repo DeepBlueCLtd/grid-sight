@@ -8,10 +8,30 @@ import type { EnrichmentId } from './gridsight-window';
  * enrichment artifacts a teardown assertion is checking for. Pure + unit-tested.
  */
 export function normalizeForCompare(html: string): string {
-  return html
-    .replace(/>\s+</g, '><')
-    .replace(/\s+/g, ' ')
-    .trim();
+  return (
+    html
+      // The Grid-Sight enable/disable button is page chrome, not enrichment
+      // output: its inline hover/active style colours flip with pointer state
+      // between two snapshots taken at different moments. Drop the volatile
+      // `style` (and `aria-expanded`) ONLY on the toggle control — never on
+      // data cells, so a heatmap that left an inline `style` on teardown is
+      // still caught.
+      .replace(
+        /(<(?:button|div)\b[^>]*\bgrid-sight-toggle\b[^>]*?)\s+style="[^"]*"/g,
+        '$1',
+      )
+      .replace(
+        /(<(?:button|div)\b[^>]*\bgrid-sight-toggle\b[^>]*?)\s+aria-expanded="[^"]*"/g,
+        '$1',
+      )
+      // An empty `class=""` left behind by an enrichment's teardown is
+      // semantically identical to no class attribute and carries no `gs-*`
+      // class — collapse it as a benign diff.
+      .replace(/\s+class=""/g, '')
+      .replace(/>\s+</g, '><')
+      .replace(/\s+/g, ' ')
+      .trim()
+  );
 }
 
 /** Normalized `outerHTML` of the table, as a round-trip baseline/comparand. */

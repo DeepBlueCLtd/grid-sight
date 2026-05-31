@@ -9,6 +9,20 @@ import { hasActiveLozenge, hasDisabledLozenge } from './toggle-panel';
  *   - `inapplicable` — it offered a lozenge but marked it disabled,
  *   - `absent`       — it produced no lozenge here at all.
  * The strong oracle (curated fixture, authored kinds) lives in the matrix spec.
+ *
+ * The two tiers, and why both exist:
+ *
+ *      enrichment on a table
+ *              │
+ *     ┌────────┴─────────┐
+ *     │   WEAK (2C)       │   "did the library render something sane?"
+ *     │   observedState   │   ← every demo; cannot catch a typing *regression*
+ *     └────────┬─────────┘     because it reads the code-under-test's own output
+ *              │
+ *     ┌────────┴─────────┐
+ *     │   STRONG (5A)     │   "is the library's typing CORRECT?"
+ *     │   ColumnOracle    │   ← curated fixture only; authored kinds are an
+ *     └──────────────────┘     independent ground truth, so issue #48 can fail
  */
 export async function observedState(
   page: Page,

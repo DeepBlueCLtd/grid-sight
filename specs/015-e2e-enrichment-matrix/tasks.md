@@ -144,30 +144,30 @@ caught by the curated fixture; byte-identical teardown.
 gets a test, each offered enrichment a step; reintroducing the `S-001` defect fails
 a strong-oracle assertion.
 
-- [ ] T022 [P] [US1] Create the curated fixture `public/demo/matrix/index.html` per
+- [x] T022 [P] [US1] Create the curated fixture `public/demo/matrix/index.html` per
   `contracts/matrix-fixture.md`: `#matrix-table` with `Sample ID` (identifier
   `S-001…`), `Assay (mg)` (numeric, ≥1 blank), `Status` (categorical), `Reading`
   (numeric + annotated cells), `Notes` (text); `pageConfig.enrichments: []`,
   `showToggleUi: true`; nav bar consistent with siblings; no network refs.
-- [ ] T023 [US1] Add the matrix card to `public/index.html` (consistency with
+- [x] T023 [US1] Add the matrix card to `public/index.html` (consistency with
   sibling demos). *(shared file)* Depends: T022.
-- [ ] T024 [US1] Implement `tests/e2e/enrichment-matrix.spec.ts` weak layer: one
+- [x] T024 [US1] Implement `tests/e2e/enrichment-matrix.spec.ts` weak layer: one
   `test()` per `discoverDemoPages()` entry, a `test.step` per offered enrichment that
   `setEnrichment` on → asserts `observedState` is active|inapplicable (never throws)
   with `aria-disabled` on disabled lozenges → relative round-trip teardown
   (`expectRoundTrip` + `expectNoArtifacts`). Covers SC-001. Depends: T007, T008, T009.
-- [ ] T025 [US1] Add the strong layer for `public/demo/matrix/index.html`: authored
+- [x] T025 [US1] Add the strong layer for `public/demo/matrix/index.html`: authored
   `ColumnOracle` table in the spec; assert identifier column is NOT summed by
   `summary-row` and offers no numeric slider; numeric columns active; categorical/
   text show disabled lozenge; annotated-numeric keeps sort+filter affordances.
   Covers SC-002. Depends: T024, T022.
-- [ ] T026 [US1] Add the fixture↔oracle consistency guard (12A): every
+- [x] T026 [US1] Add the fixture↔oracle consistency guard (12A): every
   `ColumnOracle.header` MUST resolve to a column in `#matrix-table`, else fail.
   Depends: T025.
-- [ ] T027 [US1] Add the FR-009 gap guard: a curated-fixture pairing with no
+- [x] T027 [US1] Add the FR-009 gap guard: a curated-fixture pairing with no
   oracle/expectation fails (or flagged-skips) — never silently passes. Covers SC-005.
   Depends: T025.
-- [ ] T028 [US1] Run `enrichment-matrix.spec.ts` green on chromium; manually verify
+- [x] T028 [US1] Run `enrichment-matrix.spec.ts` green on chromium; manually verify
   SC-002 by temporarily reintroducing the identifier-as-numeric defect and confirming
   a failure, then revert. Depends: T024–T027.
 
@@ -183,7 +183,7 @@ non-interference and joint byte-identical teardown.
 **Independent Test**: run `enrichment-permutations.spec.ts` alone — pairwise combos
 plus the rich combo pass, with concrete cross-behaviour assertions.
 
-- [ ] T029 [US2] Implement `tests/e2e/enrichment-permutations.spec.ts` on
+- [x] T029 [US2] Implement `tests/e2e/enrichment-permutations.spec.ts` on
   `public/demo/toggle/opt-in-playground.html`: generate `pairwise(offered)` combos +
   one curated rich combo (`summary-row`, `sort`, `filter`, sliders, virtual columns,
   annotations, `find-in-table`); for each, enable members, assert concrete
@@ -191,7 +191,7 @@ plus the rich combo pass, with concrete cross-behaviour assertions.
   rows; sort leaves the aggregate stable; `find-in-table` highlights survive a
   filter), then disable all and assert relative round-trip teardown. Covers SC-003.
   Depends: T008, T009.
-- [ ] T029a [US2] Ensure the playground fixture has data that exercises the rich
+- [x] T029a [US2] Ensure the playground fixture has data that exercises the rich
   combo (numeric + categorical + enough rows); enrich
   `public/demo/toggle/opt-in-playground.html` only if needed (FR-012). Depends: T029.
 
@@ -207,16 +207,16 @@ capability-filtering precedence checks are preserved inside the harness.
 **Independent Test**: add a throwaway demo offering one enrichment, run without
 editing specs → a new `test()` appears and runs.
 
-- [ ] T030 [US3] Fold `capability-filtering.spec.ts`'s demo→effective-set cases into
+- [x] T030 [US3] Fold `capability-filtering.spec.ts`'s demo→effective-set cases into
   the discovery harness (4B): for each discovered demo assert **Set-equality** of
   `enrichmentIds.filter(isEnrichmentEnabled)` vs the offered set (11A — exactly
   these, no extras). Add as a `PrecedenceCase` block in `enrichment-matrix.spec.ts`.
   Depends: T024.
-- [ ] T031 [US3] Delete the now-duplicated hand-listed cases from
+- [x] T031 [US3] Delete the now-duplicated hand-listed cases from
   `tests/e2e/capability-filtering.spec.ts` (keep the file only if it has unique
   non-migrated assertions; otherwise remove it) and confirm no precedence coverage is
   lost vs the T001 baseline. *(shared/removed file)* Depends: T030.
-- [ ] T032 [US3] Verify self-extension end-to-end: temporarily add a throwaway demo
+- [x] T032 [US3] Verify self-extension end-to-end: temporarily add a throwaway demo
   under `public/demo/` offering one enrichment, run the matrix without editing any
   spec, confirm a new `test()` runs (SC-004), then remove the throwaway. Depends: T024.
 
@@ -231,32 +231,32 @@ editing specs → a new `test()` appears and runs.
 **Independent Test**: `--project=firefox` and `--project=webkit` pass for the
 matrix and permutation specs; an artificially slow run trips the gate.
 
-- [ ] T033 [US4] Add `firefox` and `webkit` projects to `playwright.config.ts`
+- [x] T033 [US4] Add `firefox` and `webkit` projects to `playwright.config.ts`
   alongside `chromium` (FR-015); run the matrix + permutation specs unfiltered on all
   three; project-scope long-running existing specs to chromium if needed to bound
   runtime. Covers SC-008. *(shared file)* Depends: T019, T024, T029.
-- [ ] T034 [US4] Fix or file: triage any genuine Firefox/WebKit failures the new
+- [x] T034 [US4] Fix or file: triage any genuine Firefox/WebKit failures the new
   cross-engine run surfaces. A **minimal, bounded** `src` fix IS permitted for a real
   library defect (Principle V), but it MUST: be the smallest change that fixes the
   engine bug, re-run `node scripts/bundle-size.js` to confirm it stays under the 10 KB
   ceiling (Principle I — call out any delta in the PR), and land with a regression
   test. If the fix would be large or architectural, file a follow-up issue + project-
   skip with a documented reason instead (no silent `.skip`). Depends: T033.
-- [ ] T035 [US4] Implement `scripts/e2e-runtime-gate.mjs` (FR-016): measure full-suite
+- [x] T035 [US4] Implement `scripts/e2e-runtime-gate.mjs` (FR-016): measure full-suite
   wall-clock (Playwright JSON reporter or a wrapping timer) and exit non-zero above
   `E2E_BUDGET_SECONDS`. Depends: T019.
-- [ ] T036 [US4] Set `E2E_BUDGET_SECONDS` from the post-migration **parallel**
+- [x] T036 [US4] Set `E2E_BUDGET_SECONDS` from the post-migration **parallel**
   baseline (run the full parallel suite, take the measured wall-clock + an agreed
   headroom %); record the number in `scripts/e2e-runtime-gate.mjs` and in
   `spec.md`/`contracts/e2e-runner.md`. Depends: T035, T033.
-- [ ] T037a [US4] Add a **new** e2e CI job (FR-011/015/016): the repo currently has
+- [x] T037a [US4] Add a **new** e2e CI job (FR-011/015/016): the repo currently has
   **no** workflow that runs `yarn test:e2e` — `.github/workflows/storybook-tests.yml`
   installs only `chromium` and runs `yarn test:storybook`. Add a workflow (or a job in
   a new `e2e-tests.yml`) on `pull_request`/`push` to `main` that runs
   `npx playwright install --with-deps chromium firefox webkit` then `yarn test:e2e`,
   uploading `playwright-report/` on failure. Confirm the env network policy permits the
   browser-binary download. Depends: T033.
-- [ ] T037 [US4] Wire the runtime gate into the e2e CI job (T037a) — a step after
+- [x] T037 [US4] Wire the runtime gate into the e2e CI job (T037a) — a step after
   `playwright test`, or fold it into the `test:e2e` script in `package.json`; confirm
   it passes within budget and fails when the budget is artificially lowered.
   Covers SC-009. *(shared files: `package.json`, the e2e workflow)* Depends: T035, T036, T037a.
@@ -267,17 +267,17 @@ matrix and permutation specs; an artificially slow run trips the gate.
 
 ## Phase 7: Polish & Cross-Cutting
 
-- [ ] T038 Full suite green across all three projects (`yarn test:e2e`) within the
+- [x] T038 Full suite green across all three projects (`yarn test:e2e`) within the
   runtime budget; Vitest green (`yarn test`). Covers SC-006, SC-007. Depends: T033, T037.
-- [ ] T039 [P] Confirm zero `src/` runtime/bundle change beyond any T034 cross-browser
+- [x] T039 [P] Confirm zero `src/` runtime/bundle change beyond any T034 cross-browser
   fix: `git diff --stat main -- src/` is empty or only the justified fix; note in PR
   (Principle I — zero bundle delta).
-- [ ] T040 [P] Run the `quickstart.md` integration-spine checks (reintroduce-defect →
+- [x] T040 [P] Run the `quickstart.md` integration-spine checks (reintroduce-defect →
   fail; throwaway-demo → new case; firefox/webkit green) and tick each in the PR.
-- [ ] T041 [P] Update `tests/e2e/helpers/` inline ASCII diagrams for the discovery
+- [x] T041 [P] Update `tests/e2e/helpers/` inline ASCII diagrams for the discovery
   pipeline, the per-demo/per-step state machine, and the two-tier oracle (plan
   "diagram candidates").
-- [ ] T042 markdownlint the spec docs on the Codacy-enforced rules
+- [x] T042 markdownlint the spec docs on the Codacy-enforced rules
   (`npx markdownlint-cli2 "specs/015-e2e-enrichment-matrix/**/*.md"` — MD004/MD032
   clean) and confirm the PR is green on Codacy.
 

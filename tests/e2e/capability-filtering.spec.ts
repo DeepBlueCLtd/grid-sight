@@ -6,9 +6,13 @@ import { isolateState } from './helpers/isolation';
  *
  * A page declares `window.gridSight.pageConfig.enrichments` BEFORE the bundle
  * loads; only the declared enrichments produce lozenges and menu items. This
- * suite covers Story 1 acceptance scenarios 1–4 against the dedicated
- * fixture; the demo-subset assertions in T038 (Story 3) live in this same
- * file and run against each existing demo page.
+ * suite covers Story 1 acceptance scenarios 1–4 against the dedicated fixture.
+ *
+ * The per-demo "declares an explicit subset" assertions that used to live here
+ * (Story 3) were folded into the discovery-driven precedence block in
+ * `enrichment-matrix.spec.ts` (spec 015, T030): coverage now follows the
+ * filesystem rather than a hand-maintained list, so a new demo or a changed
+ * `pageConfig` is checked automatically.
  */
 
 test.beforeEach(async ({ page }) => {
@@ -64,60 +68,4 @@ test.describe('US1: per-page enrichment subset (capability filtering)', () => {
     expect(lozengeIds).not.toContain('frequency');
     expect(lozengeIds).not.toContain('frequency-chart');
   });
-});
-
-test.describe('US3: each existing demo declares an explicit subset', () => {
-  const cases: Array<{ path: string; expected: Set<string> }> = [
-    {
-      // spec 015 — the welcome page is now per-table driven; its page-level
-      // `enrichments` is the union of enrichments the inline demos use (the
-      // default for any unmatched table).
-      path: '/grid-sight/',
-      expected: new Set(['sliders', 'statistics', 'heatmap', 'outlier', 'summary-row', 'sort', 'filter', 'find-in-table', 'freeze-panes', 'cumulative', 'sparkline', 'diff-compare', 'annotations']),
-    },
-    {
-      path: '/grid-sight/demo/sliders/interpolation.html',
-      expected: new Set(['heatmap', 'sliders', 'statistics']),
-    },
-    {
-      // 'heatmap' added on top of spec-012's original ['sliders','statistics']
-      // so post-002-003-row-visibility reviewers can confirm the H lozenge
-      // still works on this demo's tables.
-      path: '/grid-sight/demo/sliders/alternate-calc-models.html',
-      expected: new Set(['sliders', 'statistics', 'heatmap']),
-    },
-    {
-      // 'heatmap' added on top of spec-012's original ['sliders'] for the
-      // same reason — see the demo's inline rationale comment.
-      path: '/grid-sight/demo/sliders/synced-tables.html',
-      expected: new Set(['sliders', 'heatmap']),
-    },
-    {
-      path: '/grid-sight/demo/sliders/heatmap.html',
-      expected: new Set(['heatmap', 'sliders', 'slider-threshold']),
-    },
-  ];
-
-  for (const c of cases) {
-    test(`demo ${c.path} declares ${Array.from(c.expected).join(',')}`, async ({ page }) => {
-      await page.goto(`${c.path}`);
-      await page.waitForFunction(() => !!(window as any).gridSight);
-
-      // The configured enrichments are reflected in isEnrichmentEnabled.
-      const out = await page.evaluate((expected: string[]) => {
-        const gs = (window as any).gridSight;
-        const all = Array.from(gs.enrichmentIds) as string[];
-        const enabledSet = new Set(all.filter((id) => gs.isEnrichmentEnabled(id)));
-        return { all, enabled: Array.from(enabledSet), expected };
-      }, Array.from(c.expected));
-
-      // Every id in the expected subset must be enabled.
-      for (const id of c.expected) {
-        expect(out.enabled, `${c.path}: ${id} should be enabled`).toContain(id);
-      }
-      // No id outside the expected subset is enabled (except when the demo
-      // intentionally lists more — kept tight via Set equality).
-      expect(new Set(out.enabled)).toEqual(c.expected);
-    });
-  }
 });

@@ -234,7 +234,12 @@ runtime gate.
   and WebKit** Playwright projects and pass on all three.
 - **FR-016**: CI MUST **fail the build** when the full e2e suite wall-clock
   exceeds an agreed budget (a runtime hard gate), so coverage growth cannot
-  silently inflate CI time.
+  silently inflate CI time. **Budget**: the post-migration parallel baseline is
+  ≈163 s for the full all-projects suite (252 tests; measured 2026-05-31). The
+  gate (`scripts/e2e-runtime-gate.mjs`) defaults to `E2E_BUDGET_SECONDS=360`
+  locally and is set to `600` in the CI job for slower/shared runners — generous
+  headroom that still trips on a runaway. Raise it deliberately, mirroring the
+  bundle-size ceiling.
 
 ### Key Entities
 
