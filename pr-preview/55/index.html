@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Grid-Sight — enrich your HTML tables, in place</title>
+  <style>
+    :root {
+      --ink: #1c2530;
+      --muted: #5a6675;
+      --line: #e2e6ec;
+      --accent: #1976d2;
+      --accent-soft: #e8f1fb;
+      --warm: #b4530a;
+      --bg: #fcfcfd;
+      --card: #ffffff;
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      line-height: 1.6;
+      color: var(--ink);
+      background: var(--bg);
+      margin: 0;
+      padding: 0 0 80px;
+    }
+    .wrap { max-width: 1100px; margin: 0 auto; padding: 0 24px; }
+    a { color: var(--accent); }
+
+    /* ── Hero ─────────────────────────────────────────────── */
+    .hero {
+      padding: 64px 0 40px;
+      border-bottom: 1px solid var(--line);
+      background: linear-gradient(180deg, var(--accent-soft), var(--bg));
+    }
+    .hero h1 { font-size: 2.4rem; line-height: 1.15; margin: 0 0 12px; letter-spacing: -0.02em; }
+    .hero .tagline { font-size: 1.25rem; color: var(--ink); max-width: 40ch; margin: 0 0 20px; }
+    .hero .problem { font-size: 1.05rem; color: var(--muted); max-width: 64ch; margin: 0; }
+    .hero .badge {
+      display: inline-block; font-size: 0.78rem; font-weight: 600; letter-spacing: 0.04em;
+      text-transform: uppercase; color: var(--warm); background: #fff3e8;
+      border: 1px solid #f4d9bf; border-radius: 999px; padding: 3px 12px; margin-bottom: 18px;
+    }
+
+    /* ── Hero cube (the show-stopper, beside the hero copy) ──── */
+    .hero__grid { display: grid; grid-template-columns: 1.05fr 0.95fr; gap: 36px; align-items: center; }
+    .hero__cube { min-width: 0; }
+    .hero__cube iframe { display: block; width: 100%; height: 480px; border: 0; background: transparent; }
+    .hero__cube-cap { margin: 2px 0 0; font-size: 0.82rem; color: var(--muted); text-align: center; }
+    @media (max-width: 880px) {
+      .hero__grid { grid-template-columns: 1fr; gap: 12px; }
+      .hero__cube iframe { height: 420px; }
+    }
+
+    /* ── Principles ───────────────────────────────────────── */
+    .principles { padding: 40px 0; border-bottom: 1px solid var(--line); }
+    .principles h2 { font-size: 1.4rem; margin: 0 0 6px; }
+    .principles .sub { color: var(--muted); margin: 0 0 24px; max-width: 60ch; }
+    .principle-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 18px;
+    }
+    .principle {
+      background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 18px 20px;
+    }
+    .principle h3 { margin: 0 0 6px; font-size: 1rem; color: var(--accent); }
+    .principle p { margin: 0; font-size: 0.92rem; color: var(--muted); }
+
+    /* ── Feature sections (alternating) ───────────────────── */
+    .feature {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: center;
+      padding: 56px 0; border-bottom: 1px solid var(--line);
+    }
+    .feature__narrative h2 { font-size: 1.5rem; margin: 0 0 4px; }
+    .feature__narrative .kicker {
+      font-size: 0.78rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+      color: var(--warm); margin: 0 0 8px;
+    }
+    .feature__narrative p { color: var(--muted); margin: 0 0 14px; }
+    .feature__narrative .demo-links { font-size: 0.9rem; }
+    .feature__narrative .demo-links a { margin-right: 14px; white-space: nowrap; }
+    /* Visual alternation only — DOM order stays narrative-then-table so the
+       reading/tab order is always logical (constitution §III, R-10). */
+    .feature--reverse .feature__narrative { order: 2; }
+
+    .feature__demo {
+      background: var(--card); border: 1px solid var(--line); border-radius: 12px;
+      padding: 20px; overflow-x: auto; min-width: 0;
+      box-shadow: 0 1px 3px rgba(20, 40, 80, 0.04);
+    }
+    .feature__demo .demo-caption { font-size: 0.8rem; color: var(--muted); margin: 0 0 12px; }
+
+    @media (max-width: 760px) {
+      .feature { grid-template-columns: 1fr; gap: 22px; padding: 40px 0; }
+      /* Collapse the visual swap on mobile so every section stacks
+         narrative-then-table with no horizontal overflow (SC-003). */
+      .feature--reverse .feature__narrative { order: 0; }
+      .hero h1 { font-size: 1.9rem; }
+    }
+
+    /* ── Tables ───────────────────────────────────────────── */
+    table { border-collapse: collapse; font-size: 0.85rem; }
+    th, td {
+      border: 1px solid #d6dbe2; padding: 5px 9px; text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+    tr:first-child th { background: #f3f6fa; }
+    table.text th, table.text td { text-align: left; }
+
+    /* ── Global toggle + start-state ──────────────────────── */
+    .control-bar {
+      display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+      margin: 32px 0 8px; padding: 16px 20px;
+      background: var(--accent-soft); border: 1px solid #cfe1f5; border-radius: 10px;
+    }
+    .control-bar label { display: flex; align-items: center; gap: 10px; cursor: pointer; font-weight: 600; }
+    .control-bar .meta { font-size: 0.88rem; color: var(--muted); }
+
+    .twin { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 20px; }
+    @media (max-width: 700px) { .twin { grid-template-columns: 1fr; } }
+    .twin .panel { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 18px; overflow-x: auto; }
+    .twin .panel h3 { margin: 0 0 4px; font-size: 1rem; }
+    .twin .panel p { margin: 0 0 12px; font-size: 0.85rem; color: var(--muted); }
+    .pill {
+      display: inline-block; padding: 1px 9px; border-radius: 999px; font-size: 0.72rem;
+      font-weight: 700; margin-left: 8px; vertical-align: middle; letter-spacing: 0.02em;
+    }
+    .pill-on { background: var(--accent); color: #fff; }
+    .pill-off { background: #eef0f3; color: var(--muted); }
+    .pill-raw { background: #fbe9e7; color: #c63b00; }
+
+    /* ── All demos index ──────────────────────────────────── */
+    .all-demos { padding: 48px 0 0; }
+    .all-demos h2 { font-size: 1.4rem; margin: 0 0 6px; }
+    .all-demos .sub { color: var(--muted); margin: 0 0 22px; max-width: 60ch; }
+    .demo-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 14px; }
+    .demo-card {
+      display: block; padding: 14px 16px; border: 1px solid var(--line); border-radius: 10px;
+      text-decoration: none; color: inherit; background: var(--card);
+      transition: border-color 120ms, box-shadow 120ms, transform 120ms;
+    }
+    .demo-card:hover { border-color: var(--accent); box-shadow: 0 3px 10px rgba(25,118,210,0.10); transform: translateY(-1px); }
+    .demo-card h3 { margin: 0 0 4px; color: var(--accent); font-size: 0.98rem; }
+    .demo-card p { margin: 0; font-size: 0.82rem; color: var(--muted); }
+
+    footer { margin-top: 64px; padding: 24px 0; border-top: 1px solid var(--line); color: #8a93a0; font-size: 0.82rem; }
+    code { background: #f0f2f5; padding: 1px 6px; border-radius: 4px; font-size: 0.85em; }
+  </style>
+</head>
+<body>
+
+  <!-- ═══ 1. Hero + principles (FR-001, FR-002) ═══ -->
+  <header class="hero">
+    <div class="wrap hero__grid">
+      <div class="hero__text">
+        <span class="badge">Progressive table enrichment</span>
+        <h1>Grid-Sight</h1>
+        <p class="tagline">Make the HTML tables you already have explorable — without rebuilding them.</p>
+        <p class="problem">
+          Grid-Sight attaches to an ordinary <code>&lt;table&gt;</code> on page load and layers in
+          interactive analysis — sliders and interpolation, heatmaps and outliers, sort/filter/find,
+          derived columns and cell notes — entirely in the browser. Your markup, server, and data
+          pipeline stay exactly as they are; turn Grid-Sight off and the original table returns,
+          byte-for-byte.
+        </p>
+      </div>
+      <!-- Show-stopper: six live, interactive Grid-Sight tables on the faces of a
+           rotatable CSS cube. Embedded as an isolated iframe so it runs its own
+           Grid-Sight instance (no id clashes with the demos below). Zero deps,
+           same-origin only — the page stays offline-clean. -->
+      <div class="hero__cube">
+        <iframe src="cube-css.html" title="Grid-Sight — six live tables on a rotatable cube" loading="eager"></iframe>
+        <p class="hero__cube-cap">
+          Six live tables, one per face — drag to rotate, scroll to zoom, pick a face.
+          <a href="cube-css.html" target="_blank" rel="noopener">Open full screen →</a>
+        </p>
+      </div>
+    </div>
+  </header>
+
+  <section class="principles">
+    <div class="wrap">
+      <h2>Built on five principles</h2>
+      <p class="sub">Plain rules that hold for every feature on this page.</p>
+      <div class="principle-grid">
+        <div class="principle">
+          <h3>Offline &amp; air-gapped</h3>
+          <p>Runs from a <code>file://</code> load with no network, no fetched fonts or icons, and no telemetry. Safe for secured environments.</p>
+        </div>
+        <div class="principle">
+          <h3>Zero runtime dependencies</h3>
+          <p>A single self-contained script. Nothing to install, bundle, or keep patched alongside your app.</p>
+        </div>
+        <div class="principle">
+          <h3>Progressive enhancement</h3>
+          <p>A plain <code>&lt;script&gt;</code> include. Tables work without it; with it, they gain affordances — and a table can opt out entirely.</p>
+        </div>
+        <div class="principle">
+          <h3>Accessible by default</h3>
+          <p>Keyboard-operable controls with correct ARIA state. Visual layout never reorders what a screen reader or keyboard sees.</p>
+        </div>
+        <div class="principle">
+          <h3>Read-only, byte-identical teardown</h3>
+          <p>Grid-Sight never edits your data. Disable it and every injected node is removed, restoring the exact original markup.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ 2. Four feature sections (FR-003..FR-008) ═══ -->
+  <div class="wrap">
+
+    <!-- (a) Sliders & interpolation -->
+    <section class="feature">
+      <div class="feature__narrative">
+        <p class="kicker">Sliders &amp; interpolation</p>
+        <h2>Read between the rows</h2>
+        <p>
+          Attach continuous sliders to a table's numeric axes and Grid-Sight interpolates a value
+          at any point between the printed cells — linear on one axis, bilinear across two — with a
+          live four-cell highlight and an optional formula readout. Ideal for lookup grids and
+          calibration tables.
+        </p>
+        <p class="demo-links">
+          <a href="demo/sliders/interpolation.html">Interpolation demo →</a>
+          <a href="demo/sliders/alternate-calc-models.html">Calc models →</a>
+        </p>
+      </div>
+      <div class="feature__demo">
+        <p class="demo-caption">The row &amp; column sliders are attached on load — drag them to read between the cells. Formula: <code>√sl − √R/100 + 2</code></p>
+        <table id="demo-sliders">
+          <tr><th></th>  <th>10</th><th>20</th><th>30</th><th>40</th><th>50</th></tr>
+          <tr><th>1000</th> <td>4.8</td><td>6.2</td><td>7.2</td><td>8.0</td><td>8.8</td></tr>
+          <tr><th>6000</th> <td>4.4</td><td>5.7</td><td>6.7</td><td>7.5</td><td>8.3</td></tr>
+          <tr><th>11000</th><td>4.1</td><td>5.4</td><td>6.4</td><td>7.3</td><td>8.0</td></tr>
+          <tr><th>16000</th><td>3.9</td><td>5.2</td><td>6.2</td><td>7.1</td><td>7.8</td></tr>
+          <tr><th>21000</th><td>3.7</td><td>5.0</td><td>6.0</td><td>6.9</td><td>7.6</td></tr>
+        </table>
+      </div>
+    </section>
+
+    <!-- (b) Visual analysis -->
+    <section class="feature feature--reverse">
+      <div class="feature__narrative">
+        <p class="kicker">Visual analysis</p>
+        <h2>See the shape of your numbers</h2>
+        <p>
+          Shade a row, column, or whole table as a <strong>heatmap</strong>; flag values beyond a
+          click-cycled σ threshold as <strong>outliers</strong>; open a <strong>statistics</strong>
+          popup (min, max, mean, quartiles, missing %) for any axis; and append a
+          <strong>summary row</strong> of per-column aggregates over the visible rows.
+        </p>
+        <p class="demo-links">
+          <a href="demo/outlier/measurements.html">Outliers →</a>
+          <a href="demo/statistics/index.html">Statistics →</a>
+          <a href="demo/summary-row/index.html">Summary row →</a>
+        </p>
+      </div>
+      <div class="feature__demo">
+        <p class="demo-caption">A table-wide heatmap is shading the cells on load. Click <strong>!</strong> to flag outliers, <strong>#</strong> for a stats popup, or <strong>H</strong> to toggle the heatmap off.</p>
+        <table id="demo-visual">
+          <tr><th>Site</th><th>Jan</th><th>Feb</th><th>Mar</th><th>Apr</th></tr>
+          <tr><th>North</th><td>118</td><td>122</td><td>131</td><td>140</td></tr>
+          <tr><th>South</th><td>96</td><td>101</td><td>99</td><td>410</td></tr>
+          <tr><th>East</th><td>142</td><td>138</td><td>151</td><td>149</td></tr>
+          <tr><th>West</th><td>88</td><td>91</td><td>94</td><td>97</td></tr>
+          <tr><th>Central</th><td>205</td><td>211</td><td>198</td><td>220</td></tr>
+        </table>
+      </div>
+    </section>
+
+    <!-- (c) Navigation & search -->
+    <section class="feature">
+      <div class="feature__narrative">
+        <p class="kicker">Navigation &amp; search</p>
+        <h2>Find your way through long tables</h2>
+        <p>
+          <strong>Sort</strong> and <strong>filter</strong> any column from its header,
+          <strong>find</strong> text with next/previous stepping, and <strong>freeze</strong> the
+          header row and key column so they stay put while you scroll. Sorting and filtering are a
+          view over your rows — the underlying order is never rewritten.
+        </p>
+        <p class="demo-links">
+          <a href="demo/find-in-table/index.html">Find in table →</a>
+          <a href="demo/freeze-panes/index.html">Freeze panes →</a>
+        </p>
+      </div>
+      <div class="feature__demo">
+        <p class="demo-caption">This demo starts with nothing applied — switch a feature on yourself: click a column header's sort/filter lozenges to reorder or narrow rows, or the corner <strong>find</strong> lozenge to search. The header row and key column stay frozen as you scroll.</p>
+        <table id="demo-nav" class="text">
+          <tr><th>Name</th><th>Department</th><th>Region</th><th>Tenure</th></tr>
+          <tr><td>Alex Morgan</td><td>Engineering</td><td>North</td><td>4</td></tr>
+          <tr><td>Priya Shah</td><td>Engineering</td><td>East</td><td>7</td></tr>
+          <tr><td>Jordan Lee</td><td>Operations</td><td>West</td><td>2</td></tr>
+          <tr><td>Sam Carter</td><td>Sales</td><td>South</td><td>9</td></tr>
+          <tr><td>Robin Diaz</td><td>Operations</td><td>North</td><td>5</td></tr>
+          <tr><td>Casey Wu</td><td>Sales</td><td>East</td><td>3</td></tr>
+        </table>
+      </div>
+    </section>
+
+    <!-- (d) Derived data & notes -->
+    <section class="feature feature--reverse">
+      <div class="feature__narrative">
+        <p class="kicker">Derived data &amp; notes</p>
+        <h2>Add columns and context, not spreadsheets</h2>
+        <p>
+          Append virtual columns on the right edge — a running-total <strong>Σ</strong>, an inline
+          trend <strong>⌇</strong> sparkline, and a pairwise <strong>Δ</strong> compare — all computed
+          live from the existing data. Attach a note to any cell; annotations persist per-document and
+          follow their cell across sort and filter.
+        </p>
+        <p class="demo-links">
+          <a href="demo/virtual-columns.html">Virtual columns →</a>
+          <a href="demo/annotations/index.html">Annotations →</a>
+        </p>
+      </div>
+      <div class="feature__demo">
+        <p class="demo-caption">A <strong>⌇</strong> sparkline column is appended on load. Click the corner <strong>Σ</strong> / <strong>Δ</strong> lozenges to add more derived columns; hover a cell and click its pin to attach a note.</p>
+        <table id="demo-derived">
+          <tr><th>Quarter</th><th>Product A</th><th>Product B</th><th>Product C</th></tr>
+          <tr><th>Q1</th><td>120</td><td>90</td><td>60</td></tr>
+          <tr><th>Q2</th><td>135</td><td>104</td><td>72</td></tr>
+          <tr><th>Q3</th><td>128</td><td>118</td><td>81</td></tr>
+          <tr><th>Q4</th><td>156</td><td>121</td><td>95</td></tr>
+        </table>
+      </div>
+    </section>
+
+    <!-- ═══ 3. Global toggle, explained (FR-009, FR-010) ═══ -->
+    <section>
+      <h2>One switch, non-destructive</h2>
+      <p style="color:var(--muted); max-width:64ch;">
+        Grid-Sight is an <strong>overlay</strong>, not a transform. The control below turns it on and
+        off for the whole page without reloading: switch it <strong>off</strong> and every table
+        returns to its raw HTML — no <code>GS</code> corner button, no lozenges, no injected columns;
+        switch it back <strong>on</strong> and each table is re-enriched and returned to its authored
+        start-state.
+      </p>
+      <div class="control-bar">
+        <label>
+          <input type="checkbox" id="gs-page-toggle" checked />
+          Grid-Sight enabled on this page
+        </label>
+        <span class="meta">Toggle off to see the original tables. Toggling does not reload the page.</span>
+      </div>
+
+      <!-- ═══ 4. Start-state demonstration (FR-011) ═══ -->
+      <div class="twin">
+        <div class="panel">
+          <h3>Starts active <span class="pill pill-on">revealed on load</span></h3>
+          <p>Configured <code>startActive: true</code> — its enrichment lozenges are revealed the moment the page loads (click any to apply it). Click <strong>GS</strong> to hide them in place.</p>
+          <table id="start-active">
+            <tr><th>Team</th><th>Q1</th><th>Q2</th><th>Q3</th></tr>
+            <tr><th>Alpha</th><td>42</td><td>48</td><td>51</td></tr>
+            <tr><th>Bravo</th><td>37</td><td>35</td><td>61</td></tr>
+            <tr><th>Cobalt</th><td>55</td><td>59</td><td>58</td></tr>
+          </table>
+        </div>
+        <div class="panel">
+          <h3>Starts inactive <span class="pill pill-off">hidden until clicked</span></h3>
+          <p>The default (<code>startActive: false</code>) — the <strong>GS</strong> button is present but its lozenges stay hidden. Click <strong>GS</strong> to reveal the same set.</p>
+          <table id="start-inactive">
+            <tr><th>Team</th><th>Q1</th><th>Q2</th><th>Q3</th></tr>
+            <tr><th>Alpha</th><td>42</td><td>48</td><td>51</td></tr>
+            <tr><th>Bravo</th><td>37</td><td>35</td><td>61</td></tr>
+            <tr><th>Cobalt</th><td>55</td><td>59</td><td>58</td></tr>
+          </table>
+        </div>
+      </div>
+
+      <p style="color:var(--muted); max-width:64ch; margin-top:20px;">
+        And opt-out is absolute: a table marked <code>data-gs-ignore</code> stays raw no matter what,
+        even if a per-table selector would otherwise match it.
+        <span class="pill pill-raw">opted out</span>
+      </p>
+      <div class="panel" style="max-width:420px;">
+        <table id="reference-raw" data-gs-ignore>
+          <tr><th>Team</th><th>Q1</th><th>Q2</th><th>Q3</th></tr>
+          <tr><th>Alpha</th><td>42</td><td>48</td><td>51</td></tr>
+          <tr><th>Bravo</th><td>37</td><td>35</td><td>61</td></tr>
+        </table>
+      </div>
+    </section>
+
+    <!-- ═══ 5. All-demos index (FR-012) ═══ -->
+    <section class="all-demos">
+      <h2>Every demo</h2>
+      <p class="sub">Each feature has a focused page with richer data and explanation.</p>
+      <div class="demo-grid">
+        <a class="demo-card" href="demo/sliders/interpolation.html">
+          <h3>Interpolation</h3>
+          <p>Single table — bilinear interpolation with a four-cell highlight.</p>
+        </a>
+        <a class="demo-card" href="demo/sliders/alternate-calc-models.html">
+          <h3>Alternate calc models</h3>
+          <p>Interpolated and formula readouts side by side.</p>
+        </a>
+        <a class="demo-card" href="demo/sliders/synced-tables.html">
+          <h3>Persistent URL</h3>
+          <p>Slider positions encoded in the URL fragment — bookmark, share, or reload at a value.</p>
+        </a>
+        <a class="demo-card" href="demo/toggle/live-enrichments.html">
+          <h3>Live toggles — all on</h3>
+          <p>Pre-ticked enrichment panel: untick any feature and its lozenges vanish within a frame.</p>
+        </a>
+        <a class="demo-card" href="demo/toggle/opt-in-playground.html">
+          <h3>Opt-in playground — all off</h3>
+          <p>Every enrichment ships off; tick one to verify each feature in isolation.</p>
+        </a>
+        <a class="demo-card" href="demo/virtual-columns.html">
+          <h3>Virtual columns — Σ · ⌇ · Δ</h3>
+          <p>Append running-sum, sparkline, and pairwise-compare columns on the right edge.</p>
+        </a>
+        <a class="demo-card" href="demo/annotations/index.html">
+          <h3>Cell annotations</h3>
+          <p>Attach a note to any cell; persists per-document and follows its cell across sort/filter.</p>
+        </a>
+        <a class="demo-card" href="demo/outlier/measurements.html">
+          <h3>Outlier marker</h3>
+          <p>Flag cells beyond a click-cycled 2σ → 1σ → 3σ threshold with a value/mean/σ tooltip.</p>
+        </a>
+        <a class="demo-card" href="demo/freeze-panes/index.html">
+          <h3>Freeze panes</h3>
+          <p>Sticky header row + frozen key column while scrolling a large table.</p>
+        </a>
+        <a class="demo-card" href="demo/statistics/index.html">
+          <h3>Statistics popup</h3>
+          <p>Missing %, distinct, quartiles, and a mini histogram over the visible rows.</p>
+        </a>
+        <a class="demo-card" href="demo/summary-row/index.html">
+          <h3>Summary row</h3>
+          <p>A per-column aggregate footer (sum / avg / min / max / count) over the visible rows.</p>
+        </a>
+        <a class="demo-card" href="demo/find-in-table/index.html">
+          <h3>Find in table</h3>
+          <p>Search, highlight every visible match, and step Next / Previous with wrap.</p>
+        </a>
+      </div>
+    </section>
+
+    <footer>
+      Grid-Sight · No runtime dependencies · Works offline (<code>file://</code>) ·
+      Spec <code>specs/015-welcome-per-table-options/</code>
+    </footer>
+  </div>
+
+  <!-- ═══ Per-table options config (spec 015, R-11) ═══
+       Declared BEFORE the bundle loads so init() sees it. Each demo table is
+       addressed by id and offered exactly its section's enrichment(s); most
+       start active, one deliberately starts inactive to show the default. -->
+  <script>
+    window.gridSight = {
+      pageConfig: {
+        // Page-level default for any table NOT matched by a per-table entry
+        // below — the union of enrichments the demos use. Every demo table is
+        // matched (or data-gs-ignore'd), so this is just a sane fallback.
+        enrichments: [
+          'sliders', 'statistics', 'heatmap', 'outlier', 'summary-row',
+          'sort', 'filter', 'find-in-table', 'freeze-panes',
+          'cumulative', 'sparkline', 'diff-compare', 'annotations'
+        ],
+        tables: [
+          // `activate` brings an enrichment up already applied on load (v1
+          // supports the parameterless toggles: heatmap, sliders, sparkline).
+          { selector: '#demo-sliders', enrichments: ['sliders', 'statistics'], startActive: true, activate: ['sliders'] },
+          { selector: '#demo-visual',  enrichments: ['heatmap', 'outlier', 'statistics', 'summary-row'], startActive: true, activate: ['heatmap'] },
+          // The navigation demo deliberately starts with nothing applied — the
+          // visitor switches a feature on themselves.
+          { selector: '#demo-nav',     enrichments: ['sort', 'filter', 'find-in-table', 'freeze-panes'], startActive: true },
+          { selector: '#demo-derived', enrichments: ['cumulative', 'sparkline', 'diff-compare', 'annotations'], startActive: true, activate: ['sparkline'] },
+          { selector: '#start-active',   enrichments: ['heatmap', 'statistics'], startActive: true },
+          { selector: '#start-inactive', enrichments: ['heatmap', 'statistics'], startActive: false }
+        ]
+      }
+    };
+  </script>
+  <script src="grid-sight.iife.js"></script>
+  <script>
+    // Register the interpolation formula on the sliders demo once the IIFE has
+    // loaded. The slider reads the formula live on each drag, so registering it
+    // after the start-active slider mounts is fine.
+    function registerSlidersFormula() {
+      if (!window.gridSight) return;
+      var t = document.getElementById('demo-sliders');
+      if (t) {
+        window.gridSight.registerFormula(
+          t,
+          function (range, sl) { return Math.sqrt(sl) - Math.sqrt(range) / 100 + 2; },
+          { expression: '√sl − √R/100 + 2' }
+        );
+      }
+    }
+    window.addEventListener('DOMContentLoaded', registerSlidersFormula);
+
+    // Page-wide enable/disable — a non-destructive overlay (FR-009/FR-010).
+    var toggle = document.getElementById('gs-page-toggle');
+    toggle.addEventListener('change', function () {
+      if (!window.gridSight) return;
+      if (toggle.checked) {
+        window.gridSight.enable();      // re-attaches and restores each table's start-state
+        registerSlidersFormula();
+      } else {
+        window.gridSight.disable();     // removes all GS UI, restores raw markup
+      }
+    });
+  </script>
+</body>
+</html>
