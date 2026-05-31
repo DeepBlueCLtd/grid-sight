@@ -1,4 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
+import { isolateState } from './helpers/isolation';
 
 /**
  * Validates the literal quickstart §1 embed snippet (manual `window.gridSight
@@ -6,20 +7,10 @@ import { test, expect, type Page } from '@playwright/test';
  * documented pattern does not double-mount when auto-init also fires.
  */
 
-const PORT = 3066;
-const URL = `http://localhost:${PORT}/grid-sight/demo/annotations/embed-snippet.html`;
+const URL = '/grid-sight/demo/annotations/embed-snippet.html';
 
-let server: any;
-
-test.beforeAll(async () => {
-  const { preview } = await import('vite');
-  server = await preview({ preview: { port: PORT, open: false }, build: { outDir: 'dist' } });
-});
-
-test.afterAll(async () => {
-  if (server?.httpServer?.close) {
-    await new Promise<void>((resolve) => server.httpServer.close(() => resolve()));
-  }
+test.beforeEach(async ({ page }) => {
+  await isolateState(page);
 });
 
 const cell = '#sales tbody tr:first-child td';

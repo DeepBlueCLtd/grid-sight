@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { isolateState } from './helpers/isolation';
 
 /**
  * Heatmap toggle e2e — exercises the new lozenge UX (H toggle on the
@@ -6,24 +7,12 @@ import { test, expect } from '@playwright/test';
  */
 
 test.describe('Grid-Sight Heatmap (lozenge UX)', () => {
-  let server: any;
-
-  test.beforeAll(async () => {
-    const { preview } = await import('vite');
-    server = await preview({
-      preview: { port: 3015, open: false },
-      build: { outDir: 'dist' },
-    });
-  });
-
-  test.afterAll(async () => {
-    if (server?.httpServer?.close) {
-      await new Promise<void>((resolve) => server.httpServer.close(() => resolve()));
-    }
+  test.beforeEach(async ({ page }) => {
+    await isolateState(page);
   });
 
   test('table-wide heatmap toggle on and off via the H lozenge', async ({ page }) => {
-    await page.goto('http://localhost:3015/grid-sight/');
+    await page.goto('/grid-sight/');
     await page.waitForFunction(() => !!(window as any).gridSight);
 
     const table = page.locator('#start-inactive');

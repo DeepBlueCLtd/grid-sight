@@ -1,22 +1,10 @@
 import { test, expect } from '@playwright/test';
+import { isolateState } from './helpers/isolation';
 
-const PORT = 3023;
-const URL = `http://localhost:${PORT}/grid-sight/demo/row-visibility/orders.html`;
+const URL = '/grid-sight/demo/row-visibility/orders.html';
 
-let server: any;
-
-test.beforeAll(async () => {
-  const { preview } = await import('vite');
-  server = await preview({
-    preview: { port: PORT, open: false },
-    build: { outDir: 'dist' },
-  });
-});
-
-test.afterAll(async () => {
-  if (server?.httpServer?.close) {
-    await new Promise<void>((resolve) => server.httpServer.close(() => resolve()));
-  }
+test.beforeEach(async ({ page }) => {
+  await isolateState(page);
 });
 
 test.describe('US6: shareable URL round-trip', () => {

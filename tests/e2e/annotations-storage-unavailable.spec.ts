@@ -1,4 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
+import { isolateState } from './helpers/isolation';
 
 /**
  * quickstart.md §4: when localStorage is unavailable (private mode, blocked),
@@ -7,20 +8,10 @@ import { test, expect, type Page } from '@playwright/test';
  * error (FR-017).
  */
 
-const PORT = 3067;
-const URL = `http://localhost:${PORT}/grid-sight/demo/annotations/index.html`;
+const URL = '/grid-sight/demo/annotations/index.html';
 
-let server: any;
-
-test.beforeAll(async () => {
-  const { preview } = await import('vite');
-  server = await preview({ preview: { port: PORT, open: false }, build: { outDir: 'dist' } });
-});
-
-test.afterAll(async () => {
-  if (server?.httpServer?.close) {
-    await new Promise<void>((resolve) => server.httpServer.close(() => resolve()));
-  }
+test.beforeEach(async ({ page }) => {
+  await isolateState(page);
 });
 
 const cell = '#tbl-revenue tbody tr[data-gs-row-key="acme"] td.num';

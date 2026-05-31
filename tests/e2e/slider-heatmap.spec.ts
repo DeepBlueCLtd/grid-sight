@@ -1,20 +1,9 @@
 import { test, expect } from '@playwright/test';
+import { isolateState } from './helpers/isolation';
 
 test.describe('US4: heatmap marker + threshold', () => {
-  let server: any;
-
-  test.beforeAll(async () => {
-    const { preview } = await import('vite');
-    server = await preview({
-      preview: { port: 3013, open: false },
-      build: { outDir: 'dist' },
-    });
-  });
-
-  test.afterAll(async () => {
-    if (server?.httpServer?.close) {
-      await new Promise<void>((resolve) => server.httpServer.close(() => resolve()));
-    }
+  test.beforeEach(async ({ page }) => {
+    await isolateState(page);
   });
 
   async function enableAllAndHeatmap(page: any) {
@@ -31,7 +20,7 @@ test.describe('US4: heatmap marker + threshold', () => {
   }
 
   test('marker is rendered when both axis sliders are present', async ({ page }) => {
-    await page.goto('http://localhost:3013/grid-sight/demo/sliders/heatmap.html');
+    await page.goto('/grid-sight/demo/sliders/heatmap.html');
     await page.waitForFunction(() => !!(window as any).gridSight);
     await enableAllAndHeatmap(page);
     await page.waitForTimeout(200);
@@ -41,7 +30,7 @@ test.describe('US4: heatmap marker + threshold', () => {
   });
 
   test('threshold slider fades low-value cells live', async ({ page }) => {
-    await page.goto('http://localhost:3013/grid-sight/demo/sliders/heatmap.html');
+    await page.goto('/grid-sight/demo/sliders/heatmap.html');
     await page.waitForFunction(() => !!(window as any).gridSight);
     await enableAllAndHeatmap(page);
     await page.evaluate(() => {

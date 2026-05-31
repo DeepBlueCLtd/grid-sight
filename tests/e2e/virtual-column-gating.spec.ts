@@ -1,4 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
+import { isolateState } from './helpers/isolation';
 
 /**
  * Regression: virtual-column lozenges (Σ/⌇/Δ) are column enrichment toggles, so
@@ -7,22 +8,12 @@ import { test, expect, type Page } from '@playwright/test';
  * load regardless of the GS toggle or the capability config.
  */
 
-const PORT = 3070;
-const VC_URL = `http://localhost:${PORT}/grid-sight/demo/virtual-columns.html`;
-const ANNOT_URL = `http://localhost:${PORT}/grid-sight/demo/annotations/index.html`;
-const PANEL_URL = `http://localhost:${PORT}/grid-sight/demo/toggle/vc-panel-fixture.html`;
+const VC_URL = `/grid-sight/demo/virtual-columns.html`;
+const ANNOT_URL = `/grid-sight/demo/annotations/index.html`;
+const PANEL_URL = `/grid-sight/demo/toggle/vc-panel-fixture.html`;
 
-let server: any;
-
-test.beforeAll(async () => {
-  const { preview } = await import('vite');
-  server = await preview({ preview: { port: PORT, open: false }, build: { outDir: 'dist' } });
-});
-
-test.afterAll(async () => {
-  if (server?.httpServer?.close) {
-    await new Promise<void>((resolve) => server.httpServer.close(() => resolve()));
-  }
+test.beforeEach(async ({ page }) => {
+  await isolateState(page);
 });
 
 test('VC lozenges are hidden until GS is enabled, then removed when disabled', async ({ page }) => {

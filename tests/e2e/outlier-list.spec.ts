@@ -1,19 +1,10 @@
 import { test, expect, type Page } from '@playwright/test';
+import { isolateState } from './helpers/isolation';
 
-const PORT = 3042;
-const URL = `http://localhost:${PORT}/grid-sight/demo/outlier/measurements.html`;
+const URL = '/grid-sight/demo/outlier/measurements.html';
 
-let server: any;
-
-test.beforeAll(async () => {
-  const { preview } = await import('vite');
-  server = await preview({ preview: { port: PORT, open: false }, build: { outDir: 'dist' } });
-});
-
-test.afterAll(async () => {
-  if (server?.httpServer?.close) {
-    await new Promise<void>((resolve) => server.httpServer.close(() => resolve()));
-  }
+test.beforeEach(async ({ page }) => {
+  await isolateState(page);
 });
 
 const LOZENGE = '#tbl-measurements thead th:nth-child(2) [data-gs-lozenge-id="outlier"]';

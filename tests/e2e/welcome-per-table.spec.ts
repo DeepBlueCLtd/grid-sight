@@ -1,33 +1,23 @@
 import { test, expect, type Page } from '@playwright/test';
+import { isolateState } from './helpers/isolation';
 
 /**
  * End-to-end tests for spec 015 — welcome page redesign & per-table options.
  *
  * The rewritten `public/index.html` is the first real consumer of the per-table
  * API: each inline demo table is addressed by id in `pageConfig.tables` and
- * offered exactly its section's enrichment(s), most starting active. These
- * tests cover the user stories against the built page served by `vite preview`.
+ * offered exactly its section's enrichment(s), most starting active. These tests
+ * run against the built page served by the shared Playwright webServer.
  */
 
-const PORT = 3137;
-const BASE = `http://localhost:${PORT}/grid-sight/`;
+const WELCOME = '/grid-sight/';
 
-let server: { httpServer: { close: (cb: () => void) => void } };
-
-test.beforeAll(async () => {
-  const { preview } = await import('vite');
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  server = (await preview({ preview: { port: PORT, open: false }, build: { outDir: 'dist' } })) as any;
-});
-
-test.afterAll(async () => {
-  if (server?.httpServer?.close) {
-    await new Promise<void>((resolve) => server.httpServer.close(() => resolve()));
-  }
+test.beforeEach(async ({ page }) => {
+  await isolateState(page);
 });
 
 async function gotoWelcome(page: Page): Promise<void> {
-  await page.goto(BASE);
+  await page.goto(WELCOME);
   await page.waitForLoadState('domcontentloaded');
   await page.waitForFunction(() => !!(window as unknown as { gridSight?: unknown }).gridSight);
 }
@@ -214,7 +204,7 @@ test.describe('US5: all demos reachable', () => {
     const hrefSet = new Set(hrefs);
     for (const demo of DEMOS) {
       expect(hrefSet.has(demo), `welcome page should link ${demo}`).toBe(true);
-      const res = await page.request.get(`${BASE}${demo}`);
+      const res = await page.request.get(`${WELCOME}${demo}`);
       expect(res.status(), `${demo} should resolve`).toBe(200);
     }
   });
@@ -226,7 +216,7 @@ test.describe('Offline: no external network', () => {
     const external: string[] = [];
     page.on('request', (req) => {
       const url = req.url();
-      if (!url.startsWith(BASE) && !url.startsWith(`http://localhost:${PORT}/`) && !url.startsWith('data:')) {
+      if (!url.startsWith('http://localhost') && !url.startsWith('http://127.0.0.1') && !url.startsWith('data:')) {
         external.push(url);
       }
     });

@@ -1,29 +1,16 @@
 import { test, expect } from '@playwright/test';
+import { isolateState } from './helpers/isolation';
 
 /**
  * Spec 012-virtual-columns US7: URL fragment persistence + restoration.
  */
 test.describe('Virtual columns — URL share', () => {
-  let server: any;
-  let port: number;
-
-  test.beforeAll(async () => {
-    port = 3134;
-    const { preview } = await import('vite');
-    server = await preview({
-      preview: { port, open: false },
-      build: { outDir: 'dist' },
-    });
-  });
-
-  test.afterAll(async () => {
-    if (server?.httpServer?.close) {
-      await new Promise<void>((resolve) => server.httpServer.close(() => resolve()));
-    }
+  test.beforeEach(async ({ page }) => {
+    await isolateState(page);
   });
 
   test('directives round-trip through the URL fragment', async ({ page }) => {
-    await page.goto(`http://localhost:${port}/grid-sight/demo/virtual-columns.html`);
+    await page.goto('/grid-sight/demo/virtual-columns.html');
     await page.waitForFunction(() => !!(window as any).gridSight);
 
     await page.evaluate(() => {
@@ -39,7 +26,7 @@ test.describe('Virtual columns — URL share', () => {
     expect(hash).toContain('sales-table');
 
     // Open the URL in a fresh page and assert restoration.
-    const restoredUrl = `http://localhost:${port}/grid-sight/demo/virtual-columns.html${hash}`;
+    const restoredUrl = `/grid-sight/demo/virtual-columns.html${hash}`;
     const page2 = await page.context().newPage();
     await page2.goto(restoredUrl);
     await page2.waitForFunction(() => !!(window as any).gridSight);
@@ -58,7 +45,7 @@ test.describe('Virtual columns — URL share', () => {
 
   test('order-violating URLs are re-canonicalised', async ({ page }) => {
     // Manually-crafted URL where sparkline appears before cumulative.
-    const url = `http://localhost:${port}/grid-sight/demo/virtual-columns.html#gs.vc=${encodeURIComponent('sales-table:t.r,c.weight.s')}`;
+    const url = `/grid-sight/demo/virtual-columns.html#gs.vc=${encodeURIComponent('sales-table:t.r,c.weight.s')}`;
     await page.goto(url);
     await page.waitForFunction(() => !!(window as any).gridSight);
     await page.waitForFunction(() => {

@@ -1,26 +1,17 @@
 import { test, expect } from '@playwright/test';
+import { isolateState } from './helpers/isolation';
 
 /**
  * End-to-end golden paths for spec 014 — Large-Table Navigation & Analysis.
- * One file, one preview server; a describe block per user story. Each story
+ * One file, a describe block per user story. Each story
  * asserts its golden path AND the enable→disable→enable round-trip that the
  * 006/012 lesson made mandatory.
  */
 
-const PORT = 3140;
-const BASE = `http://localhost:${PORT}/grid-sight/demo`;
+const BASE = `/grid-sight/demo`;
 
-let server: any;
-
-test.beforeAll(async () => {
-  const { preview } = await import('vite');
-  server = await preview({ preview: { port: PORT, open: false }, build: { outDir: 'dist' } });
-});
-
-test.afterAll(async () => {
-  if (server?.httpServer?.close) {
-    await new Promise<void>((resolve) => server.httpServer.close(() => resolve()));
-  }
+test.beforeEach(async ({ page }) => {
+  await isolateState(page);
 });
 
 const raf = (page: import('@playwright/test').Page) =>

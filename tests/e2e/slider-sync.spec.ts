@@ -1,20 +1,9 @@
 import { test, expect } from '@playwright/test';
+import { isolateState } from './helpers/isolation';
 
 test.describe('US3: cross-table sync + URL persistence', () => {
-  let server: any;
-
-  test.beforeAll(async () => {
-    const { preview } = await import('vite');
-    server = await preview({
-      preview: { port: 3012, open: false },
-      build: { outDir: 'dist' },
-    });
-  });
-
-  test.afterAll(async () => {
-    if (server?.httpServer?.close) {
-      await new Promise<void>((resolve) => server.httpServer.close(() => resolve()));
-    }
+  test.beforeEach(async ({ page }) => {
+    await isolateState(page);
   });
 
   async function attachAllSliders(page: any) {
@@ -31,7 +20,7 @@ test.describe('US3: cross-table sync + URL persistence', () => {
   }
 
   test('moving slider on one synced table moves the other', async ({ page }) => {
-    await page.goto('http://localhost:3012/grid-sight/demo/sliders/synced-tables.html');
+    await page.goto('/grid-sight/demo/sliders/synced-tables.html');
     await page.waitForFunction(() => !!(window as any).gridSight);
     await attachAllSliders(page);
 
@@ -48,7 +37,7 @@ test.describe('US3: cross-table sync + URL persistence', () => {
   });
 
   test('URL fragment encodes slider state and restores on reload', async ({ page }) => {
-    await page.goto('http://localhost:3012/grid-sight/demo/sliders/synced-tables.html');
+    await page.goto('/grid-sight/demo/sliders/synced-tables.html');
     await page.waitForFunction(() => !!(window as any).gridSight);
     await attachAllSliders(page);
 
