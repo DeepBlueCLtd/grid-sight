@@ -379,56 +379,102 @@ export function injectToggle(table: HTMLTableElement): boolean {
     // Insert the toggle as the first child of the cell
     firstCell.insertBefore(toggleElement, firstCell.firstChild);
     
-    // Add click handler for the toggle
+    // Add click handler for the toggle. The structural work lives in
+    // activateToggle/deactivateToggle (spec 015) so a programmatic start-state
+    // and a manual click run the IDENTICAL code path — guaranteeing
+    // byte-identical teardown (FR-024).
     if (toggle) {
       toggle.addEventListener('click', (e) => {
         e.stopPropagation();
-        const container = toggle.closest(`.${TOGGLE_CONTAINER_CLASS}`);
-        const isActive = toggle.classList.toggle(TOGGLE_ACTIVE_CLASS);
-        container?.classList.toggle(TOGGLE_ACTIVE_CLASS, isActive);
-        toggle.setAttribute('aria-expanded', String(isActive));
-        
-        // Dispatch custom event when toggle is clicked
-        const toggleEvent = new CustomEvent('gridsight:toggle', {
-          bubbles: true,
-          detail: { active: isActive, target: e.target }
-        });
-        toggle.dispatchEvent(toggleEvent);
-        
-        if (isActive) {
-          table.classList.add(TABLE_ENABLED_CLASS);
-          // Extract table data and analyze column types. Read the AUTHOR value
-          // (cellValue strips GS-injected UI such as annotation pins/markers and
-          // lozenges) and skip injected scaffold rows (e.g. the summary-row
-          // <tfoot>, spec 014). Using raw textContent here let an annotated
-          // numeric cell ("1200" + note) read as non-numeric and suppress a
-          // column's lozenges (spec 013: scaffold/UI is never the logical grid).
-          const rows = Array.from(table.rows)
-            .filter(row => !row.hasAttribute('data-gs-injected'))
-            .map(row => Array.from(row.cells).map(cell => cellValue(cell)));
-          const { columnTypes } = analyzeTable(rows);
-          // Cache column types for the toggle-panel refresh path (spec 012 R-10).
-          setColumnTypes(table, columnTypes);
-          // Inject plus icons
-          injectPlusIcons(table, columnTypes);
-          
-          // Add click handler for enrichment selection
-          table.addEventListener('gridsight:enrichmentSelected', handleEnrichmentSelected as EventListener);
+        if (toggle.classList.contains(TOGGLE_ACTIVE_CLASS)) {
+          deactivateToggle(table);
         } else {
-          table.classList.remove(TABLE_ENABLED_CLASS);
-          // Remove plus icons and event listeners when toggling off.
-          removePlusIcons(table);
-          table.removeEventListener('gridsight:enrichmentSelected', handleEnrichmentSelected as EventListener);
+          activateToggle(table);
         }
       });
     }
     
     // Add a class to the table to indicate it has Grid-Sight enabled
     table.classList.add('grid-sight-enabled');
-    
+
     return true;
   } catch (error) {
     console.error('Failed to inject Grid-Sight toggle:', error);
     return false;
   }
+}
+
+/** Locate the GS corner toggle button for a table (top-left cell). */
+function findToggle(table: HTMLTableElement): HTMLElement | null {
+  return table.querySelector<HTMLElement>(`.${TOGGLE_CLASS}`);
+}
+
+function dispatchToggleEvent(toggle: HTMLElement, active: boolean): void {
+  const toggleEvent = new CustomEvent('gridsight:toggle', {
+    bubbles: true,
+    detail: { active, target: toggle },
+  });
+  toggle.dispatchEvent(toggleEvent);
+}
+
+/**
+ * Reveal a table's enrichments: mark the GS toggle active, set
+ * `aria-expanded="true"`, inject the lozenge clusters, and wire the enrichment
+ * listener. Idempotent — calling it on an already-active table re-runs the
+ * injection (which clears and rebuilds the clusters).
+ *
+ * This is the single shared activate path (spec 015 R-5): the GS toggle's click
+ * handler and the per-table start-state both call it, so there is exactly one
+ * behaviour to reason about and teardown is byte-identical.
+ */
+export function activateToggle(table: HTMLTableElement): void {
+  const toggle = findToggle(table);
+  if (!toggle) return;
+  const container = toggle.closest(`.${TOGGLE_CONTAINER_CLASS}`);
+  toggle.classList.add(TOGGLE_ACTIVE_CLASS);
+  container?.classList.add(TOGGLE_ACTIVE_CLASS);
+  toggle.setAttribute('aria-expanded', 'true');
+
+  table.classList.add(TABLE_ENABLED_CLASS);
+  // Extract table data and analyze column types. Read the AUTHOR value
+  // (cellValue strips GS-injected UI such as annotation pins/markers and
+  // lozenges) and skip injected scaffold rows (e.g. the summary-row <tfoot>,
+  // spec 014). Using raw textContent here would let an annotated numeric cell
+  // ("1200" + note) read as non-numeric and suppress a column's lozenges
+  // (spec 013: scaffold/UI is never the logical grid).
+  const rows = Array.from(table.rows)
+    .filter(row => !row.hasAttribute('data-gs-injected'))
+    .map(row => Array.from(row.cells).map(cell => cellValue(cell)));
+  const { columnTypes } = analyzeTable(rows);
+  // Cache column types for the toggle-panel refresh path (spec 012 R-10).
+  setColumnTypes(table, columnTypes);
+  injectPlusIcons(table, columnTypes);
+  table.addEventListener('gridsight:enrichmentSelected', handleEnrichmentSelected as EventListener);
+
+  dispatchToggleEvent(toggle, true);
+}
+
+/**
+ * Hide a table's enrichments: clear the active state, set
+ * `aria-expanded="false"`, remove the lozenge clusters, and drop the enrichment
+ * listener. Restores byte-identical original markup after any activateToggle
+ * (FR-024). Idempotent.
+ */
+export function deactivateToggle(table: HTMLTableElement): void {
+  const toggle = findToggle(table);
+  if (!toggle) return;
+  const container = toggle.closest(`.${TOGGLE_CONTAINER_CLASS}`);
+  toggle.classList.remove(TOGGLE_ACTIVE_CLASS);
+  container?.classList.remove(TOGGLE_ACTIVE_CLASS);
+  toggle.setAttribute('aria-expanded', 'false');
+
+  table.classList.remove(TABLE_ENABLED_CLASS);
+  removePlusIcons(table);
+  table.removeEventListener('gridsight:enrichmentSelected', handleEnrichmentSelected as EventListener);
+  // Removing the `gs-has-plus-icon` marker can leave an empty `class=""`
+  // attribute on a header that had no other class; strip those so teardown is
+  // byte-identical (FR-024 / INV-4), mirroring index.ts disable().
+  table.querySelectorAll('[class=""]').forEach((el) => el.removeAttribute('class'));
+
+  dispatchToggleEvent(toggle, false);
 }

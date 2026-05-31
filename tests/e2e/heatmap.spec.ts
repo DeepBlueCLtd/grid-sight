@@ -15,10 +15,10 @@ test.describe('Grid-Sight Heatmap (lozenge UX)', () => {
     await page.goto('/grid-sight/');
     await page.waitForFunction(() => !!(window as any).gridSight);
 
-    const table = page.locator('#featured-table');
+    const table = page.locator('#start-inactive');
 
     // Activate GS so lozenges inject.
-    await page.locator('#featured-table .grid-sight-toggle').click();
+    await page.locator('#start-inactive .grid-sight-toggle').click();
 
     // Click the H lozenge on the top-left corner cell (table-wide).
     const cornerCell = table.locator('tr').first().locator('th, td').first();
@@ -27,7 +27,7 @@ test.describe('Grid-Sight Heatmap (lozenge UX)', () => {
 
     // Cells should pick up background colours.
     await page.waitForFunction(() => {
-      const cells = document.querySelectorAll('#featured-table td');
+      const cells = document.querySelectorAll('#start-inactive td');
       return Array.from(cells).some(c => {
         const bg = getComputedStyle(c).backgroundColor;
         return bg && bg !== 'rgba(0, 0, 0, 0)' && bg !== 'rgb(255, 255, 255)' && bg !== 'transparent';
@@ -41,7 +41,7 @@ test.describe('Grid-Sight Heatmap (lozenge UX)', () => {
     await heatmapLozenge.click();
 
     await page.waitForFunction(() => {
-      const cells = document.querySelectorAll('#featured-table td');
+      const cells = document.querySelectorAll('#start-inactive td');
       return Array.from(cells).every(c => {
         const bg = getComputedStyle(c).backgroundColor;
         return !bg || bg === 'rgba(0, 0, 0, 0)' || bg === 'rgb(255, 255, 255)' || bg === 'transparent';

@@ -22,7 +22,7 @@ import {
 beforeEach(() => {
   document.body.innerHTML = '';
   setVisitorOverride(undefined);
-  setPageConfig({ enrichments: undefined, showToggleUi: false });
+  setPageConfig({ enrichments: undefined, showToggleUi: false, tables: [] });
 });
 
 afterEach(() => {

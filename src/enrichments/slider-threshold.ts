@@ -64,7 +64,8 @@ export function addThresholdSlider(table: HTMLTableElement): GridSightSlider {
 
   const id = `${table.id}#threshold`;
   // Spec 012 (FR-011): skip URL-state activation when slider-threshold is disabled.
-  const initialPos01 = isEnrichmentEnabled('slider-threshold') ? resolveInitialPosition(id) : 0.5;
+  // Spec 015: gate is table-scoped (per-table config may disable it here).
+  const initialPos01 = isEnrichmentEnabled('slider-threshold', table) ? resolveInitialPosition(id) : 0.5;
   const initial = min + initialPos01 * (max - min);
 
   const applyThreshold = (threshold: number) => {

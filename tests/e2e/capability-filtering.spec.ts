@@ -69,8 +69,11 @@ test.describe('US1: per-page enrichment subset (capability filtering)', () => {
 test.describe('US3: each existing demo declares an explicit subset', () => {
   const cases: Array<{ path: string; expected: Set<string> }> = [
     {
+      // spec 015 — the welcome page is now per-table driven; its page-level
+      // `enrichments` is the union of enrichments the inline demos use (the
+      // default for any unmatched table).
       path: '/grid-sight/',
-      expected: new Set(['heatmap', 'sliders', 'slider-threshold', 'statistics', 'frequency', 'frequency-chart', 'annotations', 'outlier']),
+      expected: new Set(['sliders', 'statistics', 'heatmap', 'outlier', 'summary-row', 'sort', 'filter', 'find-in-table', 'freeze-panes', 'cumulative', 'sparkline', 'diff-compare', 'annotations']),
     },
     {
       path: '/grid-sight/demo/sliders/interpolation.html',

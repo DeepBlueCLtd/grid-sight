@@ -17,7 +17,7 @@ beforeEach(() => {
   localStorage.clear();
   history.replaceState(null, '', location.pathname);
   setVisitorOverride(undefined);
-  setPageConfig({ enrichments: undefined, showToggleUi: false });
+  setPageConfig({ enrichments: undefined, showToggleUi: false, tables: [] });
   unmountTogglePanel();
 });
 
@@ -66,7 +66,7 @@ describe('mountTogglePanel — DOM shape', () => {
   });
 
   it('initial checked state mirrors the effective enabled set', () => {
-    setPageConfig({ enrichments: new Set(['heatmap']), showToggleUi: false });
+    setPageConfig({ enrichments: new Set(['heatmap']), showToggleUi: false, tables: [] });
     const root = mountTogglePanel();
     const cb = (id: string) =>
       root!.querySelector<HTMLInputElement>(`input[value="${id}"]`)!;
@@ -77,7 +77,7 @@ describe('mountTogglePanel — DOM shape', () => {
 
 describe('checkbox change → effective set + persistence', () => {
   it('unticking removes the id from visitor-persisted set + effective set', () => {
-    setPageConfig({ enrichments: new Set(['heatmap', 'sliders']), showToggleUi: false });
+    setPageConfig({ enrichments: new Set(['heatmap', 'sliders']), showToggleUi: false, tables: [] });
     const root = mountTogglePanel();
     const heatmap = root!.querySelector<HTMLInputElement>('input[value="heatmap"]')!;
     expect(heatmap.checked).toBe(true);
@@ -91,7 +91,7 @@ describe('checkbox change → effective set + persistence', () => {
   });
 
   it('ticking adds the id back', () => {
-    setPageConfig({ enrichments: new Set(['heatmap']), showToggleUi: false });
+    setPageConfig({ enrichments: new Set(['heatmap']), showToggleUi: false, tables: [] });
     const root = mountTogglePanel();
     const sliders = root!.querySelector<HTMLInputElement>('input[value="sliders"]')!;
     sliders.checked = true;

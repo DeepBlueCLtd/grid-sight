@@ -134,7 +134,10 @@ function addLozengesToHeader(
   if (header.querySelector(`.${LOZENGE_CLASS}, .${PLUS_ICON_CLASS}`)) return;
 
   const columnType = inferHeaderColumnType(table, header, type);
-  const enabled = getEffectiveEnabledSet();
+  // Per-table aware (spec 015): resolve the enabled set for THIS table so two
+  // tables on one page can offer different enrichment clusters. An unmatched
+  // table resolves to the page-global set (INV-1, no regression).
+  const enabled = getEffectiveEnabledSet(table);
 
   // One pass: every shipped + enabled + applicable enrichment descriptor
   // (classic lozenges and virtual columns alike) contributes its affordance.
@@ -437,8 +440,9 @@ function buildLozenge(spec: LozengeSpec): HTMLButtonElement {
 
 /** Re-evaluate every lozenge's active state on this table. Called after any
  *  toggle so adjacent lozenges (e.g. row-axis slider after table-wide toggle)
- *  reflect the new state. */
-function refreshLozengeStates(table: HTMLTableElement): void {
+ *  reflect the new state. Exported so the spec-015 per-table auto-activate path
+ *  can refresh the H/S highlights after applying an enrichment programmatically. */
+export function refreshLozengeStates(table: HTMLTableElement): void {
   const lozenges = table.querySelectorAll<HTMLButtonElement>(`.${LOZENGE_CLASS}`);
   lozenges.forEach((btn) => {
     const id = btn.getAttribute('data-gs-lozenge-id');

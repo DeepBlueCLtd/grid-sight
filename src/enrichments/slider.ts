@@ -291,7 +291,9 @@ export function addSlider(table: HTMLTableElement, axis: Axis): GridSightSlider 
   const id = `${table.id}#${axis}`;
   // Spec 012 (FR-011): when the 'sliders' enrichment is disabled, ignore any
   // bookmarked gs.s state so a stale URL cannot activate a disabled slider.
-  const initialPos01 = isEnrichmentEnabled('sliders') ? resolveInitialPosition(id) : 0.5;
+  // Spec 015: gate is table-scoped — a per-table config can disable sliders on
+  // this specific table.
+  const initialPos01 = isEnrichmentEnabled('sliders', table) ? resolveInitialPosition(id) : 0.5;
   const initial = min + initialPos01 * (max - min);
   const syncKey = deriveSyncKey([...binding.headerValues].map(String));
 
