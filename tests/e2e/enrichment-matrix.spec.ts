@@ -256,6 +256,51 @@ test.describe('strong oracle: curated matrix fixture (SC-002)', () => {
   });
 });
 
+/* ── Capability-filtering precedence, folded into discovery (US3, 4B/11A) ─── */
+
+/**
+ * For every discovered demo, the runtime enabled set MUST be exactly the offered
+ * set — `enrichmentIds.filter(isEnrichmentEnabled)` Set-equals
+ * `readPageProfile().offered` (11A: exactly these, no extras, no omissions).
+ * This replaces the hand-maintained demo→subset list that used to live in
+ * `capability-filtering.spec.ts`: coverage now follows the filesystem, so a new
+ * demo or a changed `pageConfig` is checked automatically.
+ */
+test.describe('US3: capability-filtering precedence (discovery-driven)', () => {
+  for (const demo of demos) {
+    test(`precedence: ${demo.relPath}`, async ({ page, baseURL }) => {
+      await page.goto(demo.url(baseURL ?? ''));
+      await page.waitForFunction(() => !!(window as { gridSight?: unknown }).gridSight);
+
+      const { offered, declared } = await readPageProfile(page);
+      const enabled = await page.evaluate(() => {
+        const gs = (window as unknown as {
+          gridSight: { enrichmentIds: string[]; isEnrichmentEnabled(id: string): boolean };
+        }).gridSight;
+        return [...gs.enrichmentIds].filter((id) => gs.isEnrichmentEnabled(id));
+      });
+      const offeredSet = new Set(offered);
+
+      // The capability ceiling always holds: nothing outside the offered set is
+      // ever enabled (11A — no extras leak past the page's allow-list).
+      for (const id of enabled) {
+        expect(offeredSet.has(id), `${demo.relPath}: "${id}" enabled but not offered`).toBe(true);
+      }
+
+      // A page that declares an explicit, non-empty allow-list pins the enabled
+      // set to exactly that list (precedence: pageConfig wins over defaults).
+      if (declared && declared.length > 0) {
+        expect(new Set(enabled), `${demo.relPath}: enabled ≠ declared`).toEqual(new Set(declared));
+      }
+      // A page that declares the empty set (panel-driven playgrounds) enables
+      // nothing at load — activation is entirely visitor-driven.
+      if (declared && declared.length === 0) {
+        expect(enabled, `${demo.relPath}: declared [] but something is enabled`).toEqual([]);
+      }
+    });
+  }
+});
+
 /* ─────────── FR-009 gap guard: no pairing may silently pass (SC-005) ─────── */
 
 test.describe('FR-009: coverage gap guard', () => {

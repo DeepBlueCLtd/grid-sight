@@ -207,16 +207,16 @@ capability-filtering precedence checks are preserved inside the harness.
 **Independent Test**: add a throwaway demo offering one enrichment, run without
 editing specs → a new `test()` appears and runs.
 
-- [ ] T030 [US3] Fold `capability-filtering.spec.ts`'s demo→effective-set cases into
+- [x] T030 [US3] Fold `capability-filtering.spec.ts`'s demo→effective-set cases into
   the discovery harness (4B): for each discovered demo assert **Set-equality** of
   `enrichmentIds.filter(isEnrichmentEnabled)` vs the offered set (11A — exactly
   these, no extras). Add as a `PrecedenceCase` block in `enrichment-matrix.spec.ts`.
   Depends: T024.
-- [ ] T031 [US3] Delete the now-duplicated hand-listed cases from
+- [x] T031 [US3] Delete the now-duplicated hand-listed cases from
   `tests/e2e/capability-filtering.spec.ts` (keep the file only if it has unique
   non-migrated assertions; otherwise remove it) and confirm no precedence coverage is
   lost vs the T001 baseline. *(shared/removed file)* Depends: T030.
-- [ ] T032 [US3] Verify self-extension end-to-end: temporarily add a throwaway demo
+- [x] T032 [US3] Verify self-extension end-to-end: temporarily add a throwaway demo
   under `public/demo/` offering one enrichment, run the matrix without editing any
   spec, confirm a new `test()` runs (SC-004), then remove the throwaway. Depends: T024.
 

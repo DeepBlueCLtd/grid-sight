@@ -63,20 +63,28 @@ export function discoverDemoPages(): DemoPage[] {
  * explicit allow-list when present, otherwise the full shipped set.
  */
 export async function readPageProfile(page: Page): Promise<{
+  /** Ceiling of enrichments the page can surface (empty/absent ⇒ full set). */
   offered: EnrichmentId[];
+  /** The raw `pageConfig.enrichments` as authored: undefined, [], or a list. */
+  declared: EnrichmentId[] | undefined;
   tableIds: string[];
   hasToggleUi: boolean;
 }> {
   return page.evaluate(() => {
     const gs = (window as unknown as GridSightWindow).gridSight;
+    const allow = gs.pageConfig?.enrichments;
     // An explicit non-empty allow-list wins; an empty (or absent) list means
     // "offer the full shipped registry set" (matrix-fixture contract).
-    const allow = gs.pageConfig?.enrichments;
     const offered = allow && allow.length > 0 ? allow : [...gs.enrichmentIds];
     const tableIds = Array.from(document.querySelectorAll('table'))
       .map((t) => t.id)
       .filter((id) => id.length > 0);
     const hasToggleUi = !!document.querySelector('[data-gs-toggle-panel-root]');
-    return { offered: [...offered], tableIds, hasToggleUi };
+    return {
+      offered: [...offered],
+      declared: allow ? [...allow] : undefined,
+      tableIds,
+      hasToggleUi,
+    };
   });
 }
