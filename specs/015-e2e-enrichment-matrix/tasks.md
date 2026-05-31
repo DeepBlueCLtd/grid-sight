@@ -267,17 +267,17 @@ matrix and permutation specs; an artificially slow run trips the gate.
 
 ## Phase 7: Polish & Cross-Cutting
 
-- [ ] T038 Full suite green across all three projects (`yarn test:e2e`) within the
+- [x] T038 Full suite green across all three projects (`yarn test:e2e`) within the
   runtime budget; Vitest green (`yarn test`). Covers SC-006, SC-007. Depends: T033, T037.
-- [ ] T039 [P] Confirm zero `src/` runtime/bundle change beyond any T034 cross-browser
+- [x] T039 [P] Confirm zero `src/` runtime/bundle change beyond any T034 cross-browser
   fix: `git diff --stat main -- src/` is empty or only the justified fix; note in PR
   (Principle I — zero bundle delta).
-- [ ] T040 [P] Run the `quickstart.md` integration-spine checks (reintroduce-defect →
+- [x] T040 [P] Run the `quickstart.md` integration-spine checks (reintroduce-defect →
   fail; throwaway-demo → new case; firefox/webkit green) and tick each in the PR.
-- [ ] T041 [P] Update `tests/e2e/helpers/` inline ASCII diagrams for the discovery
+- [x] T041 [P] Update `tests/e2e/helpers/` inline ASCII diagrams for the discovery
   pipeline, the per-demo/per-step state machine, and the two-tier oracle (plan
   "diagram candidates").
-- [ ] T042 markdownlint the spec docs on the Codacy-enforced rules
+- [x] T042 markdownlint the spec docs on the Codacy-enforced rules
   (`npx markdownlint-cli2 "specs/015-e2e-enrichment-matrix/**/*.md"` — MD004/MD032
   clean) and confirm the PR is green on Codacy.
 

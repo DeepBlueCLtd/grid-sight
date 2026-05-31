@@ -1,3 +1,23 @@
+/**
+ * Demo discovery — how the matrix self-extends (spec 015, US3).
+ *
+ *   public/demo/**.html
+ *        │  walkHtml()                       (Node fs, collection time)
+ *        ▼
+ *   includeDemo(relPath, contents)           (pure, unit-tested)
+ *        │  keep: mounts grid-sight AND has a <table>
+ *        │  drop: *fixture*, perf/large/■■■-row pages (D13)
+ *        ▼
+ *   DemoPage[]  ──►  one test() per page in enrichment-matrix.spec.ts
+ *        │
+ *        ▼  (in-browser, per page)
+ *   readPageProfile(page) ──► { offered, declared, tableIds, hasToggleUi }
+ *        · offered  = pageConfig.enrichments (non-empty) | full registry set
+ *        · declared = the raw pageConfig.enrichments (undefined | [] | list)
+ *
+ * Adding a demo file therefore adds matrix + precedence coverage with no spec
+ * edit (SC-004); the only authored list left is the strong-oracle ColumnOracle.
+ */
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
 import type { Page } from '@playwright/test';
