@@ -214,9 +214,15 @@ runtime gate.
   expectation, the suite MUST surface the gap explicitly (fail or flagged skip)
   rather than silently passing.
 - **FR-010**: The combination layer MUST use **maximal pairwise** coverage (every
-  pair, plus a curated rich combo) rather than the full power set of offered
+  pair, plus curated rich combos) rather than the full power set of offered
   enrichments; runtime is kept affordable by parallelism (SC-007) and the runtime
-  gate (SC-009), not by trimming pairs.
+  gate (SC-009), not by trimming pairs. The pairwise sweep proves
+  non-interference + joint teardown; the curated rich combos additionally assert
+  *correct joint behaviour* for higher-risk groups: summary-row × filter × sort ×
+  find-in-table (aggregate recompute / stability / highlight survival), heatmap ×
+  sort (shading preserved cell-for-cell across a reorder), statistics × filter
+  (popup recomputes over the visible set), and cumulative-virtual-column × sort
+  (appended cells compose + byte-identical teardown).
 - **FR-011**: The full e2e suite (existing specs plus the new matrix and
   permutation specs) MUST pass on the branch before merge, per the project's test
   discipline.

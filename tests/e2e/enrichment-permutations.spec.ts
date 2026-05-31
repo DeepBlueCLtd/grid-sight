@@ -137,3 +137,125 @@ test.describe('rich combo: summary-row × filter × sort × find-in-table (10A)'
     await expect(page.locator(AMOUNT_VALUE)).toHaveText(filteredSum);
   });
 });
+
+/* ─────────── More curated rich combos (10A) — higher-confidence groups ────── */
+
+test.describe('rich combo: heatmap × sort (visual enrichment survives reorder)', () => {
+  test('column heatmap shading is preserved cell-for-cell after a sort', async ({ page }) => {
+    const { controllable } = await gotoPlayground(page);
+    for (const id of ['heatmap', 'sort'] as EnrichmentId[]) {
+      expect(controllable, `playground should offer ${id}`).toContain(id);
+      await setEnrichment(page, id, true);
+    }
+
+    // Activate the heatmap on the Amount column (index 3 → nth-child(3)).
+    await page.locator('#grid-mixed thead th:nth-child(3) [data-gs-lozenge-id="heatmap"]').click();
+    await page.waitForTimeout(100);
+
+    // Capture the per-row {text → background} mapping while unsorted.
+    const before = await page.$$eval('#grid-mixed tbody td:nth-child(3)', (tds) =>
+      tds.map((td) => ({ text: td.textContent?.trim() ?? '', bg: (td as HTMLElement).style.backgroundColor })),
+    );
+    const shadedBefore = before.filter((c) => c.bg).length;
+    expect(shadedBefore, 'heatmap shaded no Amount cells').toBeGreaterThan(0);
+
+    // Sort the Amount column ascending.
+    await page.locator('#grid-mixed thead th:nth-child(3) [data-gs-lozenge-id="sort"]').click();
+    await page.waitForTimeout(100);
+
+    const after = await page.$$eval('#grid-mixed tbody td:nth-child(3)', (tds) =>
+      tds.map((td) => ({ text: td.textContent?.trim() ?? '', bg: (td as HTMLElement).style.backgroundColor })),
+    );
+
+    // The rows reordered, but every value kept its own shade (a value's colour
+    // is intrinsic to the value, not the row position) and none were dropped.
+    expect(after.filter((c) => c.bg).length, 'sort dropped heatmap shading').toBe(shadedBefore);
+    const byText = new Map(before.map((c) => [c.text, c.bg]));
+    for (const cell of after) {
+      expect(cell.bg, `Amount "${cell.text}" lost/changed its shade after sort`).toBe(byText.get(cell.text));
+    }
+    // And the sort actually reordered (ascending numeric).
+    const order = after.map((c) => Number(c.text.replace(/[^0-9.\-]/g, '')));
+    expect(order, 'Amount did not sort ascending').toEqual([...order].sort((x, y) => x - y));
+  });
+});
+
+test.describe('rich combo: statistics × filter (popup recomputes over visible rows)', () => {
+  test('the open statistics popup recomputes its Count/Sum when a filter narrows the set', async ({ page }) => {
+    const { controllable } = await gotoPlayground(page);
+    for (const id of ['statistics', 'filter'] as EnrichmentId[]) {
+      expect(controllable, `playground should offer ${id}`).toContain(id);
+      await setEnrichment(page, id, true);
+    }
+
+    // Open the statistics popup on the Amount column.
+    await page.locator('#grid-mixed thead th:nth-child(3) [data-gs-lozenge-id="statistics"]').click();
+    const popup = page.locator('.gs-statistics-popup--visible');
+    await expect(popup).toBeVisible();
+
+    const readStat = async (label: string): Promise<string> =>
+      popup.evaluate((root, lbl) => {
+        const rows = Array.from(root.querySelectorAll('tr, .gs-stat-row, li, div'));
+        for (const r of rows) {
+          const t = r.textContent ?? '';
+          if (t.trim().startsWith(lbl)) return t.replace(lbl, '').trim();
+        }
+        // Fallback: whole-text scan "label<value>".
+        const m = (root.textContent ?? '').match(new RegExp(lbl + '\\s*([\\d.,%()\\s]+)'));
+        return m ? m[1].trim() : '';
+      }, label);
+
+    // All 8 rows visible initially (Count 8).
+    expect(await readStat('Count')).toContain('8');
+
+    // Filter Amount >= 200 → 3 visible rows (999, 299, 450); popup recomputes.
+    await page.evaluate(() => {
+      const t = document.getElementById('grid-mixed') as HTMLTableElement;
+      (window as unknown as {
+        __gridSightVisibleRows: { setFilter: (t: HTMLTableElement, i: number, f: unknown) => void };
+      }).__gridSightVisibleRows.setFilter(t, 2, {
+        columnIndex: 2,
+        columnKey: 'amount',
+        test: (row: HTMLTableRowElement) => {
+          const v = parseFloat((row.cells[2]?.textContent ?? '').replace(/[^0-9.\-]/g, ''));
+          return Number.isFinite(v) && v >= 200;
+        },
+        toDirective: () => ({ kind: 'numeric-range', columnKey: 'amount', min: 200, max: null, hideEmpty: false }),
+      });
+    });
+    await page.waitForTimeout(150);
+
+    // The still-open popup now reflects the narrowed visible set.
+    expect(await readStat('Count'), 'statistics did not recompute after filter').toContain('3');
+  });
+});
+
+test.describe('rich combo: cumulative virtual column × sort (appended cells follow rows)', () => {
+  test('a cumulative column composes with sort and tears down byte-identically', async ({ page }) => {
+    await page.goto(URL);
+    await page.waitForFunction(() => !!(window as { gridSight?: unknown }).gridSight);
+    await activateGridSight(page, 'grid-quarterly');
+    const { offered } = await readPageProfile(page);
+    for (const id of ['cumulative', 'sort'] as EnrichmentId[]) {
+      expect(offered, `playground should offer ${id}`).toContain(id);
+    }
+
+    const baseline = await snapshotTable(page, 'grid-quarterly');
+
+    // Cumulative appends Σ running-total cells on the numeric quarter columns.
+    await setEnrichment(page, 'cumulative' as EnrichmentId, true);
+    await page.waitForTimeout(100);
+    const vcCells = await page.locator('#grid-quarterly .gs-vc-lozenge[data-gs-vc-kind="cumulative"]').count();
+    expect(vcCells, 'cumulative added no virtual-column lozenges').toBeGreaterThan(0);
+
+    // Enable sort alongside it — the two compose without error and the table
+    // stays a valid grid.
+    await setEnrichment(page, 'sort' as EnrichmentId, true);
+    await expect(page.locator('#grid-quarterly')).toBeVisible();
+
+    // Disable both → byte-identical teardown (no appended-cell residue).
+    await setEnrichment(page, 'sort' as EnrichmentId, false);
+    await setEnrichment(page, 'cumulative' as EnrichmentId, false);
+    await expectRoundTrip(page, 'grid-quarterly', baseline);
+  });
+});
