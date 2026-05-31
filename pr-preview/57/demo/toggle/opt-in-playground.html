@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Grid-Sight · Opt-in playground</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 1024px; margin: 24px auto; padding: 0 16px; color: #222; }
+    h1 { margin-top: 0; }
+    h2 { margin-top: 24px; font-size: 16px; color: #444; }
+    table { border-collapse: collapse; margin: 12px 0; }
+    th, td { border: 1px solid #ccc; padding: 6px 10px; text-align: right; font-variant-numeric: tabular-nums; }
+    th:first-child, td:first-child { text-align: left; font-variant-numeric: normal; }
+    thead th, table > tr:first-child th { background: #f4f4f4; }
+    .layout { display: grid; grid-template-columns: 1fr 280px; gap: 24px; align-items: start; }
+    @media (max-width: 720px) { .layout { grid-template-columns: 1fr; } }
+    .panel-slot { position: sticky; top: 16px; }
+    .hint { color: #555; font-size: 13px; line-height: 1.5; }
+  </style>
+</head>
+<body>
+  <nav data-gs-demo-nav></nav>
+
+  <h1>Opt-in playground</h1>
+  <p class="hint">
+    Every enrichment ships <strong>off</strong> on this page. Tick boxes in
+    the panel on the right to enable them one at a time, then click the
+    <code>GS</code> toggle on a table to inject the lozenges. Your
+    selections persist in <code>#gs.e=...</code> and <code>localStorage</code>
+    — clear them with the panel's reset action or open the page in a private
+    window for a fresh start.
+  </p>
+  <p class="hint">
+    The <strong>Quarterly sales</strong> table below has five numeric columns and a
+    proper header row, so it qualifies for the virtual-column enrichments: tick
+    <code>cumulative</code>, <code>diff-compare</code>, or <code>sparkline</code>,
+    click its <code>GS</code> toggle, then use the <strong>Σ</strong> /
+    <strong>Δ</strong> / <strong>⌇</strong> lozenges. The two smaller tables don't
+    have enough numeric columns for sparkline or compare.
+  </p>
+
+  <script>
+    // Allowlist everything the build ships, but start with the enabled set
+    // empty so the visitor drives activation entirely from the toggle panel.
+    window.gridSight = { pageConfig: {
+      enrichments: [],
+      showToggleUi: true,
+    } };
+  </script>
+
+  <div class="layout">
+    <div>
+      <h2>Numeric grid (sliders, heatmap, statistics, sort, filter)</h2>
+      <table id="grid-numeric">
+        <tr><th></th>     <th>10</th><th>20</th><th>30</th><th>40</th><th>50</th></tr>
+        <tr><th>1000</th> <td>4.2</td><td>5.1</td><td>5.9</td><td>6.4</td><td>6.7</td></tr>
+        <tr><th>2000</th> <td>3.6</td><td>4.4</td><td>5.0</td><td>5.5</td><td>5.8</td></tr>
+        <tr><th>3000</th> <td>3.0</td><td>3.7</td><td>4.2</td><td>4.6</td><td>4.9</td></tr>
+        <tr><th>4000</th> <td>2.5</td><td>3.0</td><td>3.5</td><td>3.9</td><td>4.2</td></tr>
+        <tr><th>5000</th> <td>2.0</td><td>2.5</td><td>2.9</td><td>3.3</td><td>3.6</td></tr>
+      </table>
+
+      <h2>Mixed table (frequency, sort, filter on categorical)</h2>
+      <table id="grid-mixed">
+        <thead>
+          <tr><th>Product</th><th>Region</th><th>Amount</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Laptop</td>  <td>EU</td><td>999</td></tr>
+          <tr><td>Desk</td>    <td>US</td><td>299</td></tr>
+          <tr><td>Chair</td>   <td>EU</td><td>120</td></tr>
+          <tr><td>Monitor</td> <td>JP</td><td>450</td></tr>
+          <tr><td>Cable</td>   <td>US</td><td>15</td></tr>
+          <tr><td>Keyboard</td><td>EU</td><td>75</td></tr>
+          <tr><td>Mouse</td>   <td>JP</td><td>35</td></tr>
+          <tr><td>Webcam</td>  <td>US</td><td>180</td></tr>
+        </tbody>
+      </table>
+
+      <h2>Quarterly sales (virtual columns: Σ cumulative, Δ compare, ⌇ sparkline)</h2>
+      <table id="grid-quarterly">
+        <thead>
+          <tr><th>Region</th><th>Q1</th><th>Q2</th><th>Q3</th><th>Q4</th><th>Weight</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>North</td> <td>100</td><td>120</td><td>150</td><td>190</td><td>10</td></tr>
+          <tr><td>South</td> <td>80</td> <td>90</td> <td>95</td> <td>110</td><td>15</td></tr>
+          <tr><td>East</td>  <td>60</td> <td>70</td> <td>80</td> <td>90</td> <td>20</td></tr>
+          <tr><td>West</td>  <td>40</td> <td>50</td> <td>55</td> <td>60</td> <td>25</td></tr>
+          <tr><td>Centre</td><td>30</td> <td>35</td> <td>40</td> <td>45</td> <td>30</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <aside class="panel-slot">
+      <div data-gs-toggle-panel></div>
+    </aside>
+  </div>
+
+  <script src="../../grid-sight.iife.js"></script>
+  <script src="../nav.js"></script>
+</body>
+</html>
