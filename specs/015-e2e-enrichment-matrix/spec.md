@@ -213,8 +213,10 @@ runtime gate.
 - **FR-009**: When a demo offers an enrichment that has no defined applicability
   expectation, the suite MUST surface the gap explicitly (fail or flagged skip)
   rather than silently passing.
-- **FR-010**: The combination layer MUST bound its runtime by using representative
-  / pairwise coverage rather than the full power set of offered enrichments.
+- **FR-010**: The combination layer MUST use **maximal pairwise** coverage (every
+  pair, plus a curated rich combo) rather than the full power set of offered
+  enrichments; runtime is kept affordable by parallelism (SC-007) and the runtime
+  gate (SC-009), not by trimming pairs.
 - **FR-011**: The full e2e suite (existing specs plus the new matrix and
   permutation specs) MUST pass on the branch before merge, per the project's test
   discipline.

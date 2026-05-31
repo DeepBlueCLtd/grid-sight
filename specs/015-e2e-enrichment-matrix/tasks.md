@@ -27,9 +27,10 @@ gate) form their own late phase.
 - Config → `playwright.config.ts`; harness → `tests/e2e/helpers/`; harness units →
   `tests/e2e/helpers/__tests__/`; new specs → `tests/e2e/`; curated fixture →
   `public/demo/matrix/index.html`; runtime gate → `scripts/e2e-runtime-gate.mjs`.
-- **Shared files (NOT [P])**: `playwright.config.ts` (T004, T021, T030),
-  `package.json` scripts (T020, T031), and every migrated existing spec touches its
-  own file (so the migration tasks ARE mutually [P], but each is one file).
+- **Shared files (NOT [P])**: `playwright.config.ts` (T004 then T033),
+  `package.json` scripts (T037), the e2e CI workflow (T002, T037a, T037), and every
+  migrated existing spec touches its own file (so the migration tasks ARE mutually
+  [P], but each is one file).
 
 ---
 
@@ -38,9 +39,10 @@ gate) form their own late phase.
 - [ ] T001 Record the pre-change e2e baseline: run `yarn test:e2e` (serial, chromium)
   and note pass count + wall-clock in the PR as the migration's green baseline; run
   `yarn test` to confirm the Vitest suite is green. No code change.
-- [ ] T002 [P] Install the extra browser engines for local/CI runs:
+- [ ] T002 [P] Install the extra browser engines for local runs:
   `npx playwright install firefox webkit`; document the command in
-  `specs/015-e2e-enrichment-matrix/quickstart.md` (already present) and in the PR.
+  `specs/015-e2e-enrichment-matrix/quickstart.md` (already present) and in the PR. (CI
+  installs them in the new e2e job — T037a.)
 - [ ] T003 Inventory the per-file preview servers: list every spec under `tests/e2e/`
   that defines a `beforeAll` `vite preview` + hardcoded `PORT`/`BASE` (survey: 38 of
   39). Capture the list in a scratch note for the migration phase (T010–T019).
@@ -86,6 +88,11 @@ depends on. Nothing in US1–US3 can run until this phase is green.
 
 ### Harness helpers + their unit tests (D9) — `contracts/test-helpers.md`
 
+> **Ordering note**: T007–T009a are numbered after the migration (T010–T019) but
+> are **independent of it** — they touch different files and run in parallel with
+> the migration once T006 lands. US1 (T024) needs both the migration green (T019)
+> and the helpers (T007–T009) done.
+
 - [ ] T007 [P] Implement `tests/e2e/helpers/demo-discovery.ts`:
   `includeDemo(relPath, contents)` (pure — keep gridSight+`<table>` pages, exclude
   `*fixture*` and perf/large per D13), `discoverDemoPages()`, and `readPageProfile`
@@ -130,17 +137,18 @@ a strong-oracle assertion.
   `test()` per `discoverDemoPages()` entry, a `test.step` per offered enrichment that
   `setEnrichment` on → asserts `observedState` is active|inapplicable (never throws)
   with `aria-disabled` on disabled lozenges → relative round-trip teardown
-  (`expectRoundTrip` + `expectNoArtifacts`). Depends: T007, T008, T009.
+  (`expectRoundTrip` + `expectNoArtifacts`). Covers SC-001. Depends: T007, T008, T009.
 - [ ] T025 [US1] Add the strong layer for `public/demo/matrix/index.html`: authored
   `ColumnOracle` table in the spec; assert identifier column is NOT summed by
   `summary-row` and offers no numeric slider; numeric columns active; categorical/
   text show disabled lozenge; annotated-numeric keeps sort+filter affordances.
-  Depends: T024, T022.
+  Covers SC-002. Depends: T024, T022.
 - [ ] T026 [US1] Add the fixture↔oracle consistency guard (12A): every
   `ColumnOracle.header` MUST resolve to a column in `#matrix-table`, else fail.
   Depends: T025.
 - [ ] T027 [US1] Add the FR-009 gap guard: a curated-fixture pairing with no
-  oracle/expectation fails (or flagged-skips) — never silently passes. Depends: T025.
+  oracle/expectation fails (or flagged-skips) — never silently passes. Covers SC-005.
+  Depends: T025.
 - [ ] T028 [US1] Run `enrichment-matrix.spec.ts` green on chromium; manually verify
   SC-002 by temporarily reintroducing the identifier-as-numeric defect and confirming
   a failure, then revert. Depends: T024–T027.
@@ -163,7 +171,8 @@ plus the rich combo pass, with concrete cross-behaviour assertions.
   annotations, `find-in-table`); for each, enable members, assert concrete
   interactions (10A — filter recomputes the `summary-row` aggregate over visible
   rows; sort leaves the aggregate stable; `find-in-table` highlights survive a
-  filter), then disable all and assert relative round-trip teardown. Depends: T008, T009.
+  filter), then disable all and assert relative round-trip teardown. Covers SC-003.
+  Depends: T008, T009.
 - [ ] T029a [US2] Ensure the playground fixture has data that exercises the rich
   combo (numeric + categorical + enough rows); enrich
   `public/demo/toggle/opt-in-playground.html` only if needed (FR-012). Depends: T029.
@@ -207,11 +216,14 @@ matrix and permutation specs; an artificially slow run trips the gate.
 - [ ] T033 [US4] Add `firefox` and `webkit` projects to `playwright.config.ts`
   alongside `chromium` (FR-015); run the matrix + permutation specs unfiltered on all
   three; project-scope long-running existing specs to chromium if needed to bound
-  runtime. *(shared file)* Depends: T019, T024, T029.
+  runtime. Covers SC-008. *(shared file)* Depends: T019, T024, T029.
 - [ ] T034 [US4] Fix or file: triage any genuine Firefox/WebKit failures the new
-  cross-engine run surfaces — apply a minimal `src` fix if it's a real library defect
-  (Principle V) or file a follow-up issue and project-skip with a documented reason
-  (no silent `.skip`). Depends: T033.
+  cross-engine run surfaces. A **minimal, bounded** `src` fix IS permitted for a real
+  library defect (Principle V), but it MUST: be the smallest change that fixes the
+  engine bug, re-run `node scripts/bundle-size.js` to confirm it stays under the 10 KB
+  ceiling (Principle I — call out any delta in the PR), and land with a regression
+  test. If the fix would be large or architectural, file a follow-up issue + project-
+  skip with a documented reason instead (no silent `.skip`). Depends: T033.
 - [ ] T035 [US4] Implement `scripts/e2e-runtime-gate.mjs` (FR-016): measure full-suite
   wall-clock (Playwright JSON reporter or a wrapping timer) and exit non-zero above
   `E2E_BUDGET_SECONDS`. Depends: T019.
@@ -219,18 +231,26 @@ matrix and permutation specs; an artificially slow run trips the gate.
   baseline (run the full parallel suite, take the measured wall-clock + an agreed
   headroom %); record the number in `scripts/e2e-runtime-gate.mjs` and in
   `spec.md`/`contracts/e2e-runner.md`. Depends: T035, T033.
-- [ ] T037 [US4] Wire the gate into the `test:e2e` flow / CI in `package.json` (or a
-  dedicated CI step after Playwright); confirm it passes within budget and fails when
-  the budget is artificially lowered. *(shared file)* Depends: T035, T036.
+- [ ] T037a [US4] Add a **new** e2e CI job (FR-011/015/016): the repo currently has
+  **no** workflow that runs `yarn test:e2e` — `.github/workflows/storybook-tests.yml`
+  installs only `chromium` and runs `yarn test:storybook`. Add a workflow (or a job in
+  a new `e2e-tests.yml`) on `pull_request`/`push` to `main` that runs
+  `npx playwright install --with-deps chromium firefox webkit` then `yarn test:e2e`,
+  uploading `playwright-report/` on failure. Confirm the env network policy permits the
+  browser-binary download. Depends: T033.
+- [ ] T037 [US4] Wire the runtime gate into the e2e CI job (T037a) — a step after
+  `playwright test`, or fold it into the `test:e2e` script in `package.json`; confirm
+  it passes within budget and fails when the budget is artificially lowered.
+  Covers SC-009. *(shared files: `package.json`, the e2e workflow)* Depends: T035, T036, T037a.
 
-**Checkpoint**: three-engine green; runtime gate enforces SC-009.
+**Checkpoint**: three-engine green; runtime gate enforces SC-009; e2e runs in CI.
 
 ---
 
 ## Phase 7: Polish & Cross-Cutting
 
 - [ ] T038 Full suite green across all three projects (`yarn test:e2e`) within the
-  runtime budget; Vitest green (`yarn test`). Depends: T033, T037.
+  runtime budget; Vitest green (`yarn test`). Covers SC-006, SC-007. Depends: T033, T037.
 - [ ] T039 [P] Confirm zero `src/` runtime/bundle change beyond any T034 cross-browser
   fix: `git diff --stat main -- src/` is empty or only the justified fix; note in PR
   (Principle I — zero bundle delta).
