@@ -6,16 +6,56 @@ export const raf = (page: Page): Promise<void> =>
   page.evaluate(() => new Promise<void>((r) => requestAnimationFrame(() => r())));
 
 /**
+ * Activate Grid-Sight on a table if it is not already on. Lozenges only mount
+ * once GS is enabled on the table (the `.grid-sight-toggle` control); the
+ * enrichment *panel* then governs which of them appear. Idempotent.
+ */
+export async function activateGridSight(page: Page, tableId: string): Promise<void> {
+  const toggle = page.locator(`#${tableId} .grid-sight-toggle`).first();
+  if ((await toggle.count()) === 0) return;
+  const alreadyOn = await page
+    .locator(`#${tableId} [data-gs-lozenge-id]`)
+    .count()
+    .then((n) => n > 0);
+  if (!alreadyOn) {
+    await toggle.click();
+    await raf(page);
+  }
+}
+
+/**
  * Drive the real toggle panel: tick/untick the checkbox whose `value` is the
  * enrichment id (`src/ui/toggle-panel.ts` sets `input.value = entry.id`), then
  * wait for the resulting DOM mutation to settle.
  */
-export async function setEnrichment(page: Page, id: EnrichmentId, on: boolean): Promise<void> {
+export async function setEnrichment(page: Page, id: EnrichmentId, on: boolean): Promise<boolean> {
   const checkbox = page.locator(
     `[data-gs-toggle-panel-root] input[type=checkbox][value="${id}"]`,
   );
+  // The panel only renders rows for `shipped` enrichments, so an offered-but-
+  // not-yet-shipped id (e.g. `copy-as-csv`, `units-toggle`) has no control.
+  // Report that rather than hanging on a checkbox that will never appear.
+  if ((await checkbox.count()) === 0) return false;
   await checkbox.setChecked(on);
   await raf(page);
+  return true;
+}
+
+/** Current checked state of an enrichment's panel checkbox (false if absent). */
+export async function isEnrichmentChecked(page: Page, id: EnrichmentId): Promise<boolean> {
+  const checkbox = page.locator(
+    `[data-gs-toggle-panel-root] input[type=checkbox][value="${id}"]`,
+  );
+  if ((await checkbox.count()) === 0) return false;
+  return checkbox.isChecked();
+}
+
+/** Ids the live toggle panel actually renders a checkbox for (shipped set). */
+export async function panelEnrichmentIds(page: Page): Promise<string[]> {
+  return page.$$eval(
+    '[data-gs-toggle-panel-root] input[type=checkbox]',
+    (boxes) => boxes.map((b) => (b as HTMLInputElement).value),
+  );
 }
 
 /**

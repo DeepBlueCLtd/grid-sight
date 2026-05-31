@@ -144,30 +144,30 @@ caught by the curated fixture; byte-identical teardown.
 gets a test, each offered enrichment a step; reintroducing the `S-001` defect fails
 a strong-oracle assertion.
 
-- [ ] T022 [P] [US1] Create the curated fixture `public/demo/matrix/index.html` per
+- [x] T022 [P] [US1] Create the curated fixture `public/demo/matrix/index.html` per
   `contracts/matrix-fixture.md`: `#matrix-table` with `Sample ID` (identifier
   `S-001…`), `Assay (mg)` (numeric, ≥1 blank), `Status` (categorical), `Reading`
   (numeric + annotated cells), `Notes` (text); `pageConfig.enrichments: []`,
   `showToggleUi: true`; nav bar consistent with siblings; no network refs.
-- [ ] T023 [US1] Add the matrix card to `public/index.html` (consistency with
+- [x] T023 [US1] Add the matrix card to `public/index.html` (consistency with
   sibling demos). *(shared file)* Depends: T022.
-- [ ] T024 [US1] Implement `tests/e2e/enrichment-matrix.spec.ts` weak layer: one
+- [x] T024 [US1] Implement `tests/e2e/enrichment-matrix.spec.ts` weak layer: one
   `test()` per `discoverDemoPages()` entry, a `test.step` per offered enrichment that
   `setEnrichment` on → asserts `observedState` is active|inapplicable (never throws)
   with `aria-disabled` on disabled lozenges → relative round-trip teardown
   (`expectRoundTrip` + `expectNoArtifacts`). Covers SC-001. Depends: T007, T008, T009.
-- [ ] T025 [US1] Add the strong layer for `public/demo/matrix/index.html`: authored
+- [x] T025 [US1] Add the strong layer for `public/demo/matrix/index.html`: authored
   `ColumnOracle` table in the spec; assert identifier column is NOT summed by
   `summary-row` and offers no numeric slider; numeric columns active; categorical/
   text show disabled lozenge; annotated-numeric keeps sort+filter affordances.
   Covers SC-002. Depends: T024, T022.
-- [ ] T026 [US1] Add the fixture↔oracle consistency guard (12A): every
+- [x] T026 [US1] Add the fixture↔oracle consistency guard (12A): every
   `ColumnOracle.header` MUST resolve to a column in `#matrix-table`, else fail.
   Depends: T025.
-- [ ] T027 [US1] Add the FR-009 gap guard: a curated-fixture pairing with no
+- [x] T027 [US1] Add the FR-009 gap guard: a curated-fixture pairing with no
   oracle/expectation fails (or flagged-skips) — never silently passes. Covers SC-005.
   Depends: T025.
-- [ ] T028 [US1] Run `enrichment-matrix.spec.ts` green on chromium; manually verify
+- [x] T028 [US1] Run `enrichment-matrix.spec.ts` green on chromium; manually verify
   SC-002 by temporarily reintroducing the identifier-as-numeric defect and confirming
   a failure, then revert. Depends: T024–T027.
 

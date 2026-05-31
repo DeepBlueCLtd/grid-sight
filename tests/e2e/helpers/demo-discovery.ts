@@ -69,7 +69,10 @@ export async function readPageProfile(page: Page): Promise<{
 }> {
   return page.evaluate(() => {
     const gs = (window as unknown as GridSightWindow).gridSight;
-    const offered = gs.pageConfig?.enrichments ?? [...gs.enrichmentIds];
+    // An explicit non-empty allow-list wins; an empty (or absent) list means
+    // "offer the full shipped registry set" (matrix-fixture contract).
+    const allow = gs.pageConfig?.enrichments;
+    const offered = allow && allow.length > 0 ? allow : [...gs.enrichmentIds];
     const tableIds = Array.from(document.querySelectorAll('table'))
       .map((t) => t.id)
       .filter((id) => id.length > 0);
