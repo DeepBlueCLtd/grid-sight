@@ -2,8 +2,17 @@
 
 **Feature Branch**: `009-copy-as-csv`
 **Created**: 2026-05-18
-**Status**: Draft
-**Input**: User description: "A table-level lozenge that copies the currently visible view of a table to the clipboard in CSV, TSV, or Markdown, with a small options popup and a toast confirmation."
+**Updated**: 2026-06-01 (refreshed against current codebase: consumes the
+`copy-as-csv-registry` shim + `VirtualColumnExport` exporters, the
+`table-grid` addressing layer, and the URL view-state persistence mechanism)
+**Status**: Draft — ready for planning
+**Input**: User description: "A table-level lozenge that copies the currently
+visible view of a table to the clipboard in CSV, TSV, or Markdown, with a small
+options popup (include headers, include row headers, include GS virtual
+columns) and a toast confirmation. Honors current sort/filter/visible rows,
+RFC 4180 CSV, GFM Markdown tables, rowspan/colspan flattening, clipboard
+failure fallback, aria-live toast, remembered format in URL. Consumes the
+existing copy-as-csv-registry shim and virtual-column exporters."
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -50,8 +59,10 @@ with headers as the first line.
 A user routinely pastes Grid-Sight output into a Markdown-based note system and
 wants the popup to default to Markdown next time. The popup offers CSV, TSV, and
 Markdown table formats. The most-recent choice is encoded into the URL fragment
-using the same per-page scheme as `src/utils/slider-persistence.ts`, so reopening
-the popup on the same page (or sharing the URL) restores the user's last format.
+using the established Grid-Sight URL view-state mechanism (the per-enrichment
+persistence + `view-state-url` pattern most recently used by the outlier
+enrichment in `src/utils/outlier-persistence.ts`), so reopening the popup on the
+same page (or sharing the URL) restores the user's last format.
 
 **Why this priority**: Format-stickiness is small but high-impact for repeat
 users; it turns a three-click action into a two-click action on the second use.
@@ -127,10 +138,19 @@ Reload the page, open the popup again, and confirm Markdown is preselected.
   be included as the first field of each row when "include row headers" is on,
   and omitted otherwise.
 - **FR-008**: When "include GS virtual columns" is on, every GS-appended column
-  (e.g. cumulative, sparkline) MUST be included at its rendered position with
-  the rules in Edge Cases (sparkline as raw underlying numeric series).
+  (e.g. cumulative, compare, sparkline) MUST be included at its rendered
+  position. Its header text and per-row cell text MUST be obtained from the
+  exporters registered in the existing `copy-as-csv-registry` shim
+  (`VirtualColumnExport.headerText` and `getCellText(rowEl)`) rather than by
+  re-reading rendered DOM, so that e.g. the sparkline column exports its raw
+  underlying numeric series (per Edge Cases) rather than SVG markup. When the
+  option is off, no registered virtual column appears in the output.
 - **FR-009**: Cells marked or spanned by `rowspan` / `colspan` MUST be flattened
-  per Edge Cases.
+  per Edge Cases. The visible-row set, currently-visible column order, and
+  logical cell text MUST be resolved through the canonical `table-grid`
+  addressing layer (`src/core/table-grid.ts`, spec 013) so the export agrees
+  with what every other enrichment considers a cell, rather than via ad-hoc
+  `nth-child` DOM walks.
 
 **Output formats**
 
@@ -164,7 +184,9 @@ Reload the page, open the popup again, and confirm Markdown is preselected.
 **Persistence**
 
 - **FR-017**: The most-recently chosen format MUST be encoded into the URL
-  fragment using the same per-page scheme as `src/utils/slider-persistence.ts`.
+  fragment using the established Grid-Sight URL view-state mechanism (a
+  per-enrichment persistence module riding `src/utils/view-state-url.ts`, as
+  most recently exemplified by `src/utils/outlier-persistence.ts`).
 - **FR-018**: The three boolean options (include headers, include row headers,
   include GS virtual columns) MUST also persist alongside the format choice,
   using the same per-page scheme, so that reopening the popup on the same page
@@ -222,13 +244,24 @@ Reload the page, open the popup again, and confirm Markdown is preselected.
 
 ## Assumptions
 
-- The existing per-URL-stem persistence model used by
-  `src/utils/slider-persistence.ts` is reused unchanged.
+- The established Grid-Sight URL view-state persistence mechanism
+  (`src/utils/view-state-url.ts` plus a per-enrichment persistence module, as
+  done for sliders and most recently the outlier feature) is reused; this
+  feature adds its own small persistence module following that pattern rather
+  than inventing a new scheme.
+- The `copy-as-csv-registry` shim (`src/utils/copy-as-csv-registry.ts`,
+  introduced by spec 012) already exists and is populated by each virtual-column
+  enrichment with a `VirtualColumnExport` (`headerText` + `getCellText(rowEl)`).
+  This feature consumes that registry as-is; virtual-column enrichments remain
+  responsible for registering/unregistering their own exporters.
+- The `table-grid` addressing layer (spec 013) is the source of truth for the
+  visible-row set, visible-column order, and logical cell text; the export does
+  not re-implement coordinate/visibility logic.
 - Pages embedding Grid-Sight serve content over a secure context (file://,
   https://, or localhost) sufficient for the asynchronous clipboard interface
   on supported browsers; insecure contexts fall back to the textarea path.
-- The sparkline enrichment exposes the underlying numeric series of its
-  virtual column in a form the copy feature can consume without re-parsing SVG.
+- The sparkline enrichment's registered exporter yields the underlying numeric
+  series of its virtual column, so the copy feature never re-parses SVG.
 - No new runtime dependency is introduced; serialisation uses platform string
   handling.
 - Sparkline-as-numeric-series is the chosen export representation; embedding
