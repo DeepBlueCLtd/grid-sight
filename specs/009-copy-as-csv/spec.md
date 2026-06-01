@@ -249,14 +249,17 @@ Reload the page, open the popup again, and confirm Markdown is preselected.
   done for sliders and most recently the outlier feature) is reused; this
   feature adds its own small persistence module following that pattern rather
   than inventing a new scheme.
-- The `copy-as-csv-registry` shim (`src/utils/copy-as-csv-registry.ts`,
-  introduced by spec 012) already exists and is populated by each virtual-column
-  enrichment with a `VirtualColumnExport` (`headerText` + `getCellText(rowEl)`).
-  This feature consumes that registry as-is; virtual-column enrichments remain
-  responsible for registering/unregistering their own exporters.
-- The `table-grid` addressing layer (spec 013) is the source of truth for the
-  visible-row set, visible-column order, and logical cell text; the export does
-  not re-implement coordinate/visibility logic.
+- The `copy-as-csv-registry` (`src/utils/copy-as-csv-registry.ts`, introduced
+  by spec 012) already exists and is **actively populated** at runtime by each
+  virtual-column enrichment (cumulative, compare, sparkline) with a
+  `VirtualColumnExport` (`headerText` + `getCellText(rowEl)`). This feature
+  consumes that registry as-is; virtual-column enrichments remain responsible
+  for registering/unregistering their own exporters.
+- The `table-grid` addressing layer (spec 013) plus the `visibleBodyRows`
+  read-channel (`src/utils/visible-rows.ts`, the same channel statistics /
+  summary-row / find-in-table use) are the source of truth for the visible-row
+  set, visible-column order, and logical cell text; the export does not
+  re-implement coordinate/visibility logic.
 - Pages embedding Grid-Sight serve content over a secure context (file://,
   https://, or localhost) sufficient for the asynchronous clipboard interface
   on supported browsers; insecure contexts fall back to the textarea path.
