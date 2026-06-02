@@ -55,8 +55,8 @@ for (const demo of demos) {
       await activateGridSight(page, tableId);
 
       // The panel only renders rows for shipped enrichments; an offered id with
-      // no control (spec-only stubs like copy-as-csv / units-toggle) can't be
-      // toggled, so it isn't exercised here. Intersect rather than hang on it.
+      // no control (spec-only stubs like units-toggle) can't be toggled, so it
+      // isn't exercised here. Intersect rather than hang on it.
       const controllable = new Set(await panelEnrichmentIds(page));
       const exercise = profile.offered.filter((id) => controllable.has(id));
 

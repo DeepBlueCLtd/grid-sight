@@ -26,10 +26,21 @@
  *            and gs.o persistence).
  *   - 50 KB: raised when 014-navigation-and-analysis merged on top of 004-outlier
  *            (freeze-panes + statistics extension + summary-row + find-in-table).
+ *   - 52 KB: raised when 015-welcome-per-table-options landed (~50.1 KB).
+ *   - 54 KB: raised when 009-copy-as-csv merged (+~3.1 KB gz: the CSV/TSV/
+ *            Markdown serialisers, the visible-view export-model builder, the
+ *            copy popup + toast UI, and the gs.cp persistence codec).
+ *
+ * RELAXED POLICY (2026-06-01, project decision): bundle growth is *reported*
+ * but does NOT fail the build by default. We watch the gzipped number and
+ * decide what to trim when it gets too large, rather than blocking every
+ * feature on a hard ceiling. `MAX_GZ_KB` is now a SOFT target: exceeding it
+ * prints a NOTE, not an error. Pass `--strict` to restore a hard gate (exit
+ * non-zero) for a deliberate size audit.
  *
  * Flags:
- *   --soft   warn-only (does not exit non-zero on overage); use for local
- *            pre-PR builds where the author wants the number but not the fail.
+ *   --strict  restore the hard gate (exit non-zero when over MAX_GZ_KB).
+ *   --soft    legacy no-op (warn-only is now the default).
  */
 
 import fs from 'node:fs';
@@ -59,12 +70,16 @@ const BUNDLE = path.resolve(__dirname, '..', 'dist', 'grid-sight.iife.js');
 // 50 → 52 KB when 015-welcome-per-table-options added per-table resolution,
 // the table-aware gate, the extracted toggle activate/deactivate path, and the
 // per-table auto-activate (v1) wiring (combined gz ~50.1 KB; the baseline was
-// already 49.40 KB, leaving the prior 50 KB ceiling with sub-1 KB headroom).
+// already 49.40 KB, leaving the prior 50 KB ceiling with sub-1 KB headroom),
+// then 52 → 54 KB when 009-copy-as-csv merged (+~3.1 KB gz: the CSV/TSV/Markdown
+// serialisers, the visible-view export-model builder, the copy popup + toast UI,
+// and the gs.cp persistence codec; combined gz ~53.35 KB).
 // Constitution §I 10 KB target unchanged.
-const MAX_GZ_KB = 52;
+const MAX_GZ_KB = 54;
 const CONSTITUTION_TARGET_KB = 10;
 
-const soft = process.argv.includes('--soft');
+// Relaxed policy: warn-only by default; `--strict` restores the hard gate.
+const strict = process.argv.includes('--strict');
 
 if (!fs.existsSync(BUNDLE)) {
   console.error(`bundle-size: ${BUNDLE} not found — run \`yarn build\` first.`);
@@ -87,12 +102,12 @@ if (gzKBNum > CONSTITUTION_TARGET_KB) {
 }
 
 if (gzKBNum > MAX_GZ_KB) {
-  const msg = `bundle-size: FAIL — gzipped size ${gzKB} kB exceeds enforced ceiling ${MAX_GZ_KB} kB.`;
-  if (soft) {
-    console.warn(msg + ' (--soft: not failing the build)');
-  } else {
-    console.error(msg);
+  const msg = `bundle-size: gzipped size ${gzKB} kB exceeds soft target ${MAX_GZ_KB} kB.`;
+  if (strict) {
+    console.error(`bundle-size: FAIL — ${msg} (--strict)`);
     process.exit(1);
+  } else {
+    console.warn(`bundle-size: NOTE — ${msg} (relaxed policy: not failing the build)`);
   }
 }
 

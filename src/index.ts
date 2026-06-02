@@ -115,6 +115,8 @@ import { applySummaryRow, removeSummaryRow } from './enrichments/summary-row';
 // Side-effect: registers the find-in-table corner-lozenge behavior.
 import './ui/find-in-table-box';
 import { removeFindUi } from './enrichments/find-in-table';
+// Side-effect: registers the copy-as-csv corner-lozenge behavior (spec 009).
+import './ui/copy-csv-lozenge';
 
 // Internal InitOptions type. Not exported — see ⚠ note above and
 // specs/012-virtual-columns/research.md §R-13.

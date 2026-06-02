@@ -101,8 +101,16 @@ implementation lands, the same PR flips `shipped: true` and fills in the
 behavior fields — see the checklist in §6.
 
 This is why the catalog is a **static declaration** rather than a registry
-populated purely by self-registration: `annotations`, `copy-as-csv`,
-`outlier`, and `units-toggle` have no module to self-register from yet.
+populated purely by self-registration: a spec-only id like `units-toggle` has
+no module to self-register from yet.
+
+The `copy-as-csv` enrichment (spec 009) shipped this way: a table-level corner
+lozenge (`⎘`, `src/ui/copy-csv-lozenge.ts`) opens a popup that serialises the
+*current visible view* (`visibleBodyRows` + the `table-grid` reader + the
+`copy-as-csv-registry` virtual-column exporters) to CSV / TSV / Markdown
+(`src/enrichments/csv-serialize.ts`), writes it to the clipboard (textarea
+fallback when unavailable), and persists the chosen format + options per page
+in the URL (`gs.cp`, `src/utils/copy-persistence.ts`).
 
 ---
 
