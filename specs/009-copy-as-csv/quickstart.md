@@ -45,6 +45,7 @@ showCopyToast(`Copied ${model.rowCount} rows × ${model.colCount} columns as ${l
 ```
 
 `buildExportModel` rules to remember:
+
 - Rows = `visibleBodyRows(table)` minus `data-gs-no-export` rows.
 - Columns = `[row-header?] + source (visible order) + virtual (if opts.virtualCols)`.
 - Text via `cellValue()` (source) / `exporter.getCellText(rowEl)` (virtual).
@@ -67,10 +68,11 @@ showCopyToast(`Copied ${model.rowCount} rows × ${model.colCount} columns as ${l
 ```bash
 yarn test          # unit: csv-serialize vectors, builder, persistence round-trip
 yarn test:e2e      # playwright: copy → clipboard read-back, fallback, teardown
-yarn build         # tsc + bundle size (stay under the enforced 25 KB cap)
+yarn build         # tsc + bundle size (report-and-warn only; --strict to gate)
 ```
 
 Expected new test files:
+
 - `src/enrichments/__tests__/csv-serialize.test.ts`
 - `src/enrichments/__tests__/copy-as-csv.builder.test.ts`
 - `src/utils/__tests__/copy-persistence.test.ts`

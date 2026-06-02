@@ -50,8 +50,8 @@ toggle-off teardown.
 
 **Target Platform**: Evergreen browsers ≤ 2 years (constitution §V). Must work
 from `file://` (constitution §VI); insecure-context clipboard unavailability is
-the textarea-fallback path, not an error. Runs in jsdom under Vitest (serialiser
-+ builder + persistence tests are DOM-light; clipboard is mocked).
+the textarea-fallback path, not an error. Runs in jsdom under Vitest (the
+serialiser, builder, and persistence tests are DOM-light; clipboard is mocked).
 
 **Project Type**: Browser library, single project. IIFE bundle
 (`dist/grid-sight.iife.js`) + npm/ESM via `src/index.ts`. This feature flips the
@@ -67,14 +67,15 @@ resolution; no new hot path beyond the single on-demand pass at Copy time.
 
 **Constraints**:
 
-- **Bundle budget (constitution §I)**: The IIFE is already **~19 KB gzipped**
-  against the §I 10 KB ceiling, under an explicitly-recorded interim **25 KB**
-  enforcement cap (see `specs/012-capability-filtering/baseline-bundle-size.md`
-  and `scripts/bundle-size.js`). This feature does **not** resolve that
-  pre-existing violation; it MUST stay well under the 25 KB cap. Target a net
-  delta of **≤ 1.5 KB gzipped** — achievable because most behaviour is reused
-  (popup-chrome, table-grid, visible-rows) and the new code is three small pure
-  serialisers + a thin popup + a small codec.
+- **Bundle budget (constitution §I)**: The IIFE is already **~50 KB gzipped**
+  against the §I 10 KB ceiling — a long-standing, explicitly-recorded violation
+  (see `specs/012-capability-filtering/baseline-bundle-size.md` and the ceiling
+  history in `scripts/bundle-size.js`). This feature adds **~3.1 KB gzipped**
+  (serialisers + export-model builder + popup/toast + the `gs.cp` codec) and
+  does **not** resolve the pre-existing violation. Per the 2026-06-01 project
+  decision the size check is now **report-and-warn only** (`--strict` restores a
+  hard gate), so growth is watched and trimmed deliberately rather than blocking
+  the build.
 - **No network, offline-first (constitution §VI)**: pure string handling;
   clipboard is a local OS operation. No fetch on any path.
 - **Byte-identical teardown**: the feature mutates the source DOM zero times

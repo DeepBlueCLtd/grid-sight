@@ -35,6 +35,7 @@ export function toMarkdown(
 - Pure: no DOM, no clipboard, no globals. Fully unit-testable.
 
 **Behaviour guarantees**
+
 - `toCsv` round-trips RFC 4180 reference vectors (embedded comma, quote,
   newline).
 - Empty `body` with a non-null `header` ⇒ header-only output (Edge Cases).
@@ -77,6 +78,7 @@ export function removeCopyUi(table: HTMLTableElement): void;
 ```
 
 **Behaviour guarantees**
+
 - `buildExportModel` excludes rows with `data-gs-no-export` and rows not in
   `visibleBodyRows` (INV-1). Includes `row-header` column first iff
   `options.rowHeaders`. Appends `virtual` columns iff `options.virtualCols`,

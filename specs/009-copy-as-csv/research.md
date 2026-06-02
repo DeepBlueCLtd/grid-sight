@@ -22,6 +22,7 @@ export agrees with what every other enrichment considers "visible", and we
 inherit sort ordering and filter results for free without re-implementing them.
 
 **Alternatives considered**:
+
 - Walking `tbody.rows` and testing `data-gs-dimmed` / `display` ourselves —
   rejected: duplicates pipeline logic and would drift; also wouldn't honour the
   identity fallback for untouched tables.
@@ -33,6 +34,7 @@ inherit sort ordering and filter results for free without re-implementing them.
 ## D-2: Column set, order, header text, and cell text
 
 **Decision**: Resolve structure through `table-grid`:
+
 - Source columns: iterate logical column indices `0 … sourceColumnCount(table)-1`;
   header text from `headerCellFor(table, colIndex)` via `cellValue(...)`; per-row
   cell from `cellAt(table, rowIndex, colIndex)` via `cellValue(...)`.
@@ -51,6 +53,7 @@ exports its underlying numeric series (the exporter's responsibility), never SVG
 anything about sparklines.
 
 **Alternatives considered**:
+
 - Reading rendered virtual-column DOM directly — rejected: would capture SVG /
   formatted markup and re-couple copy to each virtual-column's rendering.
 
@@ -73,6 +76,7 @@ clean rectangular grid that pastes predictably into spreadsheets. It is the
 literal flatten of the HTML rather than a semantic fill.
 
 **Alternatives considered**:
+
 - Using `cellAt()`'s rowspan-safe resolution everywhere (which *repeats* the
   spanning cell's value into covered positions) — rejected: contradicts the
   spec and would duplicate values down a merged column. (We still use `cellAt`
@@ -106,6 +110,7 @@ clipboard/permission concerns. Matches the project's preference for small,
 testable units (e.g. `outlier-marks.ts`).
 
 **Alternatives considered**:
+
 - A single parameterised serialiser — rejected: the three formats differ in
   quoting/escaping rules enough that branching would be less readable and harder
   to test than three focused functions sharing small helpers.
@@ -130,6 +135,7 @@ fail. The textarea fallback is the universally-supported path and satisfies
 constitution §V (feature-detect + graceful fallback) and §VI (local-only).
 
 **Alternatives considered**:
+
 - `document.execCommand('copy')` as the primary path — rejected: deprecated;
   the async clipboard API is the modern primary with the textarea as the
   resilient fallback.
@@ -157,6 +163,7 @@ Reusing the outlier-persistence shape gives us the dual URL+storage behaviour,
 the `urlStem()` keying, and the malformed-tolerant decode for free.
 
 **Alternatives considered**:
+
 - Per-table persistence — rejected: the format/options aren't table-specific;
   per-table records would bloat the fragment with no user benefit.
 - localStorage only — rejected: spec SC-004 requires URL-only reproducibility on
@@ -184,6 +191,7 @@ enabled-set resolution (spec 015), and lozenge-rebuild pipeline drive it for
 free.
 
 **Alternatives considered**:
+
 - Exporting `buildLozenge` from `header-utils.ts` to reuse it externally —
   rejected: it is intentionally module-private; the sibling external descriptors
   build their own buttons against the shared CSS class, so we follow suit.
@@ -205,6 +213,7 @@ transient announcements. A tiny dedicated helper keeps it reusable and testable
 and avoids coupling the announcement to the popup's lifetime.
 
 **Alternatives considered**:
+
 - Announcing inside the popup — rejected: the popup closes on success, so the
   announcement needs to outlive it.
 - A third-party toast library — rejected: constitution §I.
