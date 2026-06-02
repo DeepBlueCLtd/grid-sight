@@ -25,7 +25,8 @@
     { path: 'statistics/index.html', label: '10. Statistics' },
     { path: 'summary-row/index.html', label: '11. Summary row' },
     { path: 'find-in-table/index.html', label: '12. Find in table' },
-    { path: 'matrix/index.html', label: '13. Matrix fixture' }
+    { path: 'matrix/index.html', label: '13. Matrix fixture' },
+    { path: 'copy-as-csv/index.html', label: '14. Copy as CSV' }
   ];
 
   var STYLE_ID = 'gs-demo-nav-styles';
