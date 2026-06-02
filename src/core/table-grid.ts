@@ -41,6 +41,10 @@ const GS_OWNED_SELECTOR = [
   // path for every cell and regress sort/aggregate performance.)
   '.gs-annotation-marker',
   '.gs-annotation-aria',
+  // The GS on/off toggle is injected into the top-left header cell
+  // (toggle-injector.ts). Its "GS" glyph is never author data, so strip it so
+  // the corner column's header/value reads cleanly (e.g. CSV export, spec 009).
+  '.grid-sight-toggle-container',
 ].join(',');
 
 /* ── Classification ─────────────────────────────────────────────────── */

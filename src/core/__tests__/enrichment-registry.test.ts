@@ -62,6 +62,8 @@ describe('enrichment-registry', () => {
       'outlier',
       // Navigation & analysis tier 1 landed via 014-navigation-and-analysis.
       'freeze-panes', 'summary-row', 'find-in-table',
+      // Copy as CSV landed via 009-copy-as-csv.
+      'copy-as-csv',
     ];
     for (const id of shipped) {
       const e = ENRICHMENT_REGISTRY.find(x => x.id === id);
@@ -71,7 +73,7 @@ describe('enrichment-registry', () => {
   });
 
   it('spec-only enrichments have no tearDown hooks', () => {
-    const specOnly = ['copy-as-csv', 'units-toggle'];
+    const specOnly = ['units-toggle'];
     for (const id of specOnly) {
       const e = ENRICHMENT_REGISTRY.find(x => x.id === id);
       expect(e?.shipped, `enrichment "${id}" must be spec-only`).toBe(false);

@@ -31,7 +31,7 @@ export async function activateGridSight(page: Page, tableId: string): Promise<vo
 export async function setEnrichment(page: Page, id: EnrichmentId, on: boolean): Promise<boolean> {
   // Drive the panel checkbox through a single page-level evaluate rather than a
   // locator. The panel only renders rows for `shipped` enrichments (so an
-  // offered-but-unshipped id like `copy-as-csv` has no control → returns false),
+  // offered-but-unshipped id like `units-toggle` has no control → returns false),
   // and some enrichments (find-in-table, summary-row) rebuild parts of the
   // panel/lozenges between calls. A locator's auto-wait then stalls on
   // WebKit/Firefox when its handle is momentarily detached; querying inside the

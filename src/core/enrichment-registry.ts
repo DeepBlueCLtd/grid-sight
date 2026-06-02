@@ -37,6 +37,7 @@ import { removeDirectivesByKind } from '../enrichments/virtual-column';
 import { applyFreezePanes, removeFreezePanes } from '../enrichments/freeze-panes';
 import { applySummaryRow, removeSummaryRow } from '../enrichments/summary-row';
 import { removeFindUi } from '../enrichments/find-in-table';
+import { removeCopyUi } from '../enrichments/copy-as-csv';
 
 export type EnrichmentId = string;
 
@@ -125,7 +126,7 @@ const ENTRIES: EnrichmentRegistryEntry[] = [
   // When you ship one of these, also add its tearDown function above and
   // wire it into the entry on the same line.
   { id: 'annotations',      label: 'Cell annotations',  defaultOn: true, shipped: true,  tearDown: tearDownAnnotations, apply: applyAnnotations },  // spec 006
-  { id: 'copy-as-csv',      label: 'Copy as CSV',       defaultOn: true, shipped: false },  // spec 009
+  { id: 'copy-as-csv',      label: 'Copy as CSV',       defaultOn: true, shipped: true,  tearDown: removeCopyUi },  // spec 009
   { id: 'cumulative',       label: 'Cumulative col.',   defaultOn: true, shipped: true,  tearDown: removeCumulativeColumns },  // spec 008 (landed via 012-virtual-columns)
   { id: 'diff-compare',     label: 'Diff / compare',    defaultOn: true, shipped: true,  tearDown: removeCompareColumns },  // spec 010 column-mode (landed via 012-virtual-columns)
   { id: 'filter',           label: 'Column filter',     defaultOn: true, shipped: true,  tearDown: clearTableFilters },  // spec 003 (landed via 002-003-row-visibility)

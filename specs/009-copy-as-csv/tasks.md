@@ -22,7 +22,7 @@ independently testable increment. US1 (CSV copy) is the MVP.
 
 **Purpose**: A demo fixture that the story, e2e, and manual verification target.
 
-- [ ] T001 [P] Add demo page `demo/copy-as-csv/index.html` with a table that has a row-header column, numeric + categorical columns, a `rowspan`/`colspan` example, and a cumulative/sparkline virtual-column trigger; register the page in `demo/nav.js` following the existing per-enrichment demo pattern.
+- [x] T001 [P] Add demo page `demo/copy-as-csv/index.html` with a table that has a row-header column, numeric + categorical columns, a `rowspan`/`colspan` example, and a cumulative/sparkline virtual-column trigger; register the page in `demo/nav.js` following the existing per-enrichment demo pattern.
 
 ---
 
@@ -35,9 +35,9 @@ green per task.
 
 **⚠️ CRITICAL**: Must complete before US1 / US2 work begins.
 
-- [ ] T002 [P] Define `CopyFormat`, `CopyOptions`, and `DEFAULT_COPY_OPTIONS` ({format:'csv', headers:true, rowHeaders:true, virtualCols:true}) in `src/utils/copy-persistence.ts` (types + defaults only; codec lands in US2).
-- [ ] T003 Implement `buildExportModel(table, options)` and the `ExportColumn`/`ExportModel` shapes in `src/enrichments/copy-as-csv.ts` — read `visibleBodyRows()` (minus `data-gs-no-export` rows), resolve source columns + header text via `table-grid` (`sourceColumnCount`, `headerCellFor`, `cellAt`, `cellValue`), append `listVirtualColumnsForCopy()` columns when `options.virtualCols`, prepend the row-header column when `options.rowHeaders`, and build a rectangular `matrix` with `''` for span-covered/short positions (research D-3). Derive each column's `align` (numeric → right).
-- [ ] T004 [P] Unit-test the builder in `src/enrichments/__tests__/copy-as-csv.builder.test.ts`: visible-only rows in sorted order, `data-gs-no-export` row omitted, row-header on/off, virtual-columns on/off, rowspan/colspan flatten (value at origin + empty covered cells), empty visible view (rowCount 0, columns intact), and INV-3 (no lozenge/slider text leaks via `cellValue`).
+- [x] T002 [P] Define `CopyFormat`, `CopyOptions`, and `DEFAULT_COPY_OPTIONS` ({format:'csv', headers:true, rowHeaders:true, virtualCols:true}) in `src/utils/copy-persistence.ts` (types + defaults only; codec lands in US2).
+- [x] T003 Implement `buildExportModel(table, options)` and the `ExportColumn`/`ExportModel` shapes in `src/enrichments/copy-as-csv.ts` — read `visibleBodyRows()` (minus `data-gs-no-export` rows), resolve source columns + header text via `table-grid` (`sourceColumnCount`, `headerCellFor`, `cellAt`, `cellValue`), append `listVirtualColumnsForCopy()` columns when `options.virtualCols`, prepend the row-header column when `options.rowHeaders`, and build a rectangular `matrix` with `''` for span-covered/short positions (research D-3). Derive each column's `align` (numeric → right).
+- [x] T004 [P] Unit-test the builder in `src/enrichments/__tests__/copy-as-csv.builder.test.ts`: visible-only rows in sorted order, `data-gs-no-export` row omitted, row-header on/off, virtual-columns on/off, rowspan/colspan flatten (value at origin + empty covered cells), empty visible view (rowCount 0, columns intact), and INV-3 (no lozenge/slider text leaks via `cellValue`).
 
 **Checkpoint**: Export model proven by tests; stories can begin.
 
@@ -56,17 +56,17 @@ plain editor and confirm only the visible rows appear in sorted order,
 comma-separated, header first. Deny the clipboard and confirm the textarea
 fallback is pre-selected.
 
-- [ ] T005 [P] [US1] Implement `toCsv(header, body)` (RFC 4180: comma delimiter, CRLF, quote-wrap on `, " CR LF`, internal `"` doubled) plus shared field helpers in `src/enrichments/csv-serialize.ts`.
-- [ ] T006 [P] [US1] Unit-test RFC 4180 vectors in `src/enrichments/__tests__/csv-serialize.test.ts`: embedded comma/quote/newline, CRLF line endings, `header === null` omits header row, header-only empty body.
-- [ ] T007 [US1] Implement `serialiseModel(model, options)` in `src/enrichments/copy-as-csv.ts` routing `format:'csv'` → `toCsv` (TSV/MD added in US2); pass `header` from `columns[].headerText` when `options.headers`, else `null`.
-- [ ] T008 [P] [US1] Implement `showCopyToast(message)` / `hideCopyToast()` in `src/ui/copy-toast.ts` — singleton `role="status"` `aria-live="polite"` `data-gs-injected` element, auto-dismiss ≤ 5 s, never focused (FR-015, FR-016, FR-022).
-- [ ] T009 [US1] Implement `openCopyPopup(args)` / `closeAllCopyPopups()` in `src/ui/copy-csv-popup.ts` — `role="dialog"` with labelled title, the three option checkboxes (defaults from `DEFAULT_COPY_OPTIONS`), Copy + Close, and an "i" note explaining "current visible view" + the flatten rule (FR-003, FR-005); use `installPopupChrome` + `positionPopup` for focus-trap/Esc/outside-click/focus-restore (FR-004); on Copy call `buildExportModel`→`serialiseModel`, then `await navigator.clipboard?.writeText(...)` guarded in try/catch; on success show toast `Copied {rows} rows × {cols} columns as CSV` and close; on failure/absence swap the body for a focused, fully-selected `<textarea>` and toast the fallback (FR-013, FR-014). Format is fixed to CSV in this story.
-- [ ] T010 [P] [US1] Add runtime-injected popup/toast CSS (`.gs-copy-popup`, textarea, toast) following the `slider-styles.ts` idempotent-injection pattern, in `src/ui/copy-csv-popup.ts` (or a sibling styles helper).
-- [ ] T011 [US1] Implement `removeCopyUi(table)` in `src/enrichments/copy-as-csv.ts` (call `closeAllCopyPopups()` + `hideCopyToast()`; no source-DOM to revert).
-- [ ] T012 [US1] Register the table-level descriptor in `src/ui/copy-csv-lozenge.ts` (`appliesTo: ctx.headerType === 'table' && !ctx.table.hasAttribute('data-gs-no-export')`; `mount` builds a `<button class="gs-lozenge" data-gs-lozenge-id="copy-as-csv">⎘</button>` that opens the popup), and add `import './ui/copy-csv-lozenge';` to `src/index.ts`.
-- [ ] T013 [US1] Flip the catalog entry in `src/core/enrichment-registry.ts` to `shipped: true` and add `tearDown: removeCopyUi` (import from `../enrichments/copy-as-csv`); update the spec-comment.
-- [ ] T014 [P] [US1] Storybook interaction story `src/stories/copy-as-csv.stories.ts`: open popup, Copy with defaults, toggle "include GS virtual columns" off with a virtual column active, and exercise the textarea fallback (clipboard stubbed to reject).
-- [ ] T015 [US1] Playwright e2e `tests/e2e/copy-as-csv.spec.ts`: enable GS, filter + sort, copy, read the clipboard back and assert visible rows in sorted order with header first; a `data-gs-no-export` row is omitted; toast announces the row × column count; clipboard-denied path yields a pre-selected textarea; toggling GS off removes the lozenge and any open popup/toast.
+- [x] T005 [P] [US1] Implement `toCsv(header, body)` (RFC 4180: comma delimiter, CRLF, quote-wrap on `, " CR LF`, internal `"` doubled) plus shared field helpers in `src/enrichments/csv-serialize.ts`.
+- [x] T006 [P] [US1] Unit-test RFC 4180 vectors in `src/enrichments/__tests__/csv-serialize.test.ts`: embedded comma/quote/newline, CRLF line endings, `header === null` omits header row, header-only empty body.
+- [x] T007 [US1] Implement `serialiseModel(model, options)` in `src/enrichments/copy-as-csv.ts` routing `format:'csv'` → `toCsv` (TSV/MD added in US2); pass `header` from `columns[].headerText` when `options.headers`, else `null`.
+- [x] T008 [P] [US1] Implement `showCopyToast(message)` / `hideCopyToast()` in `src/ui/copy-toast.ts` — singleton `role="status"` `aria-live="polite"` `data-gs-injected` element, auto-dismiss ≤ 5 s, never focused (FR-015, FR-016, FR-022).
+- [x] T009 [US1] Implement `openCopyPopup(args)` / `closeAllCopyPopups()` in `src/ui/copy-csv-popup.ts` — `role="dialog"` with labelled title, the three option checkboxes (defaults from `DEFAULT_COPY_OPTIONS`), Copy + Close, and an "i" note explaining "current visible view" + the flatten rule (FR-003, FR-005); use `installPopupChrome` + `positionPopup` for focus-trap/Esc/outside-click/focus-restore (FR-004); on Copy call `buildExportModel`→`serialiseModel`, then `await navigator.clipboard?.writeText(...)` guarded in try/catch; on success show toast `Copied {rows} rows × {cols} columns as CSV` and close; on failure/absence swap the body for a focused, fully-selected `<textarea>` and toast the fallback (FR-013, FR-014). Format is fixed to CSV in this story.
+- [x] T010 [P] [US1] Add runtime-injected popup/toast CSS (`.gs-copy-popup`, textarea, toast) following the `slider-styles.ts` idempotent-injection pattern, in `src/ui/copy-csv-popup.ts` (or a sibling styles helper).
+- [x] T011 [US1] Implement `removeCopyUi(table)` in `src/enrichments/copy-as-csv.ts` (call `closeAllCopyPopups()` + `hideCopyToast()`; no source-DOM to revert).
+- [x] T012 [US1] Register the table-level descriptor in `src/ui/copy-csv-lozenge.ts` (`appliesTo: ctx.headerType === 'table' && !ctx.table.hasAttribute('data-gs-no-export')`; `mount` builds a `<button class="gs-lozenge" data-gs-lozenge-id="copy-as-csv">⎘</button>` that opens the popup), and add `import './ui/copy-csv-lozenge';` to `src/index.ts`.
+- [x] T013 [US1] Flip the catalog entry in `src/core/enrichment-registry.ts` to `shipped: true` and add `tearDown: removeCopyUi` (import from `../enrichments/copy-as-csv`); update the spec-comment.
+- [x] T014 [P] [US1] Storybook interaction story `src/stories/copy-as-csv.stories.ts`: open popup, Copy with defaults, toggle "include GS virtual columns" off with a virtual column active, and exercise the textarea fallback (clipboard stubbed to reject).
+- [x] T015 [US1] Playwright e2e `tests/e2e/copy-as-csv.spec.ts`: enable GS, filter + sort, copy, read the clipboard back and assert visible rows in sorted order with header first; a `data-gs-no-export` row is omitted; toast announces the row × column count; clipboard-denied path yields a pre-selected textarea; toggling GS off removes the lozenge and any open popup/toast.
 
 **Checkpoint**: CSV copy fully works end-to-end and is the shippable MVP.
 
@@ -82,14 +82,14 @@ sharing the URL restores the last configuration.
 reopen the popup → Markdown is preselected. A URL carrying an unsupported format
 falls back to CSV without error.
 
-- [ ] T016 [P] [US2] Implement `toTsv(header, body)` (tab delimiter, LF, no quoting, tab/CR/LF inside a field → single space) and `toMarkdown(header, body, aligns)` (GFM table, `|`→`\|`, intra-cell newline → space, alignment row from `aligns`, blank header cells when `header === null`) in `src/enrichments/csv-serialize.ts`.
-- [ ] T017 [P] [US2] Unit-test TSV + Markdown vectors in `src/enrichments/__tests__/csv-serialize.test.ts`: TSV tab/newline replacement, Markdown pipe escaping, numeric → right alignment, headers-off blank header row.
-- [ ] T018 [US2] Extend `serialiseModel` in `src/enrichments/copy-as-csv.ts` to route `'tsv'`/`'md'` and pass per-column `aligns` (from `ExportColumn.align`) to `toMarkdown`.
-- [ ] T019 [US2] Implement the full `gs.cp` codec in `src/utils/copy-persistence.ts` — `encodeCopyFragment`/`decodeCopyFragment` (compact `fmt:csv;h:1;rh:1;vc:1`; decode never throws — unknown `fmt`→`csv`, bad boolean→`true`), `readCopyFromUrl`/`writeCopyToUrl`, `readCopyFromStorage`/`writeCopyToStorage` (`gs:${stem}:copy`), `persistCopyConfig` (URL via `history.replaceState` + storage), and `resolveInitialCopyConfig` (URL > storage > defaults), mirroring `outlier-persistence.ts`.
-- [ ] T020 [P] [US2] Unit-test persistence in `src/utils/__tests__/copy-persistence.test.ts`: encode/decode round-trip for all formats + booleans, unknown-format → CSV, unparseable boolean → true, and URL-only reproduction with no localStorage present (SC-004).
-- [ ] T021 [US2] Add the CSV/TSV/Markdown format radios to `src/ui/copy-csv-popup.ts`, preselect from `resolveInitialCopyConfig()`, and call `persistCopyConfig(...)` on every format change (FR-017).
-- [ ] T022 [US2] Persist the three option checkboxes via `persistCopyConfig(...)` on change and hydrate them from `resolveInitialCopyConfig()` when the popup opens, in `src/ui/copy-csv-popup.ts` (FR-018).
-- [ ] T023 [US2] Extend `tests/e2e/copy-as-csv.spec.ts` (and the story): pick Markdown → copy → assert GFM output; reload → reopen → Markdown + options preselected; a hand-crafted URL with an unknown format opens with CSV preselected and no console error.
+- [x] T016 [P] [US2] Implement `toTsv(header, body)` (tab delimiter, LF, no quoting, tab/CR/LF inside a field → single space) and `toMarkdown(header, body, aligns)` (GFM table, `|`→`\|`, intra-cell newline → space, alignment row from `aligns`, blank header cells when `header === null`) in `src/enrichments/csv-serialize.ts`.
+- [x] T017 [P] [US2] Unit-test TSV + Markdown vectors in `src/enrichments/__tests__/csv-serialize.test.ts`: TSV tab/newline replacement, Markdown pipe escaping, numeric → right alignment, headers-off blank header row.
+- [x] T018 [US2] Extend `serialiseModel` in `src/enrichments/copy-as-csv.ts` to route `'tsv'`/`'md'` and pass per-column `aligns` (from `ExportColumn.align`) to `toMarkdown`.
+- [x] T019 [US2] Implement the full `gs.cp` codec in `src/utils/copy-persistence.ts` — `encodeCopyFragment`/`decodeCopyFragment` (compact `fmt:csv;h:1;rh:1;vc:1`; decode never throws — unknown `fmt`→`csv`, bad boolean→`true`), `readCopyFromUrl`/`writeCopyToUrl`, `readCopyFromStorage`/`writeCopyToStorage` (`gs:${stem}:copy`), `persistCopyConfig` (URL via `history.replaceState` + storage), and `resolveInitialCopyConfig` (URL > storage > defaults), mirroring `outlier-persistence.ts`.
+- [x] T020 [P] [US2] Unit-test persistence in `src/utils/__tests__/copy-persistence.test.ts`: encode/decode round-trip for all formats + booleans, unknown-format → CSV, unparseable boolean → true, and URL-only reproduction with no localStorage present (SC-004).
+- [x] T021 [US2] Add the CSV/TSV/Markdown format radios to `src/ui/copy-csv-popup.ts`, preselect from `resolveInitialCopyConfig()`, and call `persistCopyConfig(...)` on every format change (FR-017).
+- [x] T022 [US2] Persist the three option checkboxes via `persistCopyConfig(...)` on change and hydrate them from `resolveInitialCopyConfig()` when the popup opens, in `src/ui/copy-csv-popup.ts` (FR-018).
+- [x] T023 [US2] Extend `tests/e2e/copy-as-csv.spec.ts` (and the story): pick Markdown → copy → assert GFM output; reload → reopen → Markdown + options preselected; a hand-crafted URL with an unknown format opens with CSV preselected and no console error.
 
 **Checkpoint**: All three formats work and the configuration round-trips via URL + storage.
 
@@ -97,11 +97,11 @@ falls back to CSV without error.
 
 ## Phase 5: Polish & Cross-Cutting Concerns
 
-- [ ] T024 [P] Flesh out `demo/copy-as-csv/` captions and the popup "i" tooltip text explaining "current visible view" (post sort/filter) and the rowspan/colspan flatten rule (FR-005, Edge Cases).
-- [ ] T025 [P] Document the shipped enrichment in `docs/architecture/enrichments.md` (copy-as-csv: corner lozenge, registry consumption, persistence segment `gs.cp`).
-- [ ] T026 Run `node scripts/bundle-size.js` after `yarn build`; confirm the IIFE gzipped delta is ≤ 1.5 KB and stays under the enforced 25 KB cap; record the number in the PR description.
-- [ ] T027 [P] Accessibility verification: dialog role/label, focus trap, Esc, focus-restore to the lozenge; lozenge operable by Enter/Space; toast `aria-live` does not steal focus (assert in the story where feasible; otherwise manual).
-- [ ] T028 Final gate: `yarn test` (Vitest + Storybook) and `yarn test:e2e` (Playwright) green; `yarn build` clean with zero `tsc` errors (constitution §II / Quality Gates).
+- [x] T024 [P] Flesh out `demo/copy-as-csv/` captions and the popup "i" tooltip text explaining "current visible view" (post sort/filter) and the rowspan/colspan flatten rule (FR-005, Edge Cases).
+- [x] T025 [P] Document the shipped enrichment in `docs/architecture/enrichments.md` (copy-as-csv: corner lozenge, registry consumption, persistence segment `gs.cp`).
+- [x] T026 Run `node scripts/bundle-size.js` after `yarn build`; confirm the IIFE gzipped delta is ≤ 1.5 KB and stays under the enforced 25 KB cap; record the number in the PR description.
+- [x] T027 [P] Accessibility verification: dialog role/label, focus trap, Esc, focus-restore to the lozenge; lozenge operable by Enter/Space; toast `aria-live` does not steal focus (assert in the story where feasible; otherwise manual).
+- [x] T028 Final gate: `yarn test` (Vitest + Storybook) and `yarn test:e2e` (Playwright) green; `yarn build` clean with zero `tsc` errors (constitution §II / Quality Gates).
 
 ---
 

@@ -48,6 +48,8 @@ test.describe('US2: live enrichment toggle panel', () => {
       'freeze-panes',
       'summary-row',
       'find-in-table',
+      // Shipped via 009-copy-as-csv.
+      'copy-as-csv',
     ];
     for (const id of shippedIds) {
       await expect(
