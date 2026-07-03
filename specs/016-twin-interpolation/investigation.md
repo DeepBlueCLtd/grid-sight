@@ -2,10 +2,23 @@
 
 **Branch**: `claude/twin-table-interpolation-rbbvxp`
 **Created**: 2026-07-03
-**Status**: Investigation / feasibility — not yet scheduled for implementation
+**Status**: **Implemented** (synced-blocks model, §3.2) — see the modules and
+tests below.
 **Trigger**: A real-world lookup table format spotted in the field — *Speed*
 (rows) × *Direction* (columns) with a merged **Season** column (`Summer` /
 `Winter`) grouping the speed rows into two independent blocks.
+
+> **Implemented in this branch.** Twin detection (`src/core/twin-grid.ts`),
+> per-block interpolation (`src/enrichments/twin-interp.ts`), and the synced
+> twin-slider controller (`src/enrichments/twin-slider.ts`), wired into the
+> lozenge/slider layer (`src/ui/header-utils.ts`). On a twin table the
+> mis-placed H/# lozenges are no longer offered and the corner shows an enabled
+> **S** toggle that adds a shared Direction slider plus a per-block Speed slider,
+> synced by value, with out-of-range blocks disabled and cleared. Covered by
+> unit tests (twin-grid, twin-interp, twin-slider) and an e2e spec
+> (`tests/e2e/twin-interpolation.spec.ts`). **Deferred:** making the *other*
+> enrichments (heatmap, statistics, sort/filter, outlier) group-aware — today
+> they are simply not offered on a twin table rather than mis-applied.
 
 ---
 
@@ -146,24 +159,34 @@ An explicit opt-in/---out attribute (e.g. `data-gs-group-col="0"` or
 `data-gs-twin`) can back-stop the heuristic for tables where `rowspan` is used
 cosmetically rather than structurally.
 
-### 3.2 Interaction model (the real design question)
+### 3.2 Interaction model — synced blocks (decided 2026-07-03)
 
-Two UX shapes, both buildable on the existing slider:
+**Chosen model: treat the two blocks as *synced sub-tables*, no selector.** Each
+block gets its own Speed (row) slider; the two are **synced by value** — dragging
+Summer's Speed to 55 moves Winter's to 55 as well — exactly like the existing
+cross-table sync (`deriveSyncKey` / `broadcastSync`, demo #3). The Direction
+(col) axis is shared. Each block renders its own interpolated readout and its own
+four-cell highlight rectangle.
 
-- **A. Season selector + shared sliders (recommended).** One extra control — a
-  small segmented `Summer | Winter` selector rendered in the corner cluster —
-  chooses the active block; the existing Speed (row) and Direction (col) sliders
-  then bind to that block's sub-grid. Speed slider min/max **re-ranges** when the
-  season changes (30–80 vs 20–60). One readout, one mental model, minimal new
-  surface. This matches how a human reads the sheet: "pick the season, then read
-  off speed and bearing."
-- **B. Two independent slider sets.** Bind a full row+col slider pair to each
-  block simultaneously (two readouts). More literal to the "twin" name but
-  doubles the on-table UI and the axis-sync questions; better as a later option
-  than a first cut.
+The one behaviour beyond today's sync is **range divergence**: the blocks'
+Speed ranges differ (Summer 30–80, Winter 20–60).
 
-Recommendation: **ship A first.** B is a superset that can be added behind the
-same binding model if demand appears.
+- In the **overlap (30–60)** both blocks are live: both interpolate, both show a
+  highlight rectangle, both sliders track the shared value.
+- When the shared Speed leaves a block's range — e.g. 70 (inside Summer, outside
+  Winter) — that block's Speed slider is **disabled** and its highlight rectangle
+  and interpolated readout are **cleared** (shown as `—`), while the in-range
+  block keeps interpolating. Symmetrically at the low end (e.g. 25 disables
+  Summer, keeps Winter).
+
+This differs from the existing `broadcastSync`, which *clamps* an out-of-range
+partner to its min/max; here an out-of-range partner must **disable + clear**,
+not clamp to a misleading edge value. That is the one new rule the twin
+controller adds on top of the reused sync/interpolation/highlight machinery.
+
+A `Summer | Winter` selector was considered and **rejected** — the synced-blocks
+model reads the way the physical sheet is used (both seasons visible at once) and
+reuses the sync pattern users already know from demo #3.
 
 ### 3.3 Where the code changes land
 
@@ -171,8 +194,8 @@ same binding model if demand appears.
 | ---- | ------ | ---- |
 | `src/core/table-grid.ts` | Add group-column detection + a `rowGroups(table)` reader (label + its body rows), reusing `sourceCells`/`cellValue`. Pure DOM read. | small |
 | `src/enrichments/slider-injection.ts` | Generalise `readRawAxisHeaders`/`readRawCellMatrix`/`buildAxisBinding` to take an optional row-group so the row axis skips the group column and the matrix is sliced to the group's rows. | small–medium |
-| `src/enrichments/slider.ts` + `src/ui/` | Season selector control; re-range the row slider on group change; thread the active group into `refreshTable`. | medium |
-| `src/ui/header-utils.ts` | Use the group-aware row-header column so H/# lozenges mount on the Speed value (not the merged `Season` cell), skip the label columns, and cover the first speed of each block (fixes §2.1). | small |
+| `src/enrichments/twin-slider.ts` (NEW) | Self-contained twin controller: per-block Speed slider + shared Direction slider, value-sync across blocks, out-of-range disable + clear (§3.2). Reuses pure `bilinear` + highlight helpers; leaves the single-grid slider path untouched so normal tables can't regress. | medium |
+| `src/ui/header-utils.ts` | Branch the `sliders` descriptor to the twin controller when a twin table is detected; use the group-aware row-header column so H/# lozenges mount on the Speed value (not the merged `Season` cell), skip the label columns, and cover the first speed of each block (fixes §2.1). | small |
 | `src/utils/interpolation.ts` | **None** — `bilinear`/`linear1D` are reused verbatim. | none |
 | Persistence/sync (`slider-persistence`, `sync-key`) | Add the active-group id to the per-slider key so a bookmarked position restores to the right block. | small |
 
