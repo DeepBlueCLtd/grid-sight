@@ -1,4 +1,10 @@
-import { gridRows, sourceCells, cellValue } from './table-grid';
+import {
+  gridRows,
+  sourceCells,
+  cellValue,
+  headerRows,
+  sourceColumnMatrix,
+} from './table-grid';
 
 /**
  * Type definitions for column type detection
@@ -227,6 +233,10 @@ export function analyzeTable(
  */
 export function extractTableData(table: HTMLTableElement): string[][] {
   if (!table.rows) return [];
+  // A multi-row (banner) header must be flattened by logical column so a merged
+  // banner row / rowspan corner doesn't collapse the column count and hide the
+  // table's numeric columns from type detection.
+  if (headerRows(table).length > 1) return sourceColumnMatrix(table);
   // Read author source cells via the canonical addressing layer: scaffold rows
   // and virtual columns are excluded and injected UI is stripped, so column-type
   // detection sees only author data regardless of active enrichments (013).

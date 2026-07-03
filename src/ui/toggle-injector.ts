@@ -15,6 +15,8 @@ import {
   cellValue,
   logicalColIndexOf,
   logicalRowIndexOf,
+  headerRows,
+  sourceColumnMatrix,
 } from '../core/table-grid';
 import { onVisibleRowsChange, visibleBodyRows } from '../utils/visible-rows';
 import { StatisticsPopup } from './statistics-popup';
@@ -443,9 +445,14 @@ export function activateToggle(table: HTMLTableElement): void {
   // spec 014). Using raw textContent here would let an annotated numeric cell
   // ("1200" + note) read as non-numeric and suppress a column's lozenges
   // (spec 013: scaffold/UI is never the logical grid).
-  const rows = Array.from(table.rows)
-    .filter(row => !row.hasAttribute('data-gs-injected'))
-    .map(row => Array.from(row.cells).map(cell => cellValue(cell)));
+  // A multi-row (banner) header is flattened by logical column so a merged
+  // banner / rowspan corner doesn't collapse the detected column count; a plain
+  // header keeps the raw per-cell read (which also covers virtual columns).
+  const rows = headerRows(table).length > 1
+    ? sourceColumnMatrix(table)
+    : Array.from(table.rows)
+        .filter(row => !row.hasAttribute('data-gs-injected'))
+        .map(row => Array.from(row.cells).map(cell => cellValue(cell)));
   const { columnTypes } = analyzeTable(rows);
   // Cache column types for the toggle-panel refresh path (spec 012 R-10).
   setColumnTypes(table, columnTypes);

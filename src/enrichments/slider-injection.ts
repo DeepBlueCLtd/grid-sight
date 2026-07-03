@@ -13,8 +13,9 @@ import type { EquationSnapshot } from './equation-panel';
 import {
   gridRows,
   bodyRows,
-  headerRow as gridHeaderRow,
+  headerRows as gridHeaderRows,
   sourceCells,
+  dataHeaderCells,
   cellValue,
 } from '../core/table-grid';
 
@@ -68,9 +69,10 @@ function cellText(cell: HTMLTableCellElement): string {
 
 export function readRawAxisHeaders(table: HTMLTableElement, axis: Axis): string[] {
   if (axis === 'col') {
-    const header = gridHeaderRow(table);
-    if (!header) return [];
-    return sourceCells(header).slice(1).map(cellText);
+    // Occupancy-aware read of the leaf column headers: robust to a merged
+    // banner row above the numeric headers and to a rowspan corner label that
+    // shifts the leaf cells right (spec: merged-header interpolation).
+    return dataHeaderCells(table).map(cellText);
   }
   // axis === 'row'
   return bodyRows(table)
@@ -237,10 +239,13 @@ export function ensureTopRow(ctx: TableContext): HTMLTableRowElement {
   return tr;
 }
 
-function buildRowHeaderCell(): HTMLTableCellElement {
+function buildRowHeaderCell(headerRowSpan: number): HTMLTableCellElement {
   const headerCell = document.createElement('th');
   headerCell.setAttribute('data-gs-injected', '');
   headerCell.setAttribute('data-gs-row-header', '');
+  // Span the whole header block so the injected gutter column lines up with the
+  // body when the header has a merged banner row above the leaf headers.
+  headerCell.rowSpan = Math.max(1, headerRowSpan);
   headerCell.style.padding = '6px';
   headerCell.style.verticalAlign = 'middle';
   headerCell.style.textAlign = 'center';
@@ -262,10 +267,13 @@ function buildRowSliderCell(rowSpan: number): HTMLTableCellElement {
 export function ensureRowSliderSlot(ctx: TableContext): HTMLTableCellElement {
   if (ctx.rowSliderCell) return ctx.rowSliderCell;
 
-  const headerRow = gridHeaderRow(ctx.table);
+  const headerBlock = gridHeaderRows(ctx.table);
+  const headerRow = headerBlock[0];
   if (!headerRow) throw new Error('No original header row found');
 
-  const headerCell = buildRowHeaderCell();
+  // Insert into the TOP header row and span the whole header block; for a plain
+  // single-row header this is the header row with rowSpan 1 (unchanged).
+  const headerCell = buildRowHeaderCell(headerBlock.length);
   headerRow.insertBefore(headerCell, headerRow.firstChild);
 
   const cell = buildRowSliderCell(ctx.dataRowCount);

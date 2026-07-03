@@ -15,6 +15,7 @@ import {
   isVirtualColumn,
   gridRows,
   headerRow,
+  headerRows,
   bodyRows,
   gridCells,
   sourceCells,
@@ -23,6 +24,7 @@ import {
   cellAt,
   columnCells,
   headerCellFor,
+  dataHeaderCells,
   logicalColIndexOf,
   logicalRowIndexOf,
   cellValue,
@@ -121,6 +123,83 @@ describe('row access', () => {
     expect(gridCells(headerRow(table)!)[0].textContent).toBe('GS');
     expect(bodyRows(table)).toHaveLength(3);
     for (const r of gridRows(table)) expect(isScaffold(r)).toBe(false);
+  });
+});
+
+/* ── Merged / banner headers ────────────────────────────────────────── */
+
+describe('merged banner headers', () => {
+  it('picks the leaf header row past a full-width banner (permutation 1)', () => {
+    const table = document.createElement('table');
+    table.innerHTML = `
+      <thead>
+        <tr><th colspan="4">Length Overall (m)</th></tr>
+        <tr><th>Speed Knots</th><th>10</th><th>20</th><th>30</th></tr>
+      </thead>
+      <tbody>
+        <tr><th>10</th><td>1</td><td>2</td><td>3</td></tr>
+        <tr><th>20</th><td>4</td><td>5</td><td>6</td></tr>
+      </tbody>
+    `;
+    document.body.appendChild(table);
+    expect(headerRow(table)!.cells[0].textContent).toBe('Speed Knots');
+    expect(headerRows(table)).toHaveLength(2);
+    expect(bodyRows(table)).toHaveLength(2);
+    // Column headers drop the corner label, keep the numeric leaf headers.
+    expect(dataHeaderCells(table).map((c) => c.textContent)).toEqual([
+      '10',
+      '20',
+      '30',
+    ]);
+  });
+
+  it('resolves a rowspan corner + banner: leaf cells are shifted right (permutation 2)', () => {
+    const table = document.createElement('table');
+    table.innerHTML = `
+      <thead>
+        <tr><th rowspan="2">Speed Knots</th><th colspan="3">Length Overall (m)</th></tr>
+        <tr><th>10</th><th>20</th><th>30</th></tr>
+      </thead>
+      <tbody>
+        <tr><th>10</th><td>1</td><td>2</td><td>3</td></tr>
+        <tr><th>20</th><td>4</td><td>5</td><td>6</td></tr>
+      </tbody>
+    `;
+    document.body.appendChild(table);
+    // Leaf row is the numeric header row; it has NO corner cell of its own.
+    expect(headerRow(table)!.cells[0].textContent).toBe('10');
+    expect(headerRows(table)).toHaveLength(2);
+    // Occupancy-aware: none of the three leaf cells is dropped as a row label.
+    expect(dataHeaderCells(table).map((c) => c.textContent)).toEqual([
+      '10',
+      '20',
+      '30',
+    ]);
+  });
+
+  it('leaves a plain single-row header unchanged (dataHeaderCells == slice(1))', () => {
+    const { table } = buildNumericGrid();
+    const head = headerRow(table)!;
+    expect(headerRows(table)).toHaveLength(1);
+    expect(dataHeaderCells(table)).toEqual(sourceCells(head).slice(1));
+  });
+
+  it('skips a no-<thead> leading banner row', () => {
+    const table = document.createElement('table');
+    table.innerHTML = `
+      <tr><th></th><th colspan="3">Length Overall (m)</th></tr>
+      <tr><th>Speed Knots</th><th>10</th><th>20</th><th>30</th></tr>
+      <tr><th>10</th><td>1</td><td>2</td><td>3</td></tr>
+      <tr><th>20</th><td>4</td><td>5</td><td>6</td></tr>
+    `;
+    document.body.appendChild(table);
+    expect(headerRow(table)!.cells[1].textContent).toBe('10');
+    expect(bodyRows(table)).toHaveLength(2);
+    expect(dataHeaderCells(table).map((c) => c.textContent)).toEqual([
+      '10',
+      '20',
+      '30',
+    ]);
   });
 });
 
