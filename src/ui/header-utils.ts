@@ -37,6 +37,8 @@ import {
   columnCells,
   cellValue,
   logicalColIndexOf,
+  headerRows,
+  sourceHeaderColumns,
 } from '../core/table-grid';
 import { isTwinTable } from '../core/twin-grid';
 import {
@@ -65,9 +67,19 @@ export function injectPlusIcons(table: HTMLTableElement, columnTypes: ColumnType
   ensureRowVisibilityStyles();
   ensureVirtualColumnStyles();
 
-  const rows = gridRows(table);
-  const headerRow = rows[0];
-  if (!headerRow) return;
+  // Multi-row (banner) header: place per-column lozenges on the leaf header
+  // cells resolved by logical column (occupancy-aware over colspan + rowspan),
+  // and row lozenges on the body rows only — the banner/grouping rows carry no
+  // per-column affordances. A plain single-row header keeps the original path
+  // (which also covers virtual columns and author colspan headers unchanged).
+  const multiRowHeader = headerRows(table).length > 1;
+  const headerCells = multiRowHeader
+    ? sourceHeaderColumns(table)
+    : (() => {
+        const h = gridRows(table)[0];
+        return h ? gridCells(h) : [];
+      })();
+  if (!headerCells.length) return;
 
   // Twin (grouped) tables (spec 016): the single-row-header addressing behind
   // the per-column / per-row passes mis-places lozenges on the label columns and
@@ -76,12 +88,12 @@ export function injectPlusIcons(table: HTMLTableElement, columnTypes: ColumnType
   // which carries the twin-aware slider toggle; the mis-placed H/# are not
   // offered until those enrichments learn the group structure.
   if (isTwinTable(table)) {
-    const corner = gridCells(headerRow)[0];
+    const corner = headerCells[0];
     if (corner) addLozengesToHeader(table, corner, 'table', 0);
     return;
   }
 
-  gridCells(headerRow).forEach((cell, colIndex) => {
+  headerCells.forEach((cell, colIndex) => {
     const isTopLeftCell = colIndex === 0;
     const type = columnTypes[colIndex];
     if (type === 'numeric' || type === 'categorical') {
@@ -89,8 +101,11 @@ export function injectPlusIcons(table: HTMLTableElement, columnTypes: ColumnType
     }
   });
 
-  for (let i = 1; i < rows.length; i++) {
-    const cells = gridCells(rows[i]);
+  const rowLozengeRows = multiRowHeader
+    ? bodyRows(table)
+    : gridRows(table).slice(1);
+  for (const row of rowLozengeRows) {
+    const cells = gridCells(row);
     if (!cells.length) continue;
     addLozengesToHeader(table, cells[0], 'row', 0);
   }

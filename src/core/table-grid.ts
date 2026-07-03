@@ -75,7 +75,27 @@ function footerRowSet(table: HTMLTableElement): Set<HTMLTableRowElement> {
 }
 
 /**
- * Partition the non-scaffold rows into header + body.
+ * True when `row` is a merged "banner"/grouping super-header sitting above the
+ * real (leaf) column-header row: it has fewer logical cells than the row below
+ * it AND at least one of its cells spans multiple columns. The classic cases are
+ * a single `<th colspan="N">` title (e.g. "Length Overall (m)") drawn above the
+ * numeric column headers, and a corner label that spans down with `rowspan`. The
+ * colspan requirement guards against mistaking a genuinely short header/data row
+ * for a banner. `next` is the row immediately following, measured with the same
+ * source-cell rule so both counts are comparable.
+ */
+function isBannerRow(
+  row: HTMLTableRowElement,
+  next: HTMLTableRowElement,
+): boolean {
+  const cells = sourceCells(row);
+  if (cells.length >= sourceCells(next).length) return false;
+  return cells.some((c) => Math.max(1, c.colSpan || 1) > 1);
+}
+
+/**
+ * Resolve the header region into leading banner/grouping rows, the leaf
+ * column-header row, and the body rows.
  *
  * Mirrors the header-detection rule in
  * `src/utils/original-order.ts::getDataRows` (header is `table.rows[0]` iff it
@@ -85,8 +105,15 @@ function footerRowSet(table: HTMLTableElement): Set<HTMLTableRowElement> {
  * a `<th>` corner ahead of the real header, so running the heuristic over the
  * raw rows (as `getDataRows` does) would mistake that scaffold row for the
  * header. We mirror rather than reuse `getDataRows` for exactly this reason.
+ *
+ * Leading merged banner/grouping rows (a full-width `<th colspan="N">` title, or
+ * a `rowspan` corner + colspan banner above the numeric column headers) are
+ * peeled off so `header` is the LEAF column-header row that aligns 1:1 with the
+ * data columns. That is what lets sliders/interpolation bind to the numeric
+ * column headers rather than to the banner (see `isBannerRow`, `dataHeaderCells`).
  */
-function partitionRows(table: HTMLTableElement): {
+function resolveHeader(table: HTMLTableElement): {
+  banners: HTMLTableRowElement[];
   header: HTMLTableRowElement | null;
   body: HTMLTableRowElement[];
 } {
@@ -100,27 +127,138 @@ function partitionRows(table: HTMLTableElement): {
     : [];
 
   if (theadRows.length > 0) {
-    // Explicit head: header = first head row; body = all tbody data rows.
-    return { header: theadRows[0], body: tbodyRows };
+    // Explicit head: the leaf header is the LAST head row; any earlier rows are
+    // banner/grouping rows. body = all tbody data rows.
+    const leaf = theadRows.length - 1;
+    return {
+      banners: theadRows.slice(0, leaf),
+      header: theadRows[leaf],
+      body: tbodyRows,
+    };
   }
-  // No <thead>: the de-facto header is the first tbody row iff it has a <th>.
-  if (
-    tbodyRows.length > 0 &&
-    Array.from(tbodyRows[0].cells).some((c) => c.tagName === 'TH')
+  // No <thead>: peel off leading merged banner rows, then the de-facto header is
+  // the first remaining row iff it has a <th>.
+  let start = 0;
+  while (
+    start + 1 < tbodyRows.length &&
+    isBannerRow(tbodyRows[start], tbodyRows[start + 1])
   ) {
-    return { header: tbodyRows[0], body: tbodyRows.slice(1) };
+    start++;
   }
-  return { header: tbodyRows[0] ?? null, body: tbodyRows };
+  const first = tbodyRows[start];
+  if (first && Array.from(first.cells).some((c) => c.tagName === 'TH')) {
+    return {
+      banners: tbodyRows.slice(0, start),
+      header: first,
+      body: tbodyRows.slice(start + 1),
+    };
+  }
+  return { banners: [], header: tbodyRows[0] ?? null, body: tbodyRows };
 }
 
-/** The header row (first non-scaffold row; reuses original-order header rule). */
+/** The (leaf) header row: the row whose cells align 1:1 with the data columns.
+ *  Reuses the original-order header rule and peels off any merged banner rows. */
 export function headerRow(table: HTMLTableElement): HTMLTableRowElement | null {
-  return partitionRows(table).header;
+  return resolveHeader(table).header;
+}
+
+/** The full header block — leading banner/grouping rows followed by the leaf
+ *  column-header row — top-to-bottom, non-scaffold. Single-row headers return a
+ *  one-element array. */
+export function headerRows(table: HTMLTableElement): HTMLTableRowElement[] {
+  const { banners, header } = resolveHeader(table);
+  return header ? [...banners, header] : [];
 }
 
 /** Non-scaffold data rows after the header, excluding <tfoot>. Dimmed rows kept. */
 export function bodyRows(table: HTMLTableElement): HTMLTableRowElement[] {
-  return partitionRows(table).body;
+  return resolveHeader(table).body;
+}
+
+/**
+ * Occupancy-aware sweep of the header block (leading banner/grouping rows + the
+ * leaf column-header row), honouring both colspan and rowspan. Returns, for each
+ * logical SOURCE column, the header cell covering it AT the leaf row — which is
+ * the leaf cell itself, or a corner label that spans DOWN into the leaf row from
+ * a banner row (e.g. `<th rowspan="2">Speed Knots</th>`). Also reports which
+ * leaf-row cell (if any) originates each logical column, so the row-label
+ * column can be told apart from the data-column headers.
+ */
+function sweepHeaderColumns(table: HTMLTableElement): {
+  perColumn: HTMLTableCellElement[];
+  leafOriginCols: Set<number>;
+} {
+  const rows = headerRows(table);
+  if (rows.length === 0) return { perColumn: [], leafOriginCols: new Set() };
+  const leafIdx = rows.length - 1;
+  // grid[r][c] = the cell covering logical column c of header row r (from that
+  // row, or a rowspan spilling down from above).
+  const grid: (HTMLTableCellElement | undefined)[][] = rows.map(() => []);
+  const leafOriginCols = new Set<number>();
+  for (let r = 0; r < rows.length; r++) {
+    let c = 0;
+    for (const cell of sourceCells(rows[r])) {
+      while (grid[r][c]) c++;
+      const cs = Math.max(1, cell.colSpan || 1);
+      const rs = Math.max(1, cell.rowSpan || 1);
+      if (r === leafIdx) leafOriginCols.add(c);
+      for (let dr = 0; dr < rs && r + dr < rows.length; dr++) {
+        for (let dc = 0; dc < cs; dc++) grid[r + dr][c + dc] = cell;
+      }
+      c += cs;
+    }
+  }
+  const leaf = grid[leafIdx];
+  const perColumn: HTMLTableCellElement[] = [];
+  for (let c = 0; c < leaf.length; c++) if (leaf[c]) perColumn.push(leaf[c]!);
+  return { perColumn, leafOriginCols };
+}
+
+/**
+ * The header cell for every logical SOURCE column, in order — the row-label
+ * corner first, then one per data column. Occupancy-aware over a multi-row
+ * (banner) header. For a plain single-row header this equals `sourceCells`
+ * expanded by colspan; callers that need the untouched single-row behaviour
+ * should gate on `headerRows(table).length > 1`.
+ */
+export function sourceHeaderColumns(
+  table: HTMLTableElement,
+): HTMLTableCellElement[] {
+  return sweepHeaderColumns(table).perColumn;
+}
+
+/**
+ * The leaf header cells that head the DATA columns — every source cell of the
+ * leaf header row except the one in the leading row-label column.
+ *
+ * Occupancy-aware over the whole header block (colspan + rowspan): a corner
+ * label that spans DOWN into the leaf row from a banner row (e.g. a
+ * `<th rowspan="2">Speed Knots</th>` beside a `<th colspan="N">` banner) shifts
+ * the leaf row's cells to the right, so its first physical cell is correctly
+ * recognised as a data-column header rather than dropped as the row label. For a
+ * plain single-row header this is exactly `sourceCells(header).slice(1)`.
+ */
+export function dataHeaderCells(
+  table: HTMLTableElement,
+): HTMLTableCellElement[] {
+  const { perColumn, leafOriginCols } = sweepHeaderColumns(table);
+  // Logical column 0 is the row-label column. Keep the leaf-originated cells to
+  // its right (a corner that spans down from a banner row is not a leaf cell, so
+  // it is excluded automatically).
+  return perColumn.filter((_, col) => col >= 1 && leafOriginCols.has(col));
+}
+
+/**
+ * Author-text matrix aligned to logical SOURCE columns, for column-type
+ * detection / suitability on a table with a multi-row (banner) header. Row 0 is
+ * the leaf header aligned by logical column (occupancy-aware, so a rowspan
+ * corner keeps the numeric leaf headers in their true columns); the remaining
+ * rows are the body. Virtual columns are excluded.
+ */
+export function sourceColumnMatrix(table: HTMLTableElement): string[][] {
+  const header = sourceHeaderColumns(table).map(cellValue);
+  const body = bodyRows(table).map((row) => sourceCells(row).map(cellValue));
+  return [header, ...body];
 }
 
 /* ── Cells within a row ─────────────────────────────────────────────── */
