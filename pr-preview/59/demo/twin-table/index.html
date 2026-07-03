@@ -24,17 +24,19 @@
   <h1>Twin (grouped) interpolation table — reproduction</h1>
 
   <p class="note">
-    <strong>Investigation fixture (spec 016).</strong> This reproduces a
-    <em>twin</em> lookup table: <strong>Speed</strong> (rows) &times;
-    <strong>Direction</strong> (columns), with an extra merged
-    <strong>Season</strong> column on the left. <code>Summer</code> spans six
-    speed rows (30–80&nbsp;kts) and <code>Winter</code> spans four (20–60&nbsp;kts).
-    It is really <strong>two stacked grids sharing the Direction axis</strong>.
-    Grid-Sight's current single-grid slider binding cannot bind either axis on
-    this shape — see <code>specs/016-twin-interpolation/investigation.md</code>.
-    The <code>heatmap</code> enrichment is offered here so the two blocks are
-    visible; sliders are intentionally shown to demonstrate that no axis binding
-    is produced today.
+    <strong>Twin interpolation (spec 016).</strong> This is a <em>twin</em>
+    lookup table: <strong>Speed</strong> (rows) &times; <strong>Direction</strong>
+    (columns), with an extra merged <strong>Season</strong> column on the left.
+    <code>Summer</code> spans six speed rows (30–80&nbsp;kts) and
+    <code>Winter</code> spans four (20–60&nbsp;kts) — really
+    <strong>two stacked grids sharing the Direction axis</strong>.
+    Enable Grid-Sight and click the <strong>S</strong> lozenge in the top-left
+    corner to add the <strong>synced twin sliders</strong>: one shared
+    <strong>Direction</strong> slider plus a <strong>Speed</strong> slider in each
+    season block. The Speed sliders are synced by value; in the overlap (30–60)
+    both blocks interpolate and highlight, and when the shared speed leaves a
+    block's range that block's slider disables and its highlight clears. See
+    <code>specs/016-twin-interpolation/investigation.md</code>.
   </p>
 
   <table id="twin-table" data-gs-key="twin-speed-direction">
