@@ -51,6 +51,18 @@ test.describe('spec 016: twin interpolation', () => {
     await expect(speeds.nth(1)).toHaveJSProperty('disabled', false);
   });
 
+  test('turning Grid-Sight off removes all twin adornments', async ({ page }) => {
+    await enableTwin(page);
+    await expect(page.locator(`#twin-table ${SPEED}`)).toHaveCount(2);
+    // Click the corner GS toggle off.
+    await page.locator('#twin-table .grid-sight-toggle').first().click();
+    await expect(page.locator('#twin-table [data-gs-twin-input]')).toHaveCount(0);
+    await expect(page.locator('#twin-table [data-gs-twin-row]')).toHaveCount(0);
+    await expect(page.locator('#twin-table [data-gs-twin-block-ui]')).toHaveCount(0);
+    await expect(page.locator('#twin-table .gs-slider-highlight')).toHaveCount(0);
+    await expect(page.locator('#twin-table [data-gs-lozenge-id]')).toHaveCount(0);
+  });
+
   test('out-of-range block disables its slider and clears its marker', async ({ page }) => {
     await enableTwin(page);
     const speeds = page.locator(`#twin-table ${SPEED}`);

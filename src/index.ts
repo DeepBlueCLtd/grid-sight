@@ -49,6 +49,7 @@ import {
 } from './enrichments/slider';
 import type { GridSightSlider, Axis as SliderAxis } from './enrichments/slider';
 import { addThresholdSlider as sliderAddThresholdSlider } from './enrichments/slider-threshold';
+import { disableTwinSliders } from './enrichments/twin-slider';
 import { ensureHeatmapMarkerListener } from './ui/heatmap-marker';
 
 // Virtual columns (spec 012-virtual-columns)
@@ -282,6 +283,7 @@ const GridSight = {
     try { vcDetachAll(); } catch (e) { /* ignore */ void e; }
     for (const table of Array.from(tableRegistry.values())) {
       try { removeHeatmap(table); } catch (e) { /* ignore */ void e; }
+      try { disableTwinSliders(table); } catch (e) { /* ignore */ void e; }
       const toggle = table.querySelector('.grid-sight-toggle-container');
       if (toggle) toggle.remove();
       try { unmountFilterChip(table); } catch (e) { /* ignore */ void e; }

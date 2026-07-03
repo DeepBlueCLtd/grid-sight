@@ -76,6 +76,16 @@ describe('twin-slider controller', () => {
     expect(winter.disabled).toBe(false);
   });
 
+  it('shows the shared speed and direction in the corner readout', () => {
+    const tbl = twinTable();
+    enableTwinSliders(tbl);
+    const [summer] = speedInputs(tbl);
+    setValue(summer, 50);
+    const corner = tbl.querySelector('tr[data-gs-twin-row] th:first-child .gs-twin-dir-label')!;
+    expect(corner.textContent).toContain('Speed 50');
+    expect(corner.textContent).toContain('Direction');
+  });
+
   it('disables the out-of-range block and clears its marker/readout', () => {
     const tbl = twinTable();
     enableTwinSliders(tbl);

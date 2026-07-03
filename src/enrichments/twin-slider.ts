@@ -48,7 +48,10 @@ function ensureStyles(): void {
   style.textContent = `
     .gs-twin-block-ui { display:flex; flex-direction:column; align-items:center; gap:4px; padding:4px 0; }
     .gs-twin-block-ui input[type=range][orient=vertical] {
-      writing-mode: vertical-lr; direction: rtl; width:16px; height:84px; accent-color:#1976d2;
+      /* No 'direction: rtl' — that would put the min at the bottom, inverting the
+       * slider relative to the table rows (row-header min is the TOP row). With
+       * plain vertical-lr the thumb top = min speed = top row (spec 016). */
+      writing-mode: vertical-lr; width:16px; height:84px; accent-color:#1976d2;
     }
     .gs-twin-block-ui input[type=range]:disabled { opacity:0.4; cursor:not-allowed; }
     .gs-twin-readout { font:600 11px/1.3 system-ui,sans-serif; color:#1976d2; text-align:center; font-variant-numeric:tabular-nums; }
@@ -218,7 +221,7 @@ export function enableTwinSliders(table: HTMLTableElement): boolean {
         ui.input.title = `${ui.block.label} speed`;
       }
     }
-    dirReadout.textContent = `Direction ${formatNumber(state.dir)}`;
+    dirReadout.textContent = `Speed ${formatNumber(state.speed)} · Direction ${formatNumber(state.dir)}`;
   };
 
   const onSpeed = (v: number): void => {
