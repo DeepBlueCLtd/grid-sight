@@ -77,6 +77,40 @@ offered at all.** The table is silently un-enrichable — exactly the "we may no
 be able to support this" the format was flagged for. (This is also *safe*: it
 fails closed, it does not produce a wrong interpolated number.)
 
+### 2.1 A second symptom: enrichment lozenges land in the wrong cells
+
+The same single-row-header assumption lives in the lozenge injector
+(`src/ui/header-utils.ts` → `injectPlusIcons`), so the twin table also mounts the
+per-column / per-row H (heatmap) and # (statistics) lozenges on the wrong cells.
+Dumped from the live DOM after enabling Grid-Sight on the fixture:
+
+```text
+header row:        Speed[H,#]  000°[H,#]  045°[H,#] … 180°[H,#]
+Summer block row1: "Summer"[H,#]   30 (—)   18.2 …          // lozenges on the merged Season cell
+Summer block rowN: 40[H,#] 50[H,#] 60[H,#] 70[H,#] 80[H,#]  // on the Speed values
+Winter block row1: "Winter"[H,#]   20 (—)   15.0 …
+Winter block rowN: 30[H,#] 40[H,#] 60[H,#]
+```
+
+Three placement bugs, all the same root cause:
+
+1. **`Speed` (a row-header *label* column) is mistaken for a data column.** The
+   injector treats every header cell after index 0 as a column, so the Speed
+   label header wrongly offers column enrichments (H/#).
+2. **On group-leading rows the row lozenges attach to the merged `Season` cell.**
+   The row pass always reads `gridCells(row)[0]`, which on a leading row is the
+   `Summer`/`Winter` rowspan cell, not the Speed value.
+3. **The first speed of each block (30, 20) gets no lozenge at all.** It sits in
+   `gridCells(row)[1]` of a group-leading row, which the row pass never inspects.
+
+Note the codebase already has *partial* rowspan awareness: `columnHasRowspanBodyCells`
+correctly **suppresses** sort / filter / outlier on the grouped column (which is
+why only H and # mis-mount, not the whole cluster). But that is a defensive
+guard, not structural understanding — it prevents some wrong lozenges without
+placing the right ones. **Twin support is therefore an addressing-layer concern,
+not a slider-only one:** the same `rowGroups` / group-column detection that fixes
+the binding also feeds the lozenge injector, heatmap, and sort/filter suppression.
+
 ## 3. Can we offer "twin" interpolation? — Yes, and it is a small extension
 
 A proof-of-concept group-aware binding builder was prototyped against the same
@@ -138,6 +172,7 @@ same binding model if demand appears.
 | `src/core/table-grid.ts` | Add group-column detection + a `rowGroups(table)` reader (label + its body rows), reusing `sourceCells`/`cellValue`. Pure DOM read. | small |
 | `src/enrichments/slider-injection.ts` | Generalise `readRawAxisHeaders`/`readRawCellMatrix`/`buildAxisBinding` to take an optional row-group so the row axis skips the group column and the matrix is sliced to the group's rows. | small–medium |
 | `src/enrichments/slider.ts` + `src/ui/` | Season selector control; re-range the row slider on group change; thread the active group into `refreshTable`. | medium |
+| `src/ui/header-utils.ts` | Use the group-aware row-header column so H/# lozenges mount on the Speed value (not the merged `Season` cell), skip the label columns, and cover the first speed of each block (fixes §2.1). | small |
 | `src/utils/interpolation.ts` | **None** — `bilinear`/`linear1D` are reused verbatim. | none |
 | Persistence/sync (`slider-persistence`, `sync-key`) | Add the active-group id to the per-slider key so a bookmarked position restores to the right block. | small |
 
