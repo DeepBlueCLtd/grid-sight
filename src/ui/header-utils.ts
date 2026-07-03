@@ -38,6 +38,12 @@ import {
   cellValue,
   logicalColIndexOf,
 } from '../core/table-grid';
+import { isTwinTable } from '../core/twin-grid';
+import {
+  enableTwinSliders,
+  disableTwinSliders,
+  isTwinSlidersActive,
+} from '../enrichments/twin-slider';
 
 export type HeaderType = 'row' | 'column' | 'table';
 
@@ -62,6 +68,18 @@ export function injectPlusIcons(table: HTMLTableElement, columnTypes: ColumnType
   const rows = gridRows(table);
   const headerRow = rows[0];
   if (!headerRow) return;
+
+  // Twin (grouped) tables (spec 016): the single-row-header addressing behind
+  // the per-column / per-row passes mis-places lozenges on the label columns and
+  // the merged group cell, and the classic enrichments are not group-aware. So
+  // on a twin table we mount ONLY the table-level cluster (the corner cell),
+  // which carries the twin-aware slider toggle; the mis-placed H/# are not
+  // offered until those enrichments learn the group structure.
+  if (isTwinTable(table)) {
+    const corner = gridCells(headerRow)[0];
+    if (corner) addLozengesToHeader(table, corner, 'table', 0);
+    return;
+  }
 
   gridCells(headerRow).forEach((cell, colIndex) => {
     const isTopLeftCell = colIndex === 0;
@@ -176,10 +194,14 @@ function buildDescriptorAffordances(
     colIndex,
     columnType,
   };
+  // On a twin table only the (twin-aware) sliders affordance is offered; the
+  // classic per-column/row enrichments are not group-aware yet (spec 016 §2.1).
+  const twin = isTwinTable(table);
   const out: HTMLElement[] = [];
   for (const descriptor of listEnrichmentDescriptors()) {
     const behavior = descriptor.behavior;
     if (!descriptor.shipped || !behavior) continue;
+    if (twin && descriptor.id !== 'sliders') continue;
     if (!enabled.has(descriptor.id)) continue;
     if (!behavior.appliesTo(ctx)) continue;
     const el = behavior.mount(ctx);
@@ -574,6 +596,8 @@ function heatmapRowIndex(table: HTMLTableElement, tr: HTMLTableRowElement): numb
 }
 
 function sliderApplicable(table: HTMLTableElement, type: HeaderType): boolean {
+  // Twin tables always qualify (table-level twin controller); spec 016.
+  if (type === 'table' && isTwinTable(table)) return true;
   if (type === 'column') return inspectAxisBinding(table, 'col') !== null;
   if (type === 'row') return inspectAxisBinding(table, 'row') !== null;
   // Table-wide: at least one axis must qualify.
@@ -581,12 +605,19 @@ function sliderApplicable(table: HTMLTableElement, type: HeaderType): boolean {
 }
 
 function sliderIsActive(table: HTMLTableElement, type: HeaderType): boolean {
+  if (type === 'table' && isTwinTable(table)) return isTwinSlidersActive(table);
   if (type === 'column') return getSliders(table).some(s => s.kind === 'axis' && s.axis === 'col');
   if (type === 'row') return getSliders(table).some(s => s.kind === 'axis' && s.axis === 'row');
   return getSliders(table).some(s => s.kind === 'axis');
 }
 
 function toggleSliders(table: HTMLTableElement, type: HeaderType): void {
+  // Twin tables: toggle the dedicated synced-blocks controller (spec 016).
+  if (type === 'table' && isTwinTable(table)) {
+    if (isTwinSlidersActive(table)) disableTwinSliders(table);
+    else enableTwinSliders(table);
+    return;
+  }
   const axes: Array<'row' | 'col'> = type === 'row'
     ? ['row']
     : type === 'column'

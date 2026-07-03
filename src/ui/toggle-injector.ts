@@ -1,5 +1,6 @@
 import { injectPlusIcons, removePlusIcons, plusIconStyles } from './header-utils';
 import type { HeaderType } from './header-utils';
+import { disableTwinSliders } from '../enrichments/twin-slider';
 import { analyzeTable } from '../core/table-detection';
 import { setColumnTypes } from '../core/column-types-cache';
 import { toggleHeatmap } from '../enrichments/heatmap';
@@ -469,6 +470,10 @@ export function deactivateToggle(table: HTMLTableElement): void {
   toggle.setAttribute('aria-expanded', 'false');
 
   table.classList.remove(TABLE_ENABLED_CLASS);
+  // Tear down the twin-slider adornments (injected direction row + per-block
+  // sliders/highlights) before removing lozenges, so GS-off restores the
+  // original markup on grouped tables too (spec 016).
+  try { disableTwinSliders(table); } catch (e) { /* ignore */ void e; }
   removePlusIcons(table);
   table.removeEventListener('gridsight:enrichmentSelected', handleEnrichmentSelected as EventListener);
   // Removing the `gs-has-plus-icon` marker can leave an empty `class=""`
