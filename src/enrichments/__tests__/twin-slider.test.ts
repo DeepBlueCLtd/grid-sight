@@ -102,6 +102,30 @@ describe('twin-slider controller', () => {
     expect(tbl.querySelectorAll('.gs-slider-highlight').length).toBe(4);
   });
 
+  it('shows an interpolated-position marker per live block, hidden out of range', () => {
+    const tbl = twinTable();
+    enableTwinSliders(tbl);
+    const markers = () => Array.from(document.querySelectorAll<HTMLElement>('[data-gs-marker]'));
+    // One marker per block; both visible inside the overlap.
+    expect(markers().length).toBe(2);
+    expect(markers().every((m) => m.style.display !== 'none')).toBe(true);
+
+    // Push out of Winter's range → Summer marker stays, Winter marker hides.
+    const [summer] = speedInputs(tbl);
+    setValue(summer, 70);
+    const [mSummer, mWinter] = markers();
+    expect(mSummer.style.display).not.toBe('none');
+    expect(mWinter.style.display).toBe('none');
+  });
+
+  it('removes the markers on teardown', () => {
+    const tbl = twinTable();
+    enableTwinSliders(tbl);
+    expect(document.querySelectorAll('[data-gs-marker]').length).toBe(2);
+    disableTwinSliders(tbl);
+    expect(document.querySelectorAll('[data-gs-marker]').length).toBe(0);
+  });
+
   it('re-enables the block when the speed returns to its range', () => {
     const tbl = twinTable();
     enableTwinSliders(tbl);

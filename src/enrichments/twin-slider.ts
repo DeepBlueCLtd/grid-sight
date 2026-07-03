@@ -28,6 +28,8 @@ interface BlockUi {
   block: TwinBlock;
   input: HTMLInputElement;
   readout: HTMLElement;
+  /** Circle overlay showing the interpolated point inside the bracket. */
+  marker: HTMLElement;
   min: number;
   max: number;
 }
@@ -89,6 +91,68 @@ function highlightBlock(block: TwinBlock, e: BlockEval): void {
       if (b === cols.length - 1) cell.classList.add('gs-slider-highlight-r');
     }
   }
+}
+
+/* ── Interpolated-position marker (the circle) ──────────────────────────── */
+
+/** Make the table's positioning ancestor `relative` so absolutely-positioned
+ *  markers are placed against it (mirrors heatmap-marker.ts). */
+function ensureParentPositioned(table: HTMLTableElement): HTMLElement | null {
+  const parent = table.parentElement;
+  if (!parent) return null;
+  if (getComputedStyle(parent).position === 'static') parent.style.position = 'relative';
+  return parent;
+}
+
+function makeMarker(): HTMLElement {
+  const m = document.createElement('div');
+  m.setAttribute('data-gs-marker', '');
+  m.setAttribute('aria-hidden', 'true');
+  m.style.display = 'none';
+  return m;
+}
+
+function frac(a: number, b: number, x: number): number {
+  if (b === a) return 0;
+  return Math.min(1, Math.max(0, (x - a) / (b - a)));
+}
+
+/** Place `marker` at the interpolated (speed, dir) point inside the block's
+ *  four-cell bracket, or hide it when the block is out of range. */
+function positionMarker(
+  marker: HTMLElement,
+  block: TwinBlock,
+  colHeaders: number[],
+  speed: number,
+  dir: number,
+  e: BlockEval,
+  table: HTMLTableElement,
+): void {
+  if (!e.inRange || !e.rowBracket || !e.colBracket) {
+    marker.style.display = 'none';
+    return;
+  }
+  const [i0, i1] = e.rowBracket;
+  const [j0, j1] = e.colBracket;
+  const c00 = block.dataCells[i0]?.[j0];
+  const c11 = block.dataCells[i1]?.[j1];
+  const parent = table.parentElement;
+  if (!c00 || !c11 || !parent) {
+    marker.style.display = 'none';
+    return;
+  }
+  const pr = parent.getBoundingClientRect();
+  const r00 = c00.getBoundingClientRect();
+  const r11 = c11.getBoundingClientRect();
+  const tr = frac(block.rowHeaders[i0], block.rowHeaders[i1], speed);
+  const tc = frac(colHeaders[j0], colHeaders[j1], dir);
+  const xL = r00.left + r00.width / 2;
+  const xR = r11.left + r11.width / 2;
+  const yT = r00.top + r00.height / 2;
+  const yB = r11.top + r11.height / 2;
+  marker.style.left = `${xL + tc * (xR - xL) - pr.left}px`;
+  marker.style.top = `${yT + tr * (yB - yT) - pr.top}px`;
+  marker.style.display = '';
 }
 
 /* ── Injection ──────────────────────────────────────────────────────────── */
@@ -166,7 +230,7 @@ function injectBlockSlider(
 
   wrap.append(input, readout);
   block.groupCell.appendChild(wrap);
-  return { block, input, readout, min, max };
+  return { block, input, readout, marker: makeMarker(), min, max };
 }
 
 /* ── Controller ─────────────────────────────────────────────────────────── */
@@ -206,6 +270,7 @@ export function enableTwinSliders(table: HTMLTableElement): boolean {
     for (const ui of uis) {
       const e = evalBlock(ui.block.rowHeaders, model.colHeaders, ui.block.matrix, state.speed, state.dir);
       highlightBlock(ui.block, e);
+      positionMarker(ui.marker, ui.block, model.colHeaders, state.speed, state.dir, e, table);
       const outOfRange = !e.inRange;
       ui.input.disabled = outOfRange;
       if (!outOfRange) ui.input.value = String(Math.min(ui.max, Math.max(ui.min, state.speed)));
@@ -236,14 +301,31 @@ export function enableTwinSliders(table: HTMLTableElement): boolean {
   };
 
   const { row: dirRow, readout: dirReadout } = injectDirectionRow(table, model, state.dir, onDir);
-  for (const block of model.blocks) uis.push(injectBlockSlider(block, state.speed, onSpeed));
+  const markerHost = ensureParentPositioned(table);
+  for (const block of model.blocks) {
+    const ui = injectBlockSlider(block, state.speed, onSpeed);
+    markerHost?.appendChild(ui.marker);
+    uis.push(ui);
+  }
   render();
+
+  // Cell geometry shifts on resize — reposition the markers (highlights are
+  // class-based and need no repositioning).
+  const onResize = (): void => {
+    for (const ui of uis) {
+      const e = evalBlock(ui.block.rowHeaders, model.colHeaders, ui.block.matrix, state.speed, state.dir);
+      positionMarker(ui.marker, ui.block, model.colHeaders, state.speed, state.dir, e, table);
+    }
+  };
+  if (typeof window !== 'undefined') window.addEventListener('resize', onResize);
 
   const controller: TwinController = {
     destroy() {
+      if (typeof window !== 'undefined') window.removeEventListener('resize', onResize);
       dirRow.parentElement?.removeChild(dirRow);
       for (const ui of uis) {
         clearBlockHighlight(ui.block);
+        ui.marker.remove();
         ui.block.groupCell.querySelector('[data-gs-twin-block-ui]')?.remove();
       }
       active.delete(table);

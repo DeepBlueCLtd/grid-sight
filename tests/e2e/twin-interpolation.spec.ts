@@ -37,6 +37,10 @@ test.describe('spec 016: twin interpolation', () => {
     await expect(page.locator(`#twin-table ${SPEED}`)).toHaveCount(2);
     // Both blocks live inside the initial overlap: 8 highlighted cells (4 each).
     await expect(page.locator('#twin-table .gs-slider-highlight')).toHaveCount(8);
+    // One interpolated-position marker (circle) per block, both visible.
+    const markers = page.locator('[data-gs-marker]');
+    await expect(markers).toHaveCount(2);
+    for (let i = 0; i < 2; i++) await expect(markers.nth(i)).toBeVisible();
   });
 
   test('speed syncs across blocks in the overlap', async ({ page }) => {
