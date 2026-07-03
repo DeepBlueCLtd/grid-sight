@@ -15,18 +15,18 @@ The table is really **two stacked lookup grids that share one axis**. On the
 left are two label columns — a merged **Season** group column and the numeric
 **Speed** column — followed by the numeric **Direction** columns:
 
-| Season | Speed | 000° | 045° | 090° | 135° | 180° |
-|--------|------:|-----:|-----:|-----:|-----:|-----:|
-| **Summer** (rowspan 6) | 30 | … | … | … | … | … |
-|        | 40 | … | | | | |
-|        | 50 | … | | | | |
-|        | 60 | … | | | | |
-|        | 70 | … | | | | |
-|        | 80 | … | | | | |
-| **Winter** (rowspan 4) | 20 | … | … | … | … | … |
-|        | 30 | … | | | | |
-|        | 40 | … | | | | |
-|        | 60 | … | | | | |
+| Season (merged) | Speed | 000° | 045° | 090° | 135° | 180° |
+| --------------- | ----- | ---- | ---- | ---- | ---- | ---- |
+| Summer (rowspan 6) | 30 | … | … | … | … | … |
+| ″ | 40 | … | … | … | … | … |
+| ″ | 50 | … | … | … | … | … |
+| ″ | 60 | … | … | … | … | … |
+| ″ | 70 | … | … | … | … | … |
+| ″ | 80 | … | … | … | … | … |
+| Winter (rowspan 4) | 20 | … | … | … | … | … |
+| ″ | 30 | … | … | … | … | … |
+| ″ | 40 | … | … | … | … | … |
+| ″ | 60 | … | … | … | … | … |
 
 Key structural facts:
 
@@ -134,7 +134,7 @@ same binding model if demand appears.
 ### 3.3 Where the code changes land
 
 | Area | Change | Size |
-|------|--------|------|
+| ---- | ------ | ---- |
 | `src/core/table-grid.ts` | Add group-column detection + a `rowGroups(table)` reader (label + its body rows), reusing `sourceCells`/`cellValue`. Pure DOM read. | small |
 | `src/enrichments/slider-injection.ts` | Generalise `readRawAxisHeaders`/`readRawCellMatrix`/`buildAxisBinding` to take an optional row-group so the row axis skips the group column and the matrix is sliced to the group's rows. | small–medium |
 | `src/enrichments/slider.ts` + `src/ui/` | Season selector control; re-range the row slider on group change; thread the active group into `refreshTable`. | medium |
@@ -146,7 +146,7 @@ No new runtime dependency; no network; the maths layer is untouched.
 ## 4. Constitution check (feasibility-level)
 
 | Principle | Verdict | Note |
-|-----------|---------|------|
+| --------- | ------- | ---- |
 | I. Lightweight & minimal deps | ✅ | No new dependency; reuses `bilinear`. Est. bundle delta small (detection + selector); size gate is report-and-warn. |
 | II. Test discipline | ✅ | Pure `rowGroups`/binding builders are unit-testable in isolation; the POC already exercises the partition + bilinear path. Adds a Storybook + e2e on the reproduction fixture. |
 | III. Accessibility | ✅ | Season selector as a keyboard-operable `radiogroup`; colour never the sole channel. |
