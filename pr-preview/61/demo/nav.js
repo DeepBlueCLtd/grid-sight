@@ -26,7 +26,9 @@
     { path: 'summary-row/index.html', label: '11. Summary row' },
     { path: 'find-in-table/index.html', label: '12. Find in table' },
     { path: 'matrix/index.html', label: '13. Matrix fixture' },
-    { path: 'copy-as-csv/index.html', label: '14. Copy as CSV' }
+    { path: 'copy-as-csv/index.html', label: '14. Copy as CSV' },
+    { path: 'twin-table/index.html', label: '15. Twin table (investigation)' },
+    { path: 'sliders/merged-headers.html', label: '16. Merged headers' }
   ];
 
   var STYLE_ID = 'gs-demo-nav-styles';
