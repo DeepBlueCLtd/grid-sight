@@ -17,6 +17,21 @@ describe('parseHeaderNumber', () => {
     expect(parseHeaderNumber('25kg')).toBe(25);
   });
 
+  it('ignores trailing note annotations after a unit-suffixed value', () => {
+    // Real-world speed axis: "1kt", "2kt", … "120kt (Note 1)", "121kt (Note 2)".
+    // Only the leading numeric prefix is significant; unit + parenthetical note are discarded.
+    expect(parseHeaderNumber('3kt')).toBe(3);
+    expect(parseHeaderNumber('120kt (Note 1)')).toBe(120);
+    expect(parseHeaderNumber('121kt (Note 2)')).toBe(121);
+  });
+
+  it('returns null when text precedes the number', () => {
+    // The numeric run must be anchored at the start of the cell — a leading note
+    // (rather than a trailing one) disqualifies the header.
+    expect(parseHeaderNumber('Note 1: 120kt')).toBeNull();
+    expect(parseHeaderNumber('~120kt')).toBeNull();
+  });
+
   it('returns null for non-numeric headers', () => {
     expect(parseHeaderNumber('alpha')).toBeNull();
     expect(parseHeaderNumber('')).toBeNull();
@@ -35,6 +50,14 @@ describe('deriveSyncKey', () => {
 
   it('returns null when any header is non-numeric', () => {
     expect(deriveSyncKey(['10', 'twenty', '30'])).toBeNull();
+  });
+
+  it('accepts a speed axis whose headers carry unit suffixes and note annotations', () => {
+    // Whole axis must parse for the table to qualify for interpolation.
+    const speedHeaders = ['1kt', '2kt', '3kt', '120kt (Note 1)', '121kt (Note 2)'];
+    expect(deriveSyncKey(speedHeaders)).not.toBeNull();
+    // Note text is irrelevant to the derived key: annotated headers sync with plain ones.
+    expect(deriveSyncKey(speedHeaders)).toBe(deriveSyncKey(['1', '2', '3', '120', '121']));
   });
 
   it('returns null for degenerate (single-value) axes', () => {
